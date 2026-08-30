@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Nav } from '../../components/Nav'
 import { api } from '../../lib/api'
 import {
@@ -12,6 +12,7 @@ import {
 import { ejecutarPreview } from '../../lib/sandbox'
 import type { ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
 import { PanelEncargo } from '../encargo/PanelEncargo'
+import { DivisorArrastrable } from './DivisorArrastrable'
 import { EditorPanel } from '../editor/EditorPanel'
 import { PanelPreview } from '../preview/PanelPreview'
 import { PanelRevision } from '../revision/PanelRevision'
@@ -33,12 +34,27 @@ ${portafolioEjemplo.hobbies.map((h) => `<li>${h}</li>`).join('')}
 <div style="margin-top:14px;border:1px dashed #bab6b6;border-radius:4px;padding:9px;font:11px/1.4 ui-monospace,Menlo,monospace;color:#7d7979">faltan ${portafolioEjemplo.hobbiesEnArchivoDePrueba - portafolioEjemplo.hobbies.length} elementos del archivo de prueba</div>
 `
 
+const CLAVE_ENCARGO = 've:encargo-abierto'
+
+// Conveniencia por visitante: recordar si dejó el encargo plegado. Arranca abierto.
+function leerEncargoAbierto(): boolean {
+  try {
+    return localStorage.getItem(CLAVE_ENCARGO) !== '0'
+  } catch {
+    return true
+  }
+}
+
 export function VistaEstudiante() {
   const { data: encargo, isLoading } = useQuery({
     queryKey: ['encargo', 'hoy'],
     queryFn: api.encargoDelDia,
   })
 
+  const [encargoAbierto, setEncargoAbierto] = useState(leerEncargoAbierto)
+  const [editorAbierto, setEditorAbierto] = useState(true)
+  const gridRef = useRef<HTMLDivElement>(null)
+  const [previewExpandido, setPreviewExpandido] = useState(false)
   const [contenido, setContenido] = useState(archivoPortafolioEjemplo.contenido)
   const [salida, setSalida] = useState<SalidaEjecucion | null>(salidaEjemplo)
   const [previewHtml, setPreviewHtml] = useState(previewInicial)
@@ -83,13 +99,32 @@ export function VistaEstudiante() {
 
       <div className="solo-escritorio">Editar código requiere computador.</div>
 
-      <div className="ve-grid oculto-en-movil">
+      <div
+        ref={gridRef}
+        className="ve-grid oculto-en-movil"
+        data-encargo={encargoAbierto ? 'abierto' : 'cerrado'}
+        data-editor={editorAbierto ? 'abierto' : 'cerrado'}
+        data-preview={previewExpandido ? 'expandido' : 'normal'}
+      >
         {isLoading || !encargo ? (
           <section className="ve-col-encargo">
             <p className="text-muted">Cargando encargo…</p>
           </section>
         ) : (
-          <PanelEncargo encargo={encargo} />
+          <PanelEncargo
+            encargo={encargo}
+            abierto={encargoAbierto}
+            onToggle={() =>
+              setEncargoAbierto((v) => {
+                try {
+                  localStorage.setItem(CLAVE_ENCARGO, v ? '0' : '1')
+                } catch {
+                  /* almacenamiento no disponible: seguimos sin persistir */
+                }
+                return !v
+              })
+            }
+          />
         )}
 
         <EditorPanel
@@ -105,10 +140,19 @@ export function VistaEstudiante() {
           entregando={entregando}
           onEjecutar={ejecutar}
           onEntregar={entregar}
+          abierto={editorAbierto}
+          onToggle={() => setEditorAbierto((v) => !v)}
         />
 
+        <DivisorArrastrable gridRef={gridRef} />
+
         <div className="ve-col-preview">
-          <PanelPreview url={portafolioEjemplo.url} html={previewHtml} />
+          <PanelPreview
+            url={portafolioEjemplo.url}
+            html={previewHtml}
+            expandido={previewExpandido}
+            onToggleExpandir={() => setPreviewExpandido((v) => !v)}
+          />
           <PanelRevision resultado={revision} />
         </div>
       </div>

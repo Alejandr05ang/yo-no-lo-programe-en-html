@@ -31,21 +31,124 @@
   font-size: 13px;
 }
 
-/* — grid de trabajo — */
+/* — grid de trabajo —
+   El portafolio (preview) es la pieza protagonista: editor y preview se reparten
+   el ancho 50/50. El encargo vive en una columna colapsable a la izquierda para no
+   robarle espacio permanente a la vista de lo que se está construyendo. */
 .ve-grid {
   display: grid;
-  grid-template-columns: 340px 1fr 404px;
+  grid-template-columns:
+    var(--enc-ancho, 340px)
+    var(--ed-ancho, var(--ed-manual, minmax(0, 1fr)))
+    var(--div-ancho, 6px)
+    minmax(0, 1fr);
+  grid-template-rows: 1fr;
   flex: 1;
   min-height: 0;
 }
+.ve-grid[data-encargo='cerrado'] {
+  --enc-ancho: 46px;
+}
+.ve-grid[data-editor='cerrado'] {
+  --ed-ancho: 46px;
+  --div-ancho: 0px;
+}
 
-/* columnas claras: voz humana */
+/* Divisor arrastrable entre editor y preview. */
+.ve-divisor {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+  position: relative;
+}
+.ve-divisor::after {
+  content: '';
+  position: absolute;
+  inset: 0 2px;
+  background: var(--color-divider);
+}
+.ve-divisor:hover::after,
+.ve-divisor[data-arrastrando='true']::after {
+  background: var(--color-accent);
+}
+/* editor plegado: el divisor sigue ocupando su slot (ahora 0px) pero invisible,
+   para que el preview no se corra a la columna del divisor */
+.ve-grid[data-editor='cerrado'] .ve-divisor {
+  visibility: hidden;
+}
+/* pantalla completa: editor fuera de flujo, el divisor también */
+.ve-grid[data-preview='expandido'] .ve-divisor {
+  display: none;
+}
+
+/* Modo pantalla completa del preview: editor y encargo se ocultan. */
+.ve-grid[data-preview='expandido'] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ve-grid[data-preview='expandido'] .ve-col-encargo,
+.ve-grid[data-preview='expandido'] .enc-rail,
+.ve-grid[data-preview='expandido'] .ve-col-editor,
+.ve-grid[data-preview='expandido'] .ed-rail {
+  display: none;
+}
+
+/* columna izquierda: voz humana */
 .ve-col-encargo {
   padding: var(--space-4);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   overflow: auto;
+  border-right: 1px solid var(--color-divider);
+}
+
+/* rail cuando el encargo está colapsado */
+.enc-rail {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  border-right: 1px solid var(--color-divider);
+  overflow: hidden;
+}
+.enc-rail-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font: 600 10px/1 ui-monospace, Menlo, monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  white-space: nowrap;
+}
+.enc-toggle {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  line-height: 1;
+  color: var(--color-neutral-700);
+  background: transparent;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.enc-toggle:hover {
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+.enc-cab {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+.enc-cab .card-kicker {
+  flex: 1;
 }
 
 /* columna central: voz máquina */
@@ -54,7 +157,7 @@
   color: #d7d3d3;
   display: flex;
   flex-direction: column;
-  border-inline: 1px solid var(--color-divider);
+  border-right: 1px solid var(--color-divider);
   min-width: 0;
 }
 
@@ -62,17 +165,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-/* 1024–1280: el encargo colapsa; <1024: solo consulta (handoff §Responsive) */
-@media (max-width: 1279px) {
-  .ve-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .ve-col-encargo {
-    grid-column: 1 / -1;
-    max-height: 220px;
-  }
+  min-width: 0;
 }
 
 /* ── Panel de encargo (columna izquierda) ───────────────────────────── */
@@ -110,11 +203,128 @@
 }
 
 /* ── Editor (columna central, panel oscuro) ─────────────────────────── */
+
+/* rail cuando el editor está colapsado */
+.ed-rail {
+  height: 100%;
+  background: #191816;
+  border-right: 1px solid var(--color-divider);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+  padding: var(--space-3) 0;
+  overflow: hidden;
+}
+.ed-rail-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font: 12px/1 ui-monospace, Menlo, monospace;
+  color: #9b9797;
+  white-space: nowrap;
+}
+.ed-rail .enc-toggle {
+  color: #9b9797;
+  border-color: #2d2b2b;
+}
+.ed-rail .enc-toggle:hover {
+  color: var(--color-accent-300);
+  border-color: var(--color-accent-400);
+}
+
 .ed-tabs {
   display: flex;
   align-items: stretch;
   border-bottom: 1px solid #2d2b2b;
   font: 12px/1 ui-monospace, Menlo, monospace;
+}
+.ed-tabs-scroll {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #2d2b2b transparent;
+}
+.ed-tab {
+  white-space: nowrap;
+  flex: none;
+}
+
+.ed-menu {
+  flex: none;
+  position: relative;
+  border-left: 1px solid #2d2b2b;
+}
+.ed-menu > summary {
+  list-style: none;
+  cursor: pointer;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  color: #9b9797;
+}
+.ed-menu > summary::-webkit-details-marker {
+  display: none;
+}
+.ed-menu[open] > summary {
+  color: #f8f4f4;
+}
+.ed-menu ul {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 20;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  min-width: 220px;
+  background: #201f1d;
+  border: 1px solid #2d2b2b;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-md);
+}
+.ed-menu li button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  color: #d7d3d3;
+  font: 12px/1.4 ui-monospace, Menlo, monospace;
+}
+.ed-menu li button:hover {
+  background: #2d2b2b;
+}
+.ed-menu li button[aria-current='true'] {
+  color: #f8f4f4;
+  box-shadow: inset 2px 0 0 var(--color-accent);
+}
+
+.ed-colapsar {
+  flex: none;
+  align-self: center;
+  margin: 0 10px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 15px;
+  line-height: 1;
+  color: #9b9797;
+  background: transparent;
+  border: 1px solid #2d2b2b;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.ed-colapsar:hover {
+  color: var(--color-accent-300);
+  border-color: var(--color-accent-400);
 }
 .ed-tab {
   padding: 12px 16px;
@@ -198,19 +408,62 @@
   border-radius: 99px;
   padding: 3px 10px;
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pv-url .tag,
+.pv-expandir {
+  flex: none;
+}
+.pv-expandir {
+  font-size: 12px;
+  padding: 4px 10px;
+}
+
+.pv-controles {
+  padding: 8px var(--space-3);
+  border-bottom: 1px solid var(--color-divider);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.pv-controles .seg {
+  font-size: 12px;
+}
+.pv-controles .seg-opt {
+  padding: 5px 9px;
+  font-size: 12px;
+}
+.pv-medida {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-neutral-600);
+  white-space: nowrap;
+}
+
+/* Zona de encuadre: fondo neutro para que el móvil/tablet se lean como dispositivo. */
+.pv-zona {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  background: #e6e4e2;
 }
 .pv-marco {
-  flex: 1;
   background: #fff;
-  border: 0;
-  width: 100%;
-  min-height: 0;
+  border: 1px solid var(--color-divider);
 }
 
 .rev {
+  flex: none;
   border-top: 1px solid var(--color-divider);
   padding: var(--space-3);
   background: var(--color-surface);
+  overflow: auto;
+  max-height: 40%;
 }
 .rev-cab {
   display: flex;

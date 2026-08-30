@@ -36,6 +36,7 @@ Estado: ✅ cerrada · 🟡 propuesta (a confirmar con el equipo del taller) · 
 | C1 | Cómo se enuncia el reto: variantes 1a (prosa) / 1b (síntoma puro) / 1c (contrato de aceptación) | Empezar con **1a (prosa)** la primera semana; **1c (contrato)** la segunda; **1b (síntoma puro)** solo en retos platino | 1b es lo más fiel al juego original pero lo más riesgoso con media cohorte sin base; 1c mapea 1:1 al autograder. Es combinable por semana (handoff §1a–1c) |
 | C2 | Estado de visitantes en portafolios ajenos | **Solo navegador** (`localStorage`), sin persistencia en backend | Suficiente para el objetivo pedagógico; evita moderación y escalamiento de memoria (brief §2.6). Si se quiere feedback real entre estudiantes, función aparte y moderada |
 | C3 | Entrada de estudiantes | **Correo + código de cohorte**, sin CSV | Baja fricción para el instructor, cohorte-acotada, reutilizable, sandbox de facto privado |
+| C4 | Layout de la pantalla 1a | Se desvía del mockup (`340px 1fr 404px`): **encargo, editor y preview son paneles plegables**; editor y preview parten 50/50 con **divisor arrastrable**; el preview tiene **selector de ancho** (móvil/tablet/escritorio/completo) y **modo pantalla completa** | El portafolio es la pieza protagonista y se exporta como sitio responsive real (brief §5.2, §5.9); el estudiante arma su espacio de trabajo. Se descartaron ventanas flotantes libres (trampa de usabilidad para principiantes, choca con el diseño "editorial y quieto", mata el responsive) |
 
 ## Pendientes de definir (brief §7 + nuevos)
 

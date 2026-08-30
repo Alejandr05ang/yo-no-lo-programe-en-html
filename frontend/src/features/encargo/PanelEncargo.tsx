@@ -3,6 +3,8 @@ import type { Encargo } from '../../lib/tipos'
 
 interface Props {
   encargo: Encargo
+  abierto: boolean
+  onToggle: () => void
   onPedirPista?: () => void
 }
 
@@ -15,7 +17,9 @@ function formatoMinutos(seg: number): string {
 // Columna izquierda de la pantalla 1a: el encargo como nota del cliente, en prosa,
 // sin vocabulario técnico. La incógnita ("cuántos hobbies") es lo que fuerza el bucle
 // (brief §2.2). Aquí no se dice "usa un for".
-export function PanelEncargo({ encargo, onPedirPista }: Props) {
+// Es colapsable: la vista previa del portafolio es la pieza protagonista y el encargo
+// no debe robarle ancho de forma permanente.
+export function PanelEncargo({ encargo, abierto, onToggle, onPedirPista }: Props) {
   const [restante, setRestante] = useState(encargo.pistaDisponibleEn ?? 0)
 
   useEffect(() => {
@@ -26,11 +30,40 @@ export function PanelEncargo({ encargo, onPedirPista }: Props) {
   }, [encargo.pistaDisponibleEn])
 
   const pistaBloqueada = restante > 0
+  const numero = String(encargo.numero).padStart(2, '0')
+
+  if (!abierto) {
+    return (
+      <div className="enc-rail">
+        <button
+          className="enc-toggle"
+          onClick={onToggle}
+          aria-expanded={false}
+          aria-label="Abrir el encargo"
+          title="Abrir el encargo"
+        >
+          ›
+        </button>
+        <span className="enc-rail-label">Encargo {numero} · {encargo.titulo}</span>
+      </div>
+    )
+  }
 
   return (
     <section className="ve-col-encargo">
-      <div className="card-kicker">
-        Encargo {String(encargo.numero).padStart(2, '0')} · {encargo.desbloqueadoTexto}
+      <div className="enc-cab">
+        <div className="card-kicker">
+          Encargo {numero} · {encargo.desbloqueadoTexto}
+        </div>
+        <button
+          className="enc-toggle"
+          onClick={onToggle}
+          aria-expanded
+          aria-label="Colapsar el encargo"
+          title="Colapsar el encargo"
+        >
+          ‹
+        </button>
       </div>
       <h3 style={{ margin: 0 }}>{encargo.titulo}</h3>
       <hr className="hr" style={{ margin: 'var(--space-1) 0 var(--space-2)' }} />
