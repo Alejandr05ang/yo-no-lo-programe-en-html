@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="stylesheet" href="styles.css">
+<style>
+body{margin:0;background:#e6e4e2}
+.dv-turn{padding:44px 48px 36px;border-bottom:1px solid rgba(0,0,0,.10);scroll-margin-top:16px}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}
+.dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#201f1d;color:#f3f2f2;border-radius:4px;text-decoration:none}
+.dv-tname{font:400 15px/1.2 "Cormorant Garamond",serif;color:#201f1d}
+.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+.dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.09);color:#201f1d;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:9px;font:400 12px/1.3 "Lora",serif;color:rgba(32,31,29,.6)}
+.dv-card{max-width:100%;background:#f3f2f2;border:1px solid rgba(32,31,29,.16);border-radius:4px;box-shadow:0 3px 10px rgba(45,43,43,.10);overflow:hidden}
+.dv-opt:target .dv-oid{background:#b68235;color:#fff}
+.dv-next{margin:24px 0 0;font:12px/1.6 "Lora",serif;color:rgba(32,31,29,.55)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">Plataforma del taller — cuatro pantallas y tres formas de comunicar el reto</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Vista principal · el reto llega como <strong style="font-weight:600">encargo escrito</strong> (nota del cliente, sin instrucción técnica)</div>
+<div class="dv-card" style="width:1280px">
+
+<div class="nav" style="gap:18px">
+<span class="nav-brand">Taller<span style="color:var(--color-accent)"> · </span>Portafolio</span>
+<span class="tag tag-outline mono">Día 4 — Ju1</span>
+<a href="#1a" aria-current="page">Mi portafolio</a>
+<a href="#1e">Mapa</a>
+<a href="#1a">Retos platino</a>
+<a href="#1d">Bitácora</a>
+<div style="width:30px;height:30px;border-radius:50%;border:1px solid var(--color-divider);display:grid;place-items:center;font-family:var(--font-heading);font-size:13px">AR</div>
+</div>
+
+<div style="display:grid;grid-template-columns:340px 1fr 404px;height:716px">
+
+<div style="padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-3);overflow:hidden">
+<div class="card-kicker">Encargo 07 · desbloqueado hoy 10:00</div>
+<h3 style="margin:0">La lista que no se queda quieta</h3>
+<hr class="hr" style="margin:var(--space-1) 0 var(--space-2)">
+<p style="text-align:justify;font-size:13.5px;margin:0 0 var(--space-2)">Tus hobbies están en <span class="mono" style="font-size:12.5px">datos.hobbies</span>, un archivo que no escribes tú. Hoy tiene tres. La semana que viene puede tener catorce, o ninguno, y la página tiene que verse bien en los tres casos sin que vuelvas a tocar el código.</p>
+<p style="text-align:justify;font-size:13.5px;margin:0">Escribe el código que construya la sección de hobbies a partir de ese archivo, tal como esté cuando alguien la abra.</p>
+<div style="margin-top:var(--space-3);border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+<div style="font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent);margin-bottom:var(--space-2)">Herramientas disponibles</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<span class="tag tag-neutral mono">crearElemento()</span>
+<span class="tag tag-neutral mono">agregarA()</span>
+<span class="tag tag-neutral mono">obtenerDatos()</span>
+<span class="tag tag-neutral mono">si / sino</span>
+<span class="tag tag-accent mono">nuevo hoy: repetir()</span>
+</div>
+</div>
+<div style="margin-top:auto;border-top:1px solid var(--color-divider);padding-top:var(--space-3);display:flex;align-items:center;gap:var(--space-2)">
+<span class="mono" style="font-size:11px;color:var(--color-neutral-600)">Pista disponible en 6:12</span>
+<button class="btn btn-secondary" style="margin-left:auto" disabled>Pedir pista</button>
+</div>
+</div>
+
+<div style="background:#191816;color:#d7d3d3;display:flex;flex-direction:column;border-inline:1px solid var(--color-divider)">
+<div style="display:flex;align-items:stretch;border-bottom:1px solid #2d2b2b;font:12px/1 ui-monospace,Menlo,monospace">
+<div style="padding:12px 16px;color:#f8f4f4;box-shadow:inset 0 -1px 0 var(--color-accent)">portafolio.js</div>
+<div style="padding:12px 16px;color:#7d7979">datos.js <span style="opacity:.6">— solo lectura</span></div>
+</div>
+<div style="display:flex;gap:16px;padding:18px 20px;flex:1;font:13px/1.8 ui-monospace,SFMono-Regular,Menlo,monospace">
+<pre style="margin:0;color:#605d5d;text-align:right;user-select:none">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15</pre>
+<pre style="margin:0;flex:1;white-space:pre-wrap">const datos = obtenerDatos();
+const seccion = crearElemento("section");
+seccion.style.padding = "24px";
+
+<span style="color:#7d7979">// mis hobbies, uno por uno</span>
+agregarA(seccion, crearElemento("li", datos.hobbies[<span style="color:#e1ad66">0</span>]));
+agregarA(seccion, crearElemento("li", datos.hobbies[<span style="color:#e1ad66">1</span>]));
+agregarA(seccion, crearElemento("li", datos.hobbies[<span style="color:#e1ad66">2</span>]));
+
+<span style="color:#7d7979">// ...y si mañana hay catorce?</span>
+
+agregarA(pagina, seccion);
+<span style="background:#3a270d;outline:1px solid #7d5411;padding:0 2px">|</span></pre>
+</div>
+<div style="border-top:1px solid #2d2b2b;padding:10px 20px;font:11.5px/1.7 ui-monospace,Menlo,monospace;color:#9b9797;background:#151412">
+<span style="color:#e1ad66">consola</span>  Uncaught TypeError: no se puede leer "3" de undefined<br>
+<span style="opacity:.55">          en portafolio.js:8 — el archivo de datos tiene 3 elementos</span>
+</div>
+<div style="border-top:1px solid #2d2b2b;padding:12px 20px;display:flex;align-items:center;gap:var(--space-2)">
+<button class="btn btn-primary" style="border-color:var(--color-accent-400);color:var(--color-accent-300)">Ejecutar</button>
+<button class="btn" style="color:#9b9797;border-color:#2d2b2b">Entregar a revisión</button>
+<span class="mono" style="margin-left:auto;font-size:11px;color:#605d5d">guardado hace 4 s · 3 intentos</span>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;overflow:hidden">
+<div style="padding:10px var(--space-3);border-bottom:1px solid var(--color-divider);display:flex;align-items:center;gap:8px">
+<span class="mono" style="font-size:11px;color:var(--color-neutral-600);border:1px solid var(--color-divider);border-radius:99px;padding:3px 10px;flex:1">ana-rivas.taller.dev</span>
+<span class="tag tag-accent mono">en vivo</span>
+</div>
+<div style="flex:1;background:#fff;padding:var(--space-4);overflow:hidden">
+<div style="font-family:var(--font-heading);font-size:26px;line-height:1.1">Ana Rivas</div>
+<div style="font-size:12px;color:var(--color-neutral-600);margin-top:2px">Estudiante de ingeniería · Bogotá</div>
+<hr class="hr">
+<div style="font-size:12.5px;text-align:justify;color:var(--color-neutral-800)">Aprendiendo a construir cosas para internet. Este sitio lo escribí yo, línea por línea, durante dos semanas.</div>
+<div style="margin-top:var(--space-4);font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)">Hobbies</div>
+<ul style="margin:var(--space-2) 0 0;padding-left:18px;font-size:12.5px;line-height:1.9">
+<li>Escalada en roca</li>
+<li>Fotografía analógica</li>
+<li>Ajedrez</li>
+</ul>
+<div style="margin-top:var(--space-3);border:1px dashed var(--color-neutral-400);border-radius:var(--radius-md);padding:var(--space-2);font:11px/1.4 ui-monospace,Menlo,monospace;color:var(--color-neutral-600)">faltan 11 elementos del archivo de prueba</div>
+</div>
+<div style="border-top:1px solid var(--color-divider);padding:var(--space-3);background:var(--color-surface)">
+<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:var(--space-2)">
+<h5 style="margin:0">Revisión automática</h5>
+<span class="mono" style="margin-left:auto;font-size:11px;color:var(--color-neutral-700)">1 / 4 casos</span>
+</div>
+<table class="table" style="font-size:12.5px">
+<tbody>
+<tr><td style="padding:7px var(--space-1)">Lista con 3 elementos</td><td style="text-align:right;padding:7px var(--space-1)"><span class="tag tag-accent mono">pasa</span></td></tr>
+<tr><td style="padding:7px var(--space-1)">Lista con 14 elementos</td><td style="text-align:right;padding:7px var(--space-1)"><span class="tag tag-outline mono">falla</span></td></tr>
+<tr><td style="padding:7px var(--space-1)">Lista vacía → mensaje</td><td style="text-align:right;padding:7px var(--space-1)"><span class="tag tag-outline mono">falla</span></td></tr>
+<tr><td style="padding:7px var(--space-1);border-bottom:0">Sin índices fijos en el código</td><td style="text-align:right;padding:7px var(--space-1);border-bottom:0"><span class="tag tag-outline mono">falla</span></td></tr>
+</tbody>
+</table>
+<p style="margin:var(--space-3) 0 0;font-size:12px;text-align:justify;color:var(--color-neutral-800)">Los casos ocultos cambian de tamaño en cada revisión. Ninguno te dice cómo arreglarlo.</p>
+</div>
+</div>
+
+</div>
+</div>
+<sc-if value="{{ anot }}" hint-placeholder-val="{{ true }}">
+<div style="width:1280px;display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-top:var(--space-1)">
+<div style="border-top:1px solid var(--color-divider);padding-top:8px;display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">01</span><span>Panel de encargo: prosa, cero vocabulario técnico. La incógnita (cuántos hobbies) es lo que fuerza el bucle — §2.2.</span></div>
+<div style="border-top:1px solid var(--color-divider);padding-top:8px;display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">02</span><span>Editor Monaco en iframe aislado; datos.js solo lectura. La API del día se inyecta desbloqueada por calendario — §5.1–5.3.</span></div>
+<div style="border-top:1px solid var(--color-divider);padding-top:8px;display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">03</span><span>Preview en vivo + autograder con casos ocultos de tamaño variable; feedback sin solución — §5.2, §5.4.</span></div>
+</div>
+</sc-if>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Mismo layout · el reto llega como <strong style="font-weight:600">síntoma</strong> (nada que leer: la página está mal y los casos fallan)</div>
+<div class="dv-card" style="width:1280px">
+
+<div class="nav" style="gap:18px">
+<span class="nav-brand">Taller<span style="color:var(--color-accent)"> · </span>Portafolio</span>
+<span class="tag tag-outline mono">Día 4 — Ju1</span>
+<a href="#1b" aria-current="page">Mi portafolio</a>
+<a href="#1e">Mapa</a>
+<a href="#1b">Retos platino</a>
+<a href="#1d">Bitácora</a>
+<div style="width:30px;height:30px;border-radius:50%;border:1px solid var(--color-divider);display:grid;place-items:center;font-family:var(--font-heading);font-size:13px">AR</div>
+</div>
+
+<div style="display:grid;grid-template-columns:340px 1fr 404px;height:716px">
+
+<div style="padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-3)">
+<div class="card-kicker">Estado del portafolio</div>
+<h3 style="margin:0">3 de 4 comprobaciones fallan</h3>
+<hr class="hr" style="margin:var(--space-1) 0 var(--space-2)">
+<div style="display:flex;flex-direction:column;gap:var(--space-3)">
+<div>
+<div class="mono" style="font-size:11px;color:var(--color-accent-700)">14 hobbies en el archivo</div>
+<div style="font-size:13px;margin-top:2px">la página muestra 3</div>
+</div>
+<div>
+<div class="mono" style="font-size:11px;color:var(--color-accent-700)">0 hobbies en el archivo</div>
+<div style="font-size:13px;margin-top:2px">la página queda en blanco</div>
+</div>
+<div>
+<div class="mono" style="font-size:11px;color:var(--color-accent-700)">línea 8</div>
+<div style="font-size:13px;margin-top:2px">error en tiempo de ejecución</div>
+</div>
+</div>
+<div style="margin-top:var(--space-3);border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+<div style="font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent);margin-bottom:var(--space-2)">Herramientas disponibles</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<span class="tag tag-neutral mono">crearElemento()</span>
+<span class="tag tag-neutral mono">agregarA()</span>
+<span class="tag tag-neutral mono">obtenerDatos()</span>
+<span class="tag tag-neutral mono">si / sino</span>
+<span class="tag tag-accent mono">nuevo hoy: repetir()</span>
+</div>
+</div>
+<sc-if value="{{ pistas }}" hint-placeholder-val="{{ true }}">
+<div style="margin-top:var(--space-3);border:1px solid var(--color-accent-300);background:var(--color-accent-100);border-radius:var(--radius-md);padding:var(--space-3)">
+<div class="mono" style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent-800)">Pista 1 de 3</div>
+<p style="margin:6px 0 0;font-size:13px;color:var(--color-accent-900);text-align:justify">Detectamos tres líneas casi idénticas. ¿Qué parte cambia entre ellas y qué parte no?</p>
+</div>
+</sc-if>
+<div style="margin-top:auto;border-top:1px solid var(--color-divider);padding-top:var(--space-3);display:flex;align-items:center;gap:var(--space-2)">
+<span class="mono" style="font-size:11px;color:var(--color-neutral-600)">estancada 8 min · patrón copiar/pegar</span>
+<button class="btn btn-primary" style="margin-left:auto">Pedir pista</button>
+</div>
+</div>
+
+<div style="background:#191816;color:#d7d3d3;display:flex;flex-direction:column;border-inline:1px solid var(--color-divider)">
+<div style="display:flex;align-items:stretch;border-bottom:1px solid #2d2b2b;font:12px/1 ui-monospace,Menlo,monospace">
+<div style="padding:12px 16px;color:#f8f4f4;box-shadow:inset 0 -1px 0 var(--color-accent)">portafolio.js</div>
+<div style="padding:12px 16px;color:#7d7979">datos.js <span style="opacity:.6">— solo lectura</span></div>
+</div>
+<div style="display:flex;gap:16px;padding:18px 20px;flex:1;font:13px/1.8 ui-monospace,SFMono-Regular,Menlo,monospace">
+<pre style="margin:0;color:#605d5d;text-align:right;user-select:none">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12</pre>
+<pre style="margin:0;flex:1;white-space:pre-wrap">const datos = obtenerDatos();
+const seccion = crearElemento("section");
+
+repetir(datos.hobbies, function (hobby) {
+  agregarA(seccion, crearElemento("li", hobby));
+});
+
+<span style="color:#7d7979">// falta: qué pasa si la lista viene vacía</span>
+
+agregarA(pagina, seccion);
+<span style="background:#3a270d;outline:1px solid #7d5411;padding:0 2px">|</span></pre>
+</div>
+<div style="border-top:1px solid #2d2b2b;padding:10px 20px;font:11.5px/1.7 ui-monospace,Menlo,monospace;color:#9b9797;background:#151412">
+<span style="color:#e1ad66">consola</span>  14 elementos generados · sin errores<br>
+<span style="opacity:.55">          caso "lista vacía": el contenedor quedó sin hijos</span>
+</div>
+<div style="border-top:1px solid #2d2b2b;padding:12px 20px;display:flex;align-items:center;gap:var(--space-2)">
+<button class="btn btn-primary" style="border-color:var(--color-accent-400);color:var(--color-accent-300)">Ejecutar</button>
+<button class="btn" style="color:#9b9797;border-color:#2d2b2b">Entregar a revisión</button>
+<span class="mono" style="margin-left:auto;font-size:11px;color:#605d5d">guardado hace 1 s · 7 intentos</span>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;overflow:hidden">
+<div style="padding:10px var(--space-3);border-bottom:1px solid var(--color-divider);display:flex;align-items:center;gap:8px">
+<span class="mono" style="font-size:11px;color:var(--color-neutral-600);border:1px solid var(--color-divider);border-radius:99px;padding:3px 10px;flex:1">ana-rivas.taller.dev</span>
+<div class="seg" style="font-size:11px">
+<label class="seg-opt mono"><input type="radio" name="caso-1b" checked>3</label>
+<label class="seg-opt mono"><input type="radio" name="caso-1b">14</label>
+<label class="seg-opt mono"><input type="radio" name="caso-1b">0</label>
+</div>
+</div>
+<div style="flex:1;background:#fff;padding:var(--space-4);overflow:hidden">
+<div style="font-family:var(--font-heading);font-size:26px;line-height:1.1">Ana Rivas</div>
+<div style="font-size:12px;color:var(--color-neutral-600);margin-top:2px">Estudiante de ingeniería · Bogotá</div>
+<hr class="hr">
+<div style="margin-top:var(--space-2);font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)">Hobbies</div>
+<ul style="margin:var(--space-2) 0 0;padding-left:18px;font-size:12.5px;line-height:1.9">
+<li>Escalada en roca</li>
+<li>Fotografía analógica</li>
+<li>Ajedrez</li>
+</ul>
+<div style="margin-top:var(--space-4);height:1px;background:var(--color-divider)"></div>
+<div style="margin-top:var(--space-3);font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)">Proyectos</div>
+<div style="margin-top:var(--space-2);border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:var(--space-2);font-size:12px;color:var(--color-neutral-700)">se construye el lunes (L2)</div>
+</div>
+<div style="border-top:1px solid var(--color-divider);padding:var(--space-3);background:var(--color-surface)">
+<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:var(--space-2)">
+<h5 style="margin:0">Revisión automática</h5>
+<span class="mono" style="margin-left:auto;font-size:11px;color:var(--color-neutral-700)">3 / 4 casos</span>
+</div>
+<table class="table" style="font-size:12.5px">
+<tbody>
+<tr><td style="padding:7px var(--space-1)">Lista con 3 elementos</td><td style="text-align:right;padding:7px var(--space-1)"><span class="tag tag-accent mono">pasa</span></td></tr>
+<tr><td style="padding:7px var(--space-1)">Lista con 14 elementos</td><td style="text-align:right;padding:7px var(--space-1)"><span class="tag tag-accent mono">pasa</span></td></tr>
+<tr><td style="padding:7px var(--space-1)">Lista vacía → mensaje</td><td style="text-align:right;padding:7px var(--space-1)"><span class="tag tag-outline mono">falla</span></td></tr>
+<tr><td style="padding:7px var(--space-1);border-bottom:0">Sin índices fijos en el código</td><td style="text-align:right;padding:7px var(--space-1);border-bottom:0"><span class="tag tag-accent mono">pasa</span></td></tr>
+</tbody>
+</table>
+<p style="margin:var(--space-3) 0 0;font-size:12px;text-align:justify;color:var(--color-neutral-800)">Cambia el caso arriba para ver tu página con otros datos. El tamaño real de la revisión no se muestra.</p>
+</div>
+</div>
+
+</div>
+</div>
+<sc-if value="{{ anot }}" hint-placeholder-val="{{ true }}">
+<div style="width:1280px;display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-top:var(--space-1)">
+<div style="border-top:1px solid var(--color-divider);padding-top:8px;display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">01</span><span>Sin enunciado: el panel lista síntomas observables. Más cerca del juego original, más duro para quien no tiene base.</span></div>
+<div style="border-top:1px solid var(--color-divider);padding-top:8px;display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">02</span><span>Pista progresiva disparada por tiempo estancado + patrón copiar/pegar detectado — §5.4. Prop <span style="color:#201f1d">mostrarPistas</span> muestra el estado abierto.</span></div>
+<div style="border-top:1px solid var(--color-divider);padding-top:8px;display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">03</span><span>Selector 3 / 14 / 0 deja probar tamaños; los tamaños de la revisión oculta siguen sin revelarse.</span></div>
+</div>
+</sc-if>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Mismo layout · el reto llega como <strong style="font-weight:600">contrato de aceptación</strong> (condiciones verificables, ninguna técnica)</div>
+<div class="dv-card" style="width:1280px">
+
+<div class="nav" style="gap:18px">
+<span class="nav-brand">Taller<span style="color:var(--color-accent)"> · </span>Portafolio</span>
+<span class="tag tag-outline mono">Día 4 — Ju1</span>
+<a href="#1c" aria-current="page">Mi portafolio</a>
+<a href="#1e">Mapa</a>
+<a href="#1c">Retos platino</a>
+<a href="#1d">Bitácora</a>
+<div style="width:30px;height:30px;border-radius:50%;border:1px solid var(--color-divider);display:grid;place-items:center;font-family:var(--font-heading);font-size:13px">AR</div>
+</div>
+
+<div style="display:grid;grid-template-columns:340px 1fr 404px;height:716px">
+
+<div style="padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-3)">
+<div class="card-kicker">Encargo 07 · condiciones</div>
+<h3 style="margin:0">Se acepta cuando…</h3>
+<hr class="hr" style="margin:var(--space-1) 0 var(--space-2)">
+<div style="display:flex;flex-direction:column;gap:var(--space-3);font-size:13px">
+<div style="display:flex;gap:10px;align-items:flex-start"><span class="mono" style="color:var(--color-accent);font-size:11px;padding-top:3px">i</span><span style="text-align:justify">La sección de hobbies muestra <em>todos</em> los que haya en el archivo de datos, sea la cantidad que sea.</span></div>
+<div style="display:flex;gap:10px;align-items:flex-start"><span class="mono" style="color:var(--color-accent);font-size:11px;padding-top:3px">ii</span><span style="text-align:justify">Si el archivo llega vacío, la página dice algo en lugar de quedarse en blanco.</span></div>
+<div style="display:flex;gap:10px;align-items:flex-start"><span class="mono" style="color:var(--color-accent);font-size:11px;padding-top:3px">iii</span><span style="text-align:justify">Nadie tiene que editar tu código cuando cambie el archivo.</span></div>
+<div style="display:flex;gap:10px;align-items:flex-start"><span class="mono" style="color:var(--color-accent);font-size:11px;padding-top:3px">iv</span><span style="text-align:justify">La consola queda sin errores.</span></div>
+</div>
+<div style="margin-top:var(--space-3);border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+<div style="font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent);margin-bottom:var(--space-2)">Herramientas disponibles</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px">
+<span class="tag tag-neutral mono">crearElemento()</span>
+<span class="tag tag-neutral mono">agregarA()</span>
+<span class="tag tag-neutral mono">obtenerDatos()</span>
+<span class="tag tag-neutral mono">si / sino</span>
+<span class="tag tag-accent mono">nuevo hoy: repetir()</span>
+</div>
+</div>
+<div style="margin-top:auto;border-top:1px solid var(--color-divider);padding-top:var(--space-3)">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span class="mono" style="font-size:11px;color:var(--color-neutral-700)">Antes de codificar</span></div>
+<button class="btn btn-secondary btn-block" style="margin-top:0">Abrir hoja de pseudocódigo</button>
+</div>
+</div>
+
+<div style="background:#191816;color:#d7d3d3;display:flex;flex-direction:column;border-inline:1px solid var(--color-divider)">
+<div style="display:flex;align-items:stretch;border-bottom:1px solid #2d2b2b;font:12px/1 ui-monospace,Menlo,monospace">
+<div style="padding:12px 16px;color:#f8f4f4;box-shadow:inset 0 -1px 0 var(--color-accent)">portafolio.js</div>
+<div style="padding:12px 16px;color:#7d7979">plan.txt</div>
+<div style="padding:12px 16px;color:#7d7979">datos.js <span style="opacity:.6">— solo lectura</span></div>
+</div>
+<div style="display:flex;gap:16px;padding:18px 20px;flex:1;font:13px/1.8 ui-monospace,SFMono-Regular,Menlo,monospace">
+<pre style="margin:0;color:#605d5d;text-align:right;user-select:none">1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13</pre>
+<pre style="margin:0;flex:1;white-space:pre-wrap">const datos = obtenerDatos();
+const seccion = crearElemento("section");
+
+si (datos.hobbies.length === <span style="color:#e1ad66">0</span>) {
+  agregarA(seccion, crearElemento("p", "Todavía sin hobbies."));
+} sino {
+  repetir(datos.hobbies, function (hobby) {
+    agregarA(seccion, crearElemento("li", hobby));
+  });
+}
+
+agregarA(pagina, seccion);
+<span style="background:#3a270d;outline:1px solid #7d5411;padding:0 2px">|</span></pre>
+</div>
+<div style="border-top:1px solid #2d2b2b;padding:10px 20px;font:11.5px/1.7 ui-monospace,Menlo,monospace;color:#9b9797;background:#151412">
+<span style="color:#e1ad66">consola</span>  sin errores · 4 casos ejecutados<br>
+<span style="opacity:.55">          3 → 3 · 14 → 14 · 40 → 40 · 0 → mensaje</span>
+</div>
+<div style="border-top:1px solid #2d2b2b;padding:12px 20px;display:flex;align-items:center;gap:var(--space-2)">
+<button class="btn btn-primary" style="border-color:var(--color-accent-400);color:var(--color-accent-300)">Ejecutar</button>
+<button class="btn btn-primary" style="border-color:var(--color-accent);color:var(--color-accent-300);background:#221f19">Entregar a revisión</button>
+<span class="mono" style="margin-left:auto;font-size:11px;color:#605d5d">guardado hace 12 s · 9 intentos</span>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;overflow:hidden">
+<div style="padding:10px var(--space-3);border-bottom:1px solid var(--color-divider);display:flex;align-items:center;gap:8px">
+<span class="mono" style="font-size:11px;color:var(--color-neutral-600);border:1px solid var(--color-divider);border-radius:99px;padding:3px 10px;flex:1">ana-rivas.taller.dev</span>
+<span class="tag tag-accent mono">encargo aceptado</span>
+</div>
+<div style="flex:1;background:#fff;padding:var(--space-4);overflow:hidden">
+<div style="font-family:var(--font-heading);font-size:26px;line-height:1.1">Ana Rivas</div>
+<div style="font-size:12px;color:var(--color-neutral-600);margin-top:2px">Estudiante de ingeniería · Bogotá</div>
+<hr class="hr">
+<div style="margin-top:var(--space-2);font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)">Hobbies</div>
+<ul style="margin:var(--space-2) 0 0;padding-left:18px;font-size:12.5px;line-height:1.9;columns:2">
+<li>Escalada en roca</li>
+<li>Fotografía analógica</li>
+<li>Ajedrez</li>
+<li>Cocina coreana</li>
+<li>Ciclismo urbano</li>
+<li>Origami</li>
+<li>Astronomía</li>
+<li>Tejido</li>
+</ul>
+<div style="margin-top:var(--space-3);display:flex;align-items:center;gap:8px">
+<button class="btn btn-primary" style="font-size:12px;padding:5px 10px">+ Agregar hobby</button>
+<span class="mono" style="font-size:10.5px;color:var(--color-neutral-600)">vive en el navegador del visitante</span>
+</div>
+</div>
+<div style="border-top:1px solid var(--color-divider);padding:var(--space-3);background:var(--color-surface)">
+<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:var(--space-2)">
+<h5 style="margin:0">Revisión automática</h5>
+<span class="mono" style="margin-left:auto;font-size:11px;color:var(--color-accent-800)">4 / 4 casos</span>
+</div>
+<table class="table" style="font-size:12.5px">
+<tbody>
+<tr><td style="padding:7px var(--space-1)">Lista con 3 elementos</td><td style="text-align:right;padding:7px var(--space-1)"><span class="tag tag-accent mono">pasa</span></td></tr>
+<tr><td style="padding:7px var(--space-1)">Lista con 40 elementos</td><td style="text-align:right;padding:7px var(--space-1)"><span class="tag tag-accent mono">pasa</span></td></tr>
+<tr><td style="padding:7px var(--space-1)">Lista vacía → mensaje</td><td style="text-align:right;padding:7px var(--space-1)"><span class="tag tag-accent mono">pasa</span></td></tr>
+<tr><td style="padding:7px var(--space-1);border-bottom:0">Sin índices fijos en el código</td><td style="text-align:right;padding:7px var(--space-1);border-bottom:0"><span class="tag tag-accent mono">pasa</span></td></tr>
+</tbody>
+</table>
+<div style="margin-top:var(--space-3);border-top:1px solid var(--color-divider);padding-top:var(--space-3);display:flex;align-items:center;gap:var(--space-2)">
+<span style="font-size:12px">Queda un checkpoint oral pendiente</span>
+<button class="btn btn-ghost" style="margin-left:auto;font-size:12px">Agendar</button>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+<sc-if value="{{ anot }}" hint-placeholder-val="{{ true }}">
+<div style="width:1280px;display:grid;grid-template-columns:repeat(3,1fr);gap:var(--space-4);margin-top:var(--space-1)">
+<div style="border-top:1px solid var(--color-divider);padding-top:8px;display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">01</span><span>Condiciones numeradas en romanas: verificables una a una y trazables al autograder, sin nombrar la técnica.</span></div>
+<div style="border-top:1px solid var(--color-divider);padding-top:8px;display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">02</span><span>Pestaña <span style="color:#201f1d">plan.txt</span> y hoja de pseudocódigo: los diagramas de flujo se reutilizan por encargo, no como bloque teórico — §4.</span></div>
+<div style="border-top:1px solid var(--color-divider);padding-top:8px;display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">03</span><span>Estado resuelto: botón "+ Agregar hobby" del visitante y checkpoint oral pendiente — §2.6, §5.7.</span></div>
+</div>
+</sc-if>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Dashboard del instructor — avance, checkpoints orales y señales de riesgo</div>
+<div class="dv-card" style="width:1280px">
+<div class="nav" style="gap:18px">
+<span class="nav-brand">Taller<span style="color:var(--color-accent)"> · </span>Instructor</span>
+<span class="tag tag-outline mono">Cohorte 2026-B · 24 estudiantes</span>
+<a href="#1d" aria-current="page">Avance</a>
+<a href="#1d">Checkpoints</a>
+<a href="#1e">Calendario</a>
+<a href="#1d">Parejas</a>
+</div>
+<div style="display:grid;grid-template-columns:1fr 372px;min-height:620px">
+<div style="padding:var(--space-4)">
+<div style="display:flex;align-items:baseline;gap:var(--space-3);margin-bottom:var(--space-3)">
+<h3 style="margin:0">Encargo 07 — la lista que no se queda quieta</h3>
+<span class="mono" style="margin-left:auto;font-size:11px;color:var(--color-neutral-700)">actualizado hace 30 s</span>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:var(--space-3);margin-bottom:var(--space-4)">
+<div class="card"><div class="card-kicker">Aceptado</div><div style="font-family:var(--font-heading);font-size:34px;line-height:1;font-variant-numeric:tabular-nums">11</div><div class="card-meta">de 24</div></div>
+<div class="card"><div class="card-kicker">En progreso</div><div style="font-family:var(--font-heading);font-size:34px;line-height:1;font-variant-numeric:tabular-nums">9</div><div class="card-meta">≥ 1 intento</div></div>
+<div class="card" style="border-color:var(--color-accent-300)"><div class="card-kicker">Estancados</div><div style="font-family:var(--font-heading);font-size:34px;line-height:1;font-variant-numeric:tabular-nums;color:var(--color-accent-700)">4</div><div class="card-meta">&gt; 15 min sin cambio</div></div>
+<div class="card"><div class="card-kicker">Retos platino</div><div style="font-family:var(--font-heading);font-size:34px;line-height:1;font-variant-numeric:tabular-nums">6</div><div class="card-meta">extra-crédito</div></div>
+</div>
+<table class="table">
+<thead><tr><th>Pareja</th><th>Estudiante</th><th>Base previa</th><th>Casos ocultos</th><th>Intentos</th><th>Checkpoint oral</th><th>Señal</th></tr></thead>
+<tbody>
+<tr><td class="mono">P-01</td><td>Ana Rivas</td><td class="text-muted">no</td><td class="mono">4 / 4</td><td class="mono">9</td><td><span class="tag tag-outline mono">pendiente</span></td><td class="text-muted">—</td></tr>
+<tr><td class="mono">P-01</td><td>Diego Salas</td><td class="text-muted">sí</td><td class="mono">4 / 4</td><td class="mono">3</td><td><span class="tag tag-accent mono">ok · Mi1</span></td><td class="text-muted">—</td></tr>
+<tr><td class="mono">P-02</td><td>Laura Peña</td><td class="text-muted">no</td><td class="mono">1 / 4</td><td class="mono">14</td><td><span class="tag tag-accent mono">ok · Mi1</span></td><td><span class="tag tag-outline mono">copiar/pegar</span></td></tr>
+<tr><td class="mono">P-02</td><td>Iván Cortés</td><td class="text-muted">sí</td><td class="mono">4 / 4</td><td class="mono">2</td><td><span class="tag tag-outline mono">pendiente</span></td><td><span class="tag tag-outline mono">pasó sin explicar</span></td></tr>
+<tr><td class="mono">P-03</td><td>Sofía Mena</td><td class="text-muted">no</td><td class="mono">2 / 4</td><td class="mono">11</td><td><span class="tag tag-accent mono">ok · Ju1</span></td><td class="text-muted">—</td></tr>
+<tr><td class="mono">P-03</td><td>Julián Ortiz</td><td class="text-muted">sí</td><td class="mono">4 / 4</td><td class="mono">1</td><td><span class="tag tag-accent mono">ok · Ju1</span></td><td><span class="tag tag-accent mono">listo para platino</span></td></tr>
+<tr><td class="mono">P-04</td><td>Camila Duque</td><td class="text-muted">no</td><td class="mono">0 / 4</td><td class="mono">2</td><td><span class="tag tag-outline mono">pendiente</span></td><td><span class="tag tag-outline mono">estancada 22 min</span></td></tr>
+<tr><td class="mono" style="border-bottom:0">P-04</td><td style="border-bottom:0">Mateo Ruiz</td><td class="text-muted" style="border-bottom:0">sí</td><td class="mono" style="border-bottom:0">3 / 4</td><td class="mono" style="border-bottom:0">6</td><td style="border-bottom:0"><span class="tag tag-accent mono">ok · Mi1</span></td><td class="text-muted" style="border-bottom:0">—</td></tr>
+</tbody>
+</table>
+</div>
+<div style="border-left:1px solid var(--color-divider);padding:var(--space-4);background:var(--color-surface);display:flex;flex-direction:column;gap:var(--space-3)">
+<div class="card-kicker">Checkpoint oral · 3 min</div>
+<h4 style="margin:0">Camila Duque</h4>
+<div class="field"><label>¿Qué hace tu código y por qué?</label><textarea class="input" style="min-height:74px">Explica el bucle con sus palabras; no logra decir qué pasa si la lista llega vacía.</textarea></div>
+<div>
+<div class="field" style="margin-bottom:var(--space-2)"><label>Comprensión</label></div>
+<div style="display:flex;flex-direction:column;gap:8px">
+<label class="radio"><input type="radio" name="ck"><span class="dot"></span>Explica y generaliza</label>
+<label class="radio"><input type="radio" name="ck" checked><span class="dot"></span>Explica con ayuda</label>
+<label class="radio"><input type="radio" name="ck"><span class="dot"></span>No puede explicar su propio código</label>
+</div>
+</div>
+<button class="btn btn-primary btn-block">Registrar checkpoint</button>
+<hr class="hr">
+<div class="card-kicker">Sugerido por el sistema</div>
+<p style="font-size:12.5px;text-align:justify;margin:0">Iván pasó los cuatro casos en dos intentos y no tiene checkpoint del día. Agéndalo antes de cerrar la sesión.</p>
+<button class="btn btn-secondary btn-block">Agendar con Iván</button>
+</div>
+</div>
+</div>
+<sc-if value="{{ anot }}" hint-placeholder-val="{{ true }}">
+<div style="width:1280px;display:grid;grid-template-columns:repeat(2,1fr);gap:var(--space-4);margin-top:var(--space-1)">
+<div style="border-top:1px solid var(--color-divider);padding-top:8px;display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">01</span><span>Columna "base previa" viene del diagnóstico inicial provisto por los superiores; alimenta el armado de parejas mixtas — §3.</span></div>
+<div style="border-top:1px solid var(--color-divider);padding-top:8px;display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">02</span><span>Señales derivadas, no calificaciones: "pasó sin explicar" y "copiar/pegar" son los disparadores de checkpoint oral — §2.5, §5.7.</span></div>
+</div>
+</sc-if>
+</div>
+
+<div class="dv-opt" id="1e">
+<div class="dv-olabel"><a class="dv-oid" href="#1e">1e</a>Mapa de progreso — dos semanas, desbloqueo por día y pieza del portafolio</div>
+<div class="dv-card" style="width:1280px">
+<div class="nav" style="gap:18px">
+<span class="nav-brand">Taller<span style="color:var(--color-accent)"> · </span>Mapa</span>
+<span class="tag tag-outline mono">Hoy: Día 4 — Ju1</span>
+<a href="#1a">Mi portafolio</a>
+<a href="#1e" aria-current="page">Mapa</a>
+<a href="#1e">Retos platino</a>
+</div>
+<div style="padding:var(--space-6) var(--space-4) var(--space-4)">
+<div style="display:flex;align-items:baseline;gap:var(--space-4);margin-bottom:var(--space-6)">
+<h2 style="margin:0;font-weight:400">El portafolio se construye una pieza por sesión</h2>
+<p style="margin:0;max-width:420px;font-size:12.5px;text-align:justify;color:var(--color-neutral-700)">Cada día suma una capa sobre lo anterior y reabre los mismos conceptos en un contexto nuevo. Nada se reemplaza: lo del lunes sigue vivo el viernes.</p>
+</div>
+<div style="display:grid;grid-template-columns:repeat(10,1fr);gap:0;border-top:1px solid var(--color-divider);border-bottom:1px solid var(--color-divider)">
+<div style="padding:var(--space-3) var(--space-2);border-right:1px solid var(--color-divider)"><div class="mono" style="font-size:11px;color:var(--color-accent)">L1 · 2h</div><div style="font-family:var(--font-heading);font-size:16px;margin-top:6px">Diagnóstico + algoritmos</div><div style="font-size:11.5px;color:var(--color-neutral-700);margin-top:6px">Setup del entorno</div><div style="margin-top:var(--space-3)"><span class="tag tag-neutral mono">hecho</span></div></div>
+<div style="padding:var(--space-3) var(--space-2);border-right:1px solid var(--color-divider)"><div class="mono" style="font-size:11px;color:var(--color-accent)">Ma1 · 4h</div><div style="font-family:var(--font-heading);font-size:16px;margin-top:6px">Variables + DOM</div><div style="font-size:11.5px;color:var(--color-neutral-700);margin-top:6px">Header y "sobre mí"</div><div style="margin-top:var(--space-3)"><span class="tag tag-neutral mono">hecho</span></div></div>
+<div style="padding:var(--space-3) var(--space-2);border-right:1px solid var(--color-divider)"><div class="mono" style="font-size:11px;color:var(--color-accent)">Mi1 · 2h</div><div style="font-family:var(--font-heading);font-size:16px;margin-top:6px">Más elementos</div><div style="font-size:11.5px;color:var(--color-neutral-700);margin-top:6px">Contacto y redes</div><div style="margin-top:var(--space-3)"><span class="tag tag-neutral mono">hecho</span></div></div>
+<div style="padding:var(--space-3) var(--space-2);border-right:1px solid var(--color-divider);background:var(--color-accent-100);box-shadow:inset 0 2px 0 var(--color-accent)"><div class="mono" style="font-size:11px;color:var(--color-accent-800)">Ju1 · 4h</div><div style="font-family:var(--font-heading);font-size:16px;margin-top:6px">Condicionales → bucles</div><div style="font-size:11.5px;color:var(--color-accent-900);margin-top:6px">Saludo dinámico + lista de hobbies</div><div style="margin-top:var(--space-3)"><span class="tag tag-accent mono">hoy · 1 de 2</span></div></div>
+<div style="padding:var(--space-3) var(--space-2);border-right:1px solid var(--color-divider)"><div class="mono" style="font-size:11px;color:var(--color-neutral-500)">V1 · 2h</div><div style="font-family:var(--font-heading);font-size:16px;margin-top:6px;color:var(--color-neutral-600)">Bucles que no paran</div><div style="font-size:11.5px;color:var(--color-neutral-600);margin-top:6px">Reloj o carrusel</div><div style="margin-top:var(--space-3)"><span class="tag tag-outline mono" style="border-color:var(--color-neutral-400);color:var(--color-neutral-600)">mañana</span></div></div>
+<div style="padding:var(--space-3) var(--space-2);border-right:1px solid var(--color-divider)"><div class="mono" style="font-size:11px;color:var(--color-neutral-500)">L2 · 2h</div><div style="font-family:var(--font-heading);font-size:16px;margin-top:6px;color:var(--color-neutral-600)">Bucle + condición</div><div style="font-size:11.5px;color:var(--color-neutral-600);margin-top:6px">Proyectos con filtro</div><div style="margin-top:var(--space-3)"><span class="tag tag-neutral mono" style="color:var(--color-neutral-600)">cerrado</span></div></div>
+<div style="padding:var(--space-3) var(--space-2);border-right:1px solid var(--color-divider)"><div class="mono" style="font-size:11px;color:var(--color-neutral-500)">Ma2 · 4h</div><div style="font-family:var(--font-heading);font-size:16px;margin-top:6px;color:var(--color-neutral-600)">Matrices + funciones</div><div style="font-size:11.5px;color:var(--color-neutral-600);margin-top:6px">Skills agrupadas</div><div style="margin-top:var(--space-3)"><span class="tag tag-neutral mono" style="color:var(--color-neutral-600)">cerrado</span></div></div>
+<div style="padding:var(--space-3) var(--space-2);border-right:1px solid var(--color-divider)"><div class="mono" style="font-size:11px;color:var(--color-neutral-500)">Mi2 · 2h</div><div style="font-family:var(--font-heading);font-size:16px;margin-top:6px;color:var(--color-neutral-600)">Funciones</div><div style="font-size:11.5px;color:var(--color-neutral-600);margin-top:6px">Render distinto por tipo</div><div style="margin-top:var(--space-3)"><span class="tag tag-neutral mono" style="color:var(--color-neutral-600)">cerrado</span></div></div>
+<div style="padding:var(--space-3) var(--space-2);border-right:1px solid var(--color-divider)"><div class="mono" style="font-size:11px;color:var(--color-neutral-500)">Ju2 · 4h</div><div style="font-family:var(--font-heading);font-size:16px;margin-top:6px;color:var(--color-neutral-600)">Git + deploy</div><div style="font-size:11.5px;color:var(--color-neutral-600);margin-top:6px">URL pública real</div><div style="margin-top:var(--space-3)"><span class="tag tag-neutral mono" style="color:var(--color-neutral-600)">cerrado</span></div></div>
+<div style="padding:var(--space-3) var(--space-2)"><div class="mono" style="font-size:11px;color:var(--color-neutral-500)">V2 · 2h</div><div style="font-family:var(--font-heading);font-size:16px;margin-top:6px;color:var(--color-neutral-600)">Diagnóstico final</div><div style="font-size:11.5px;color:var(--color-neutral-600);margin-top:6px">Demo de portafolios</div><div style="margin-top:var(--space-3)"><span class="tag tag-neutral mono" style="color:var(--color-neutral-600)">cerrado</span></div></div>
+</div>
+<div style="display:grid;grid-template-columns:1.15fr 1fr;gap:var(--space-6);margin-top:var(--space-6)">
+<div>
+<h4 style="margin:0 0 var(--space-2)">Currículo en espiral</h4>
+<p style="font-size:12.5px;text-align:justify;color:var(--color-neutral-800);margin:0 0 var(--space-3)">Las cinco capas se ven como una escalera de trazos: cada peldaño incluye los anteriores.</p>
+<div style="display:flex;flex-direction:column;gap:0;border-top:1px solid var(--color-divider)">
+<div style="display:flex;gap:var(--space-3);align-items:center;padding:9px 0;border-bottom:1px solid var(--color-divider)"><span class="mono" style="font-size:11px;color:var(--color-accent);width:16px">1</span><span style="font-size:13px;flex:1">Acción manual</span><span style="height:2px;background:var(--color-accent);width:44px"></span></div>
+<div style="display:flex;gap:var(--space-3);align-items:center;padding:9px 0;border-bottom:1px solid var(--color-divider)"><span class="mono" style="font-size:11px;color:var(--color-accent);width:16px">2</span><span style="font-size:13px;flex:1">Acción condicional</span><span style="height:2px;background:var(--color-accent);width:88px"></span></div>
+<div style="display:flex;gap:var(--space-3);align-items:center;padding:9px 0;border-bottom:1px solid var(--color-divider);background:var(--color-accent-100)"><span class="mono" style="font-size:11px;color:var(--color-accent-800);width:16px">3</span><span style="font-size:13px;flex:1">Repetición de una acción</span><span style="height:2px;background:var(--color-accent);width:132px"></span></div>
+<div style="display:flex;gap:var(--space-3);align-items:center;padding:9px 0;border-bottom:1px solid var(--color-divider)"><span class="mono" style="font-size:11px;color:var(--color-neutral-500);width:16px">4</span><span style="font-size:13px;flex:1;color:var(--color-neutral-600)">Repetición + condición</span><span style="height:2px;background:var(--color-neutral-400);width:176px"></span></div>
+<div style="display:flex;gap:var(--space-3);align-items:center;padding:9px 0;border-bottom:1px solid var(--color-divider)"><span class="mono" style="font-size:11px;color:var(--color-neutral-500);width:16px">5</span><span style="font-size:13px;flex:1;color:var(--color-neutral-600)">Acciones distintas según el dato</span><span style="height:2px;background:var(--color-neutral-400);width:220px"></span></div>
+</div>
+</div>
+<div>
+<h4 style="margin:0 0 var(--space-2)">Retos platino <span class="text-muted" style="font-family:var(--font-body);font-size:12px">· opcionales, no bloquean</span></h4>
+<div style="display:grid;gap:var(--space-2)">
+<div class="card" style="flex-direction:row;align-items:center;gap:var(--space-3)"><div style="flex:1"><div class="card-title">Memoria de imágenes</div><div class="card-meta">array + bucle + condicional + clic</div></div><span class="tag tag-accent mono">abierto</span></div>
+<div class="card" style="flex-direction:row;align-items:center;gap:var(--space-3)"><div style="flex:1"><div class="card-title">Ahorcado</div><div class="card-meta">se abre con matrices y funciones · Ma2</div></div><span class="tag tag-outline mono">Ma2</span></div>
+<div class="card" style="flex-direction:row;align-items:center;gap:var(--space-3);border-style:dashed"><div style="flex:1"><div class="card-title" style="color:var(--color-neutral-600)">Buscaminas</div><div class="card-meta">recursión — fuera del flujo obligatorio</div></div><span class="tag tag-neutral mono" style="color:var(--color-neutral-600)">etapa final</span></div>
+</div>
+<p class="mono" style="font-size:11px;color:var(--color-neutral-600);margin:var(--space-3) 0 0">Pendiente del equipo: si el platino suma a la nota o es extra-crédito visible.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="dv-opt" id="1f">
+<div class="dv-olabel"><a class="dv-oid" href="#1f">1f</a>Entrada y diagnóstico inicial — primera sesión (L1)</div>
+<div class="dv-card" style="width:1280px">
+<div style="display:grid;grid-template-columns:1fr 1fr;min-height:600px">
+<div style="background:#191816;color:#d7d3d3;padding:var(--space-8);display:flex;flex-direction:column">
+<div class="mono" style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--color-accent-400)">Taller de desarrollo web · Cohorte 2026-B</div>
+<h1 style="font-weight:400;font-size:52px;margin:var(--space-4) 0 var(--space-3);color:#f8f4f4">Dos semanas.<br>Un portafolio<br>publicado.</h1>
+<p style="font-size:14px;line-height:1.7;text-align:justify;color:#bab6b6;max-width:400px">No vas a escribir HTML a mano. Vas a escribir el código que lo construye, y al final va a estar en internet con tu nombre y una dirección que puedes compartir.</p>
+<div style="margin-top:auto;border-top:1px solid #2d2b2b;padding-top:var(--space-4);display:flex;gap:var(--space-6)">
+<div><div style="font-family:var(--font-heading);font-size:30px;font-variant-numeric:tabular-nums;color:#f8f4f4">10</div><div class="mono" style="font-size:11px;color:#7d7979">sesiones</div></div>
+<div><div style="font-family:var(--font-heading);font-size:30px;font-variant-numeric:tabular-nums;color:#f8f4f4">7</div><div class="mono" style="font-size:11px;color:#7d7979">encargos</div></div>
+<div><div style="font-family:var(--font-heading);font-size:30px;font-variant-numeric:tabular-nums;color:#f8f4f4">1</div><div class="mono" style="font-size:11px;color:#7d7979">URL real</div></div>
+</div>
+</div>
+<div style="padding:var(--space-8);display:flex;flex-direction:column;gap:var(--space-3)">
+<div class="card-kicker">Paso 1 de 3 · diagnóstico inicial</div>
+<h3 style="margin:0">Antes de empezar</h3>
+<p style="font-size:13px;text-align:justify;margin:0 0 var(--space-2);color:var(--color-neutral-800)">No es un examen y no afecta tu nota. Sirve para armar las parejas de trabajo y para calibrar el ritmo de la clase.</p>
+<hr class="hr" style="margin:0 0 var(--space-2)">
+<div class="field"><label>Nombre</label><input class="input" value="Ana Rivas"></div>
+<div class="field"><label>¿Has programado antes?</label>
+<div style="display:flex;flex-direction:column;gap:9px;margin-top:6px">
+<label class="radio"><input type="radio" name="exp" checked><span class="dot"></span>Nunca</label>
+<label class="radio"><input type="radio" name="exp"><span class="dot"></span>Algo en clase o por mi cuenta</label>
+<label class="radio"><input type="radio" name="exp"><span class="dot"></span>Sí, escribo código con soltura</label>
+</div>
+</div>
+<div class="field"><label>Lee este fragmento. ¿Qué crees que aparece en la página?</label>
+<div style="background:#191816;color:#d7d3d3;border-radius:var(--radius-md);padding:var(--space-3);font:12.5px/1.8 ui-monospace,Menlo,monospace;margin:6px 0">const nombres = ["Ana", "Luis", "Sara"];<br>repetir(nombres, function (n) {<br>&nbsp;&nbsp;mostrar(n);<br>});</div>
+<textarea class="input" placeholder="Escríbelo con tus palabras. Si no tienes idea, dilo — también es una respuesta útil."></textarea>
+</div>
+<div style="display:flex;align-items:center;gap:var(--space-3);margin-top:auto">
+<span class="mono" style="font-size:11px;color:var(--color-neutral-600)">Preguntas 1 – 3 de 12</span>
+<button class="btn btn-primary" style="margin-left:auto">Continuar</button>
+</div>
+</div>
+</div>
+</div>
+<sc-if value="{{ anot }}" hint-placeholder-val="{{ true }}">
+<div style="width:1280px;border-top:1px solid var(--color-divider);padding-top:8px;margin-top:var(--space-1);display:flex;gap:8px;font:11px/1.6 ui-monospace,Menlo,monospace;color:#605d5d"><span style="color:#b68235">01</span><span>El contenido del diagnóstico lo entregan los superiores (§6); la plataforma solo lo presenta y guarda la respuesta. El mismo formulario se reusa en V2 para comparar.</span></div>
+</sc-if>
+</div>
+
+<div class="dv-opt" id="1g">
+<div class="dv-olabel"><a class="dv-oid" href="#1g">1g</a>Móvil (390 pt) — consulta, no edición: encargo del día, avance y el portafolio publicado</div>
+<div style="display:flex;gap:var(--space-4)">
+
+<div class="dv-card" style="width:390px;border-radius:22px">
+<div style="padding:10px var(--space-3) 6px;display:flex;align-items:center;gap:8px;font:11px/1 ui-monospace,Menlo,monospace;color:var(--color-neutral-600)"><span>9:41</span><span style="margin-left:auto">taller.dev</span></div>
+<div style="padding:var(--space-3);border-bottom:1px solid var(--color-divider);display:flex;align-items:baseline;gap:8px">
+<span class="nav-brand" style="font-size:16px">Taller</span>
+<span class="tag tag-outline mono" style="margin-left:auto">Día 4 — Ju1</span>
+</div>
+<div style="padding:var(--space-4) var(--space-3);min-height:560px">
+<div class="card-kicker">Encargo 07 · hoy</div>
+<h3 style="margin:2px 0 var(--space-2);font-size:22px">La lista que no se queda quieta</h3>
+<p style="font-size:13px;text-align:justify;color:var(--color-neutral-800)">Tus hobbies vienen de un archivo que no escribes tú. Hoy tiene tres; mañana puede tener catorce, o ninguno.</p>
+<div style="border:1px solid var(--color-divider);border-radius:var(--radius-md);padding:var(--space-3);margin:var(--space-3) 0">
+<div style="display:flex;align-items:baseline;gap:8px"><span style="font-size:13px">Revisión automática</span><span class="mono" style="margin-left:auto;font-size:12px;color:var(--color-accent-800)">1 / 4</span></div>
+<div style="display:flex;gap:5px;margin-top:10px">
+<span style="height:4px;flex:1;background:var(--color-accent)"></span>
+<span style="height:4px;flex:1;background:var(--color-neutral-300)"></span>
+<span style="height:4px;flex:1;background:var(--color-neutral-300)"></span>
+<span style="height:4px;flex:1;background:var(--color-neutral-300)"></span>
+</div>
+<p class="mono" style="font-size:11px;color:var(--color-neutral-600);margin:10px 0 0">Editar código requiere computador</p>
+</div>
+<hr class="hr">
+<div style="font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)">Se desbloqueó hoy</div>
+<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:var(--space-2)"><span class="tag tag-accent mono">repetir()</span><span class="tag tag-neutral mono">si / sino</span></div>
+<div style="margin-top:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2)">
+<button class="btn btn-primary btn-block" style="min-height:46px;margin-top:0">Ver mi portafolio publicado</button>
+<button class="btn btn-secondary btn-block" style="min-height:46px;margin-top:0">Mi pareja: Diego Salas</button>
+</div>
+</div>
+</div>
+
+<div class="dv-card" style="width:390px;border-radius:22px">
+<div style="padding:10px var(--space-3) 6px;display:flex;align-items:center;gap:8px;font:11px/1 ui-monospace,Menlo,monospace;color:var(--color-neutral-600)"><span>9:41</span><span style="margin-left:auto">ana-rivas.taller.dev</span></div>
+<div style="padding:var(--space-4) var(--space-3);min-height:600px;background:#fff">
+<div style="font-family:var(--font-heading);font-size:32px;line-height:1.05">Ana Rivas</div>
+<div style="font-size:12px;color:var(--color-neutral-600);margin-top:4px">Estudiante de ingeniería · Bogotá</div>
+<hr class="hr">
+<div class="mono" style="font-size:12px;color:var(--color-accent-700);font-variant-numeric:tabular-nums">14:32:07 · buenas tardes</div>
+<p style="font-size:13px;text-align:justify;margin-top:var(--space-3);color:var(--color-neutral-800)">Aprendiendo a construir cosas para internet. Este sitio lo escribí yo, línea por línea, durante dos semanas.</p>
+<div style="margin-top:var(--space-4);font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)">Hobbies</div>
+<ul style="margin:var(--space-2) 0 0;padding-left:18px;font-size:13px;line-height:2">
+<li>Escalada en roca</li>
+<li>Fotografía analógica</li>
+<li>Ajedrez</li>
+</ul>
+<button class="btn btn-primary btn-block" style="min-height:46px">+ Agregar hobby</button>
+<p class="mono" style="font-size:10.5px;color:var(--color-neutral-600);margin-top:8px">Lo que agregues vive solo en tu navegador. Al recargar vuelve al original.</p>
+<div style="margin-top:var(--space-4);height:1px;background:var(--color-divider)"></div>
+<div style="margin-top:var(--space-3);font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--color-accent)">Proyectos</div>
+<div style="margin-top:var(--space-2);border:1px dashed var(--color-neutral-400);border-radius:var(--radius-md);padding:var(--space-3);font:11px/1.5 ui-monospace,Menlo,monospace;color:var(--color-neutral-600)">se construye el lunes (L2)</div>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<p class="dv-next">Prueba: «quédate con <a class="dv-oid" href="#1c">1c</a> y mételo al móvil» · «una versión de <a class="dv-oid" href="#1a">1a</a> más gamificada, con racha y sellos» · «agrega la pantalla de Git/deploy del Ju2» · «apaga las anotaciones para presentar»</p>
+</section>
+
+<section class="dv-turn" id="t0" style="background:#f3f2f2">
+<div class="dv-thd"><a class="dv-tid" href="#t0">0</a><span class="dv-tname">Supuestos, contexto y criterios de diseño</span></div>
+<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--space-6);max-width:1280px">
+<div>
+<h4 style="margin:0 0 var(--space-2)">Lo que asumí</h4>
+<p style="font-size:13px;text-align:justify;margin:0 0 var(--space-2)">UI en español. Público interno: esto es material de handoff, así que cada pantalla lleva anotaciones numeradas con la sección del documento que la justifica.</p>
+<p style="font-size:13px;text-align:justify;margin:0 0 var(--space-2)">Llamé <em>encargo</em> a lo que el documento llama nivel o ejercicio: el estudiante nunca lee "usa un for". La API expuesta usa nombres descriptivos en español (<span class="mono" style="font-size:12px">crearElemento</span>, <span class="mono" style="font-size:12px">repetir</span>) según §2.4.</p>
+<p style="font-size:13px;text-align:justify;margin:0">El móvil es de consulta, no de edición: escribir código en 390 pt no es realista para principiantes, así que ahí solo viven el encargo del día, el avance y el portafolio publicado.</p>
+</div>
+<div>
+<h4 style="margin:0 0 var(--space-2)">Cómo se ve el sistema</h4>
+<p style="font-size:13px;text-align:justify;margin:0 0 var(--space-2)">Sistema Classical: Cormorant Garamond sobre Lora, fondo casi blanco, oro solo como trazo. Todo lo que es <em>tarea humana</em> (encargo, condiciones, revisión, checkpoints) se compone como página de libro: prosa justificada y filetes.</p>
+<p style="font-size:13px;text-align:justify;margin:0">Todo lo que es <em>máquina</em> — editor, consola, datos, cifras — va en negro cálido y monoespaciada. La tensión entre las dos voces es la que ordena la pantalla; el "toque de juego" está en el desbloqueo, la revisión y el platino, no en colores brillantes.</p>
+</div>
+<div>
+<h4 style="margin:0 0 var(--space-2)">Decisiones abiertas</h4>
+<p style="font-size:13px;text-align:justify;margin:0 0 var(--space-2)">La elección real de este turno es <a class="dv-oid" href="#1a">1a</a> / <a class="dv-oid" href="#1b">1b</a> / <a class="dv-oid" href="#1c">1c</a>: cuánto texto acompaña al reto. <a class="dv-oid" href="#1b">1b</a> es lo más fiel al juego y lo más riesgoso con la mitad sin base; <a class="dv-oid" href="#1c">1c</a> es lo más fácil de mapear al autograder.</p>
+<p style="font-size:13px;text-align:justify;margin:0">Se puede combinar: encargo en prosa el primer día, contrato de aceptación en la segunda semana, síntoma puro solo en el platino.</p>
+</div>
+</div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showAnnotations&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Handoff&quot;},&quot;mostrarPistas&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Handoff&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const p = this.props;
+    return {
+      anot: p.showAnnotations ?? true,
+      pistas: p.mostrarPistas ?? true,
+    };
+  }
+}
+
+</script>
+</body>
+</html>
