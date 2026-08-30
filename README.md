@@ -8,12 +8,14 @@ descubre por **necesidad real** dentro del proyecto, no por instrucción directa
 
 ## Estado del proyecto
 
-**Fase: diseño cerrado, arquitectura definida, sin código de aplicación todavía.**
+**Fase: frontend arrancado, backend pendiente.**
 
 - ✅ Brief de producto y diseño de alta fidelidad (7 pantallas) — en `docs/` y `design/`.
 - ✅ Stack y arquitectura decididos — ver `docs/arquitectura.md`.
-- ⬜ Andamiaje de `backend/` y `frontend/`.
-- ⬜ Implementación.
+- ✅ `frontend/` scaffold + **pantalla 1a** funcionando con datos de ejemplo (`cd frontend && npm i && npm run dev`).
+- ⬜ Pantallas 1b–1g.
+- ⬜ Andamiaje de `backend/` (FastAPI) y el autograder (Deno).
+- ⬜ Cablear frontend ↔ backend.
 
 ## Por dónde empezar
 

@@ -48,3 +48,4 @@ Estado: ✅ cerrada · 🟡 propuesta (a confirmar con el equipo del taller) · 
 | D5 | Subconjunto exacto de la API en español que expone el grader y shim de DOM (linkedom) | Debe coincidir con la API desbloqueada por día |
 | D6 | Verificación del deploy final del estudiante (Git + Vercel/Netlify) — brief §5.9 | Mostrar la URL pública generada dentro de la plataforma |
 | D7 | Persistencia: ¿SQLite basta para todas las cohortes previstas o se migra a Postgres desde el inicio? | SQLAlchemy hace la migración barata; decidir según nº de cohortes concurrentes esperadas |
+| D8 | ¿Self-hostear Monaco o dejarlo cargar desde CDN? | `@monaco-editor/react` carga Monaco desde jsdelivr por defecto. Un taller presencial con wifi flojo probablemente quiere Monaco servido desde `public/` |

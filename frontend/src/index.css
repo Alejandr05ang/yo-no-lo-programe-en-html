@@ -1,0 +1,48 @@
+/* App shell. Los tokens y clases del sistema viven en styles/design-system.css.
+   Aquí solo va lo que el sistema no cubre y es global a la app. */
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Handoff §Tipografía: subir el cuerpo de lectura a 15–16px en la vista real
+   del estudiante (única desviación esperada del mockup). El sistema deja body en 15px;
+   los bloques de lectura de prosa suben con la utilidad .prosa. */
+.prosa {
+  font-size: 15px;
+  line-height: 1.6;
+  text-align: justify;
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.kicker {
+  font: 600 10px/1 ui-monospace, Menlo, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent);
+}
+
+/* Aviso de que editar requiere escritorio (<1024px, handoff §Responsive). */
+.solo-escritorio {
+  display: none;
+}
+@media (max-width: 1023px) {
+  .oculto-en-movil {
+    display: none !important;
+  }
+  .solo-escritorio {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--color-neutral-700);
+    font-size: 15px;
+  }
+}
