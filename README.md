@@ -24,6 +24,7 @@ descubre por **necesidad real** dentro del proyecto, no por instrucción directa
 | Entender el **producto** (fuente de verdad) | `docs/brief.md` |
 | Entender el **diseño visual** y las 7 pantallas | `docs/design-handoff.md`, luego abre `design/Plataforma Taller.dc.html` en un navegador |
 | Entender **cómo se va a construir** | `docs/arquitectura.md` |
+| Ver la **progresión de encargos** y el API del estudiante | `docs/encargos.md` |
 | Ver **qué está decidido y qué no** | `docs/decisiones.md` |
 | Los **tokens del design system** (reutilizables tal cual) | `design/styles.css` + `design/design-system/readme.md` |
 

@@ -150,6 +150,7 @@ export function EditorPanel({
             renderLineHighlight: 'none',
             overviewRulerLanes: 0,
             tabSize: 2,
+            wordWrap: 'on', // comentarios largos en español sin scroll horizontal — más amable para principiantes
             automaticLayout: true, // recupera el tamaño al salir de "pantalla completa" del preview
           }}
         />

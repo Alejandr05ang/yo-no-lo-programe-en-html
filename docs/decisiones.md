@@ -38,6 +38,19 @@ Estado: ✅ cerrada · 🟡 propuesta (a confirmar con el equipo del taller) · 
 | C3 | Entrada de estudiantes | **Correo + código de cohorte**, sin CSV | Baja fricción para el instructor, cohorte-acotada, reutilizable, sandbox de facto privado |
 | C4 | Layout de la pantalla 1a | Se desvía del mockup (`340px 1fr 404px`): **encargo, editor y preview son paneles plegables**; editor y preview parten 50/50 con **divisor arrastrable**; el preview tiene **selector de ancho** (móvil/tablet/escritorio/completo) y **modo pantalla completa** | El portafolio es la pieza protagonista y se exporta como sitio responsive real (brief §5.2, §5.9); el estudiante arma su espacio de trabajo. Se descartaron ventanas flotantes libres (trampa de usabilidad para principiantes, choca con el diseño "editorial y quieto", mata el responsive) |
 
+## Progresión de encargos y API del estudiante
+
+Ver `encargos.md` para el diseño completo. Decisiones que necesitan confirmación del equipo:
+
+| # | Tema | Propuesta en `encargos.md` |
+|---|---|---|
+| EN1 | Nº de encargos: 1f dice "7", la progresión tiene 10 | Actualizar el copy de 1f a "10 encargos" |
+| EN2 | API: `crearElemento("h1")` expone HTML | Funciones semánticas: `crearTitulo`, `crearParrafo`, `crearLista`, `crearItem`, `crearEnlace`… |
+| EN3 | API: `si`/`repetir` helpers vs JS real | `if`/`else` y `for…of` reales, rotulados en español en el panel de herramientas |
+| EN4 | `obtenerDatos()` vs `datos` global | `datos` global ya listo (quita carga del encargo 1) |
+| EN5 | Texto estándar del "caso vacío" por sección | Pendiente |
+| EN6 | El grader debe poder simular el paso del tiempo (`cadaSegundo`) | Detalle de implementación del autograder |
+
 ## Pendientes de definir (brief §7 + nuevos)
 
 | # | Tema | Notas |

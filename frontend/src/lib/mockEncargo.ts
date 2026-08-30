@@ -1,87 +1,59 @@
-import type {
-  ArchivoEditor,
-  Encargo,
-  EstadoGuardado,
-  ResultadoRevision,
-  SalidaEjecucion,
-} from './tipos'
+import type { ArchivoEditor, Encargo, EstadoGuardado, SalidaEjecucion } from './tipos'
 
 // Datos de ejemplo para desarrollar la pantalla 1a sin backend.
-// Copy final tomado del mockup (design/Plataforma Taller.dc.html, panel 1a).
-// Cuando exista el backend, esto lo entrega FastAPI (ver docs/arquitectura.md §4).
+// Refleja el ENCARGO 1 de docs/encargos.md — la experiencia de alguien que nunca programó,
+// no la del estudiante que ya va por bucles. Cuando exista el backend, esto lo entrega FastAPI.
 
 export const encargoEjemplo: Encargo = {
-  numero: 7,
-  titulo: 'La lista que no se queda quieta',
+  numero: 1,
+  titulo: 'Tu nombre',
   desbloqueadoTexto: 'desbloqueado hoy 10:00',
   parrafos: [
-    'Tus hobbies están en datos.hobbies, un archivo que no escribes tú. Hoy tiene tres. La semana que viene puede tener catorce, o ninguno, y la página tiene que verse bien en los tres casos sin que vuelvas a tocar el código.',
-    'Escribe el código que construya la sección de hobbies a partir de ese archivo, tal como esté cuando alguien la abra.',
+    'Esta página va a ser tu portafolio. Ahora mismo no dice nada.',
+    'Lo primero que cualquiera tiene que ver al abrirla es tu nombre. Escríbelo en el código y pulsa Ejecutar para verlo aparecer.',
   ],
   herramientas: [
-    { nombre: 'crearElemento()' },
-    { nombre: 'agregarA()' },
-    { nombre: 'obtenerDatos()' },
-    { nombre: 'si / sino' },
-    { nombre: 'repetir()', nuevaHoy: true },
+    { nombre: 'crearTitulo()' },
+    { nombre: 'crearParrafo()' },
+    { nombre: 'mostrar()' },
+    { nombre: 'const' },
   ],
-  pistaDisponibleEn: 372, // 6:12
+  pistaDisponibleEn: 300, // 5:00
 }
 
 export const archivoPortafolioEjemplo: ArchivoEditor = {
   nombre: 'portafolio.js',
   soloLectura: false,
-  contenido: `const datos = obtenerDatos();
-const seccion = crearElemento("section");
-seccion.style.padding = "24px";
-
-// mis hobbies, uno por uno
-agregarA(seccion, crearElemento("li", datos.hobbies[0]));
-agregarA(seccion, crearElemento("li", datos.hobbies[1]));
-agregarA(seccion, crearElemento("li", datos.hobbies[2]));
-
-// ...y si mañana hay catorce?
-
-agregarA(pagina, seccion);
+  contenido: `// La página está vacía. Escribe tu nombre entre las comillas y pulsa Ejecutar.
+const titulo = crearTitulo("tu nombre")
+mostrar(titulo)
 `,
 }
 
 export const archivoDatosEjemplo: ArchivoEditor = {
   nombre: 'datos.js',
   soloLectura: true,
-  contenido: `// Este archivo no lo escribes tú. El evaluador puede cambiarlo.
+  contenido: `// "datos" ya existe, no hace falta crearlo. Lo vas a usar más adelante.
+// Este archivo lo puede cambiar el evaluador; vos no lo escribís.
 const datos = {
-  hobbies: ["Escalada en roca", "Fotografía analógica", "Ajedrez"],
-};
+  nombre: "",
+  sobreMi: "",
+  redes: {},
+  hobbies: [],
+  proyectos: [],
+}
 `,
 }
 
-export const salidaEjemplo: SalidaEjecucion = {
-  lineas: [
-    {
-      prefijo: 'consola',
-      texto: 'Uncaught TypeError: no se puede leer "3" de undefined',
-      detalle: 'en portafolio.js:8 — el archivo de datos tiene 3 elementos',
-    },
-  ],
-}
+// En E1 todavía no hay salida ni revisión.
+export const salidaEjemplo: SalidaEjecucion | null = null
 
 export const guardadoEjemplo: EstadoGuardado = {
-  guardadoHaceSegundos: 4,
-  intentos: 3,
+  guardadoHaceSegundos: 2,
+  intentos: 0,
 }
 
-export const revisionEjemplo: ResultadoRevision = {
-  casosPasados: 1,
-  casosTotales: 4,
-  casos: [
-    { descripcion: 'Lista con 3 elementos', estado: 'pasa' },
-    { descripcion: 'Lista con 14 elementos', estado: 'falla' },
-    { descripcion: 'Lista vacía → mensaje', estado: 'falla' },
-    { descripcion: 'Sin índices fijos en el código', estado: 'falla' },
-  ],
-  nota: 'Los casos ocultos cambian de tamaño en cada revisión. Ninguno te dice cómo arreglarlo.',
-}
+// La revisión ya no es un mock fijo: la corre revisionLocal.ts a partir del código real.
 
 export const portafolioEjemplo = {
   nombre: 'Ana Rivas',

@@ -18,20 +18,19 @@ import { PanelPreview } from '../preview/PanelPreview'
 import { PanelRevision } from '../revision/PanelRevision'
 import './vista-estudiante.css'
 
-// Datos que el evaluador puede cambiar (datos.js). Provisional hasta el backend.
-const datosParaPreview = { hobbies: portafolioEjemplo.hobbies }
+// Datos que el evaluador puede cambiar (datos.js). En E1 el código todavía no los usa.
+const datosParaPreview = {
+  nombre: '',
+  sobreMi: '',
+  redes: {},
+  hobbies: [],
+  proyectos: [],
+}
 
-// HTML inicial del preview: el estado ilustrado en el mockup (3 hobbies + aviso).
+// HTML inicial del preview: E1 arranca con la página casi vacía (el resultado de
+// ejecutar el andamiaje, que muestra el título con el placeholder).
 const previewInicial = `
-<div style="font-family:'Cormorant Garamond',serif;font-size:26px;line-height:1.1">${portafolioEjemplo.nombre}</div>
-<div style="font-size:12px;color:#7d7979;margin-top:2px">${portafolioEjemplo.subtitulo}</div>
-<hr style="height:1px;border:0;background:rgba(32,31,29,.16);margin:14px 0">
-<div style="font-size:13px;text-align:justify;color:#444141">${portafolioEjemplo.sobreMi}</div>
-<div style="margin-top:18px;font:600 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em;text-transform:uppercase;color:#b68235">Hobbies</div>
-<ul style="margin:9px 0 0;padding-left:18px;font-size:13px;line-height:1.9">
-${portafolioEjemplo.hobbies.map((h) => `<li>${h}</li>`).join('')}
-</ul>
-<div style="margin-top:14px;border:1px dashed #bab6b6;border-radius:4px;padding:9px;font:11px/1.4 ui-monospace,Menlo,monospace;color:#7d7979">faltan ${portafolioEjemplo.hobbiesEnArchivoDePrueba - portafolioEjemplo.hobbies.length} elementos del archivo de prueba</div>
+<h1 style="font-family:'Cormorant Garamond',Georgia,serif;font-weight:400;color:#9b9797">tu nombre</h1>
 `
 
 const CLAVE_ENCARGO = 've:encargo-abierto'
@@ -82,10 +81,10 @@ export function VistaEstudiante() {
 
   const entregar = useCallback(async () => {
     setEntregando(true)
-    const r = await api.entregarARevision(contenido)
+    const r = await api.entregarARevision(encargo?.numero ?? 1, contenido, datosParaPreview)
     setRevision(r)
     setEntregando(false)
-  }, [contenido])
+  }, [contenido, encargo?.numero])
 
   // Autoguardado (debounce). Provisional: api.autoguardar es un stub.
   useEffect(() => {
@@ -95,7 +94,7 @@ export function VistaEstudiante() {
 
   return (
     <div className="ve">
-      <Nav dia="Día 4 — Ju1" iniciales="AR" />
+      <Nav dia="Día 2 — Ma1" iniciales="AR" />
 
       <div className="solo-escritorio">Editar código requiere computador.</div>
 

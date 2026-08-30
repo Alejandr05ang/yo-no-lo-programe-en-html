@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
+import { API_DOCS } from '../../lib/apiDocs'
 import type { Encargo } from '../../lib/tipos'
+import { FichaHerramienta } from './FichaHerramienta'
 
 interface Props {
   encargo: Encargo
@@ -21,6 +23,7 @@ function formatoMinutos(seg: number): string {
 // no debe robarle ancho de forma permanente.
 export function PanelEncargo({ encargo, abierto, onToggle, onPedirPista }: Props) {
   const [restante, setRestante] = useState(encargo.pistaDisponibleEn ?? 0)
+  const [ficha, setFicha] = useState<{ nombre: string; anclaEl: HTMLElement } | null>(null)
 
   useEffect(() => {
     setRestante(encargo.pistaDisponibleEn ?? 0)
@@ -77,16 +80,36 @@ export function PanelEncargo({ encargo, abierto, onToggle, onPedirPista }: Props
       <div className="enc-herramientas">
         <div className="kicker">Herramientas disponibles</div>
         <div className="enc-tags">
-          {encargo.herramientas.map((h) => (
-            <span
-              key={h.nombre}
-              className={`tag mono ${h.nuevaHoy ? 'tag-accent' : 'tag-neutral'}`}
-            >
-              {h.nuevaHoy ? `nuevo hoy: ${h.nombre}` : h.nombre}
-            </span>
-          ))}
+          {encargo.herramientas.map((h) => {
+            const tieneDoc = !!API_DOCS[h.nombre]
+            const activa = ficha?.nombre === h.nombre
+            return (
+              <button
+                key={h.nombre}
+                type="button"
+                className={`tag mono enc-tag ${h.nuevaHoy ? 'tag-accent' : 'tag-neutral'}`}
+                aria-pressed={activa}
+                disabled={!tieneDoc}
+                title={tieneDoc ? 'Ver cómo se usa' : undefined}
+                onClick={(e) =>
+                  setFicha(activa ? null : { nombre: h.nombre, anclaEl: e.currentTarget })
+                }
+              >
+                {h.nuevaHoy ? `nuevo hoy: ${h.nombre}` : h.nombre}
+              </button>
+            )
+          })}
         </div>
       </div>
+
+      {ficha && (
+        <FichaHerramienta
+          nombre={ficha.nombre}
+          anclaEl={ficha.anclaEl}
+          onCerrar={() => setFicha(null)}
+          onIrA={(n) => setFicha((f) => (f ? { ...f, nombre: n } : f))}
+        />
+      )}
 
       <div className="enc-pie">
         <span className="mono enc-pista-contador">

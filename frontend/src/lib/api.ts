@@ -3,7 +3,8 @@
 // Cuando exista la API, reemplazar el cuerpo por fetch() y mantener las firmas.
 
 import type { Encargo, ResultadoRevision } from './tipos'
-import { encargoEjemplo, revisionEjemplo } from './mockEncargo'
+import { encargoEjemplo } from './mockEncargo'
+import { revisarLocalmente } from './revisionLocal'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 
@@ -29,12 +30,16 @@ export const api = {
     return { guardadoHaceSegundos: 0 }
   },
 
-  async entregarARevision(_contenido: string): Promise<ResultadoRevision> {
-    // El servidor corre el código contra casos ocultos de tamaño variable.
-    // El cliente NUNCA recibe los casos ni la solución.
+  async entregarARevision(
+    numeroEncargo: number,
+    contenido: string,
+    datos: unknown,
+  ): Promise<ResultadoRevision> {
+    // Real: el servidor corre el código contra casos ocultos de tamaño variable; el
+    // cliente NUNCA recibe los casos ni la solución.
     // return pedir<ResultadoRevision>('/entregas/revisar', { method: 'POST', body: JSON.stringify({ contenido }) })
     await espera(400)
-    return revisionEjemplo
+    return revisarLocalmente(numeroEncargo, contenido, datos)
   },
 }
 

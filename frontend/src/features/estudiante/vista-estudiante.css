@@ -189,6 +189,113 @@
   gap: 6px;
   margin-top: var(--space-2);
 }
+
+/* tags como botones que abren la ficha de ayuda */
+.enc-tag {
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.enc-tag:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+.enc-tag[aria-pressed='true'] {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+.enc-tag:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* ficha de documentación — popup flotante, voz máquina */
+.enc-ficha {
+  position: fixed;
+  z-index: 50;
+  width: min(340px, calc(100vw - 24px));
+  background: #191816;
+  color: #d7d3d3;
+  border: 1px solid #2d2b2b;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-3);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.enc-ficha-cab {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+.enc-ficha-firma {
+  flex: 1;
+  font: 12.5px/1.4 ui-monospace, Menlo, monospace;
+  color: var(--color-accent-300);
+  word-break: break-word;
+}
+.enc-ficha-x {
+  flex: none;
+  background: transparent;
+  border: 0;
+  color: #7d7979;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.enc-ficha-x:hover {
+  color: #f8f4f4;
+}
+.enc-ficha-desc {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-body);
+  font-size: 13px;
+}
+.enc-ficha-devuelve {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--color-neutral-400);
+}
+.enc-ficha-devuelve span {
+  color: var(--color-accent-400);
+}
+.enc-ficha-ejemplo-titulo {
+  font: 600 10px/1 ui-monospace, Menlo, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #7d7979;
+  margin-bottom: 4px;
+}
+.enc-ficha-ejemplo {
+  margin: 0;
+  padding: var(--space-2);
+  background: #151412;
+  border-radius: var(--radius-sm);
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #d7d3d3;
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+.enc-ficha-rel {
+  margin-top: var(--space-2);
+  font: 11.5px/1.5 ui-monospace, Menlo, monospace;
+  color: #7d7979;
+}
+.enc-ficha-rel-link {
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--color-accent-300);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.enc-ficha-rel-link:hover {
+  color: var(--color-accent-200);
+}
 .enc-pie {
   margin-top: auto;
   border-top: 1px solid var(--color-divider);
