@@ -1,0 +1,14 @@
+# El sitio es solo el frontend (Vite/React). El backend se despliega aparte.
+[build]
+  base    = "frontend"
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "24"
+
+# SPA: React Router maneja las rutas en el cliente. Toda URL cae en index.html.
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200
