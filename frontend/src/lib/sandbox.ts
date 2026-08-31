@@ -34,8 +34,9 @@ const RUNTIME = String.raw`
     if (texto != null) el.textContent = String(texto);
     return el;
   }
-  const crearTitulo  = (texto) => __crear('h1', texto);
-  const crearParrafo = (texto) => __crear('p', texto);
+  const crearTitulo    = (texto) => __crear('h1', texto);
+  const crearSubtitulo = (texto) => __crear('h2', texto);
+  const crearParrafo   = (texto) => __crear('p', texto);
   const crearLista   = () => __crear('ul');
   const crearItem    = (texto) => __crear('li', texto);
   const crearBoton   = (texto) => __crear('button', texto);

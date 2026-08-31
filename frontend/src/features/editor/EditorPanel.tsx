@@ -14,6 +14,8 @@ interface Props {
   onEntregar: () => void
   abierto: boolean
   onToggle: () => void
+  /** Abrir el formulario "Mis datos" (se ofrece cuando la pestaña activa es de solo lectura). */
+  onEditarDatos: () => void
 }
 
 // Colores del handoff §Paleta del panel oscuro.
@@ -52,6 +54,7 @@ export function EditorPanel({
   onEntregar,
   abierto,
   onToggle,
+  onEditarDatos,
 }: Props) {
   const [activo, setActivo] = useState(0)
   const archivo = archivos[activo]
@@ -121,6 +124,12 @@ export function EditorPanel({
               ))}
             </ul>
           </details>
+        )}
+
+        {archivo.soloLectura && (
+          <button className="ed-editar-datos" onClick={onEditarDatos}>
+            editar mis datos
+          </button>
         )}
 
         <button

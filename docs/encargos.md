@@ -96,7 +96,7 @@ const  ·  if / else  ·  for (const x of lista) { … }  ·  function
 
 | Sesión | Se desbloquea |
 | --- | --- |
-| Ma1 | `crearTitulo`, `crearParrafo`, `mostrar`, `const`, `datos` |
+| Ma1 | `crearTitulo`, `crearSubtitulo`, `crearParrafo`, `mostrar`, `const`, `datos` |
 | Mi1 | `crearEnlace`, `if` / `else` |
 | Ju1 | `crearLista`, `crearItem`, `agregarA`, `for … of` |
 | V1 | `cadaSegundo` |
@@ -106,7 +106,7 @@ const  ·  if / else  ·  for (const x of lista) { … }  ·  function
 
 ---
 
-## 4. Los 10 encargos
+## 4. Los 11 encargos
 
 Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4). La columna
 **capa** es la del currículo en espiral que se muestra en la pantalla del mapa (1e).
@@ -131,21 +131,43 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 
 - **Necesidad.** Un nombre solo no es una página. Falta contar quién sos en un par de frases.
 - **Incógnita.** Ninguna dura; es consolidación de E1 con más de una línea.
-- **Andamiaje inicial:**
+- **Andamiaje inicial** — el título es **el que el estudiante escribió en E1** (su nombre real),
+  no un ejemplo. No se da la estructura hecha: se pide que la deduzca de su propio código.
   ```
-  const titulo = crearTitulo("Ana Rivas")   // ← tu encargo anterior
+  // ← Tu código del encargo 1
+  const titulo = crearTitulo("Daniel")
   mostrar(titulo)
 
-  // Agrega DOS párrafos sobre vos, siguiendo el ejemplo:
-  const p1 = crearParrafo("Estudio ingeniería en Bogotá.")
-  mostrar(p1)
-  // escribe aquí el segundo párrafo
+  // Ahora escribí dos párrafos sobre vos, debajo del título.
+  // Pista: fijate cómo armaste el título arriba (una variable + mostrar())
+  // y hacé lo mismo con crearParrafo().
   ```
+  El salto analítico —reconocer el patrón `const X = herramienta("…"); mostrar(X)` y aplicarlo
+  a los párrafos— es el primer entrenamiento real de pensamiento computacional. Regalar
+  `const p1 = crearParrafo(…)` ya escrito lo convierte en copiar/pegar en piloto automático.
 - **Entrega.** Título + 2 o más párrafos propios.
 - **Tests ocultos.** ≥2 párrafos · texto no vacío · el título de E1 sigue presente (acumulativo).
 - **Concepto.** Repetir una acción a mano; variables distintas para cosas distintas.
 
-### E3 — "Cómo encontrarte" · Mi1 · contacto / redes · N2→N3 · capa 2
+### E3 — "Dale forma con secciones" · Ma1 · secciones · N2 · capa 1
+
+- **Necesidad.** La página ya dice cosas pero es un bloque de párrafos sin forma. Hay que dividir el
+  contenido en secciones con un título arriba de cada parte.
+- **Incógnita.** Ninguna dura — es organización. El descubrimiento es que hay más de un tamaño de título.
+- **Andamiaje inicial** — sus párrafos de E2 + una pista:
+  ```
+  // ← Tu código del encargo 2 (título + párrafos)
+  ...
+
+  // Poné un título de sección ("Sobre mí") ANTES de tus párrafos.
+  // Pista: crearSubtitulo() funciona igual que crearParrafo(), pero hace un título más chico.
+  ```
+- **Entrega.** Un subtítulo de sección antes de los párrafos; el título y los párrafos siguen.
+- **Tests ocultos.** Hay un `h2` con texto · el `h2` viene antes de los `p` · el contenido de E1–E2 sigue.
+- **Concepto.** Un segundo nivel de encabezado; empezar a estructurar la página, no solo llenarla.
+  Es el paso previo a mover cosas por el espacio, cuadrículas y color (más adelante, fuera de este taller).
+
+### E4 — "Cómo encontrarte" · Mi1 · contacto / redes · N2→N3 · capa 2
 
 - **Necesidad.** Un portafolio sin forma de contactarte no sirve. Tus redes están en `datos.redes`
   y **solo algunas están cargadas** — hay que mostrar los enlaces que existen y ninguno más.
@@ -163,7 +185,7 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 - **Tests ocultos.** Con las 3 redes → 3 enlaces · con 1 red → 1 enlace · con 0 → sin enlaces, sin romper.
 - **Concepto.** Condicional: hacer algo **solo cuando** un dato existe.
 
-### E4 — "En construcción" · Mi1 · aviso condicional · N3 · capa 2
+### E5 — "En construcción" · Mi1 · aviso condicional · N3 · capa 2
 
 - **Necesidad.** Si todavía no escribiste tu "sobre mí", un visitante ve una página vacía y rara.
   Debería aparecer un aviso "en construcción" — pero solo mientras esté vacío.
@@ -183,7 +205,7 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 - **Tests ocultos.** bio llena → sin aviso · bio vacía → con aviso · el aviso nunca aparece dos veces.
 - **Concepto.** Condicional sobre el estado de un dato (no solo su existencia).
 
-### E5 — "Tus hobbies, a mano" · Ju1 (1ª mitad) · lista de hobbies · N2 · capa 1
+### E6 — "Tus hobbies, a mano" · Ju1 (1ª mitad) · lista de hobbies · N2 · capa 1
 
 - **Necesidad.** Agregar tus pasatiempos como una lista.
 - **Incógnita.** Por ahora vos elegís cuántos (tres). **Deliberadamente manual.**
@@ -199,9 +221,9 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 - **Entrega.** Lista con 3 items.
 - **Tests ocultos.** ≥3 items · textos no vacíos.
 - **Concepto.** `agregarA` con un contenedor propio (no `pagina`); patrón repetido a mano.
-  **Este encargo siembra el tedio** que E6 resuelve.
+  **Este encargo siembra el tedio** que E7 resuelve.
 
-### E6 — "La lista que no se queda quieta" · Ju1 (2ª mitad) / V1 · hobbies desde datos · N4 · capa 3
+### E7 — "La lista que no se queda quieta" · Ju1 (2ª mitad) / V1 · hobbies desde datos · N4 · capa 3
 
 *(este es el encargo que ilustra el mockup)*
 
@@ -209,7 +231,7 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
   tres. La semana que viene puede tener catorce, o ninguno, y la página tiene que verse bien en los
   tres casos sin que vuelvas a tocar el código.
 - **Incógnita.** **Cuántos hobbies hay.** No lo sabés al escribir el código.
-- **Andamiaje inicial** — su propio código de E5 + un plan en pseudocódigo:
+- **Andamiaje inicial** — su propio código de E6 + un plan en pseudocódigo:
   ```
   const lista = crearLista()
   mostrar(lista)
@@ -229,7 +251,7 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
   (`[0]`, `[1]`, `[2]`) en el código · el resto del portafolio (E1–E5) sigue presente.
 - **Concepto.** Recorrer una colección de tamaño desconocido: `for (const hobby of datos.hobbies)`.
 
-### E7 — "El saludo que cambia solo" · V1 · reloj / saludo dinámico · N4 · capa 3
+### E8 — "El saludo que cambia solo" · V1 · reloj / saludo dinámico · N4 · capa 3
 
 - **Necesidad.** La página debería saludar según la hora ("Buenos días / Buenas tardes / Buenas
   noches") y la hora tiene que seguir corriendo mientras la página esté abierta.
@@ -251,20 +273,20 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 - **Concepto.** Repetición que no termina (`cadaSegundo`) **con una condición adentro**. Primera vez
   que se combinan las dos capas.
 
-### E8 — "Solo los proyectos terminados" · L2 · sección de proyectos con filtro · N4→N5 · capa 4
+### E9 — "Solo los proyectos terminados" · L2 · sección de proyectos con filtro · N4→N5 · capa 4
 
 - **Necesidad.** Mostrar tus proyectos, pero solo los terminados — los que están a medias no van en
   el portafolio todavía. Están en `datos.proyectos`, cada uno con un campo `terminado`.
 - **Incógnita.** Cuántos proyectos hay y cuáles están terminados.
-- **Andamiaje inicial.** Solo la necesidad + herramientas. (El estudiante ya tiene `for` de E6 y `if`
-  de E3/E4; acá los junta.)
+- **Andamiaje inicial.** Solo la necesidad + herramientas. (El estudiante ya tiene `for` de E7 y `if`
+  de E4/E5; acá los junta.)
 - **Entrega.** Una tarjeta por cada proyecto terminado; nada para los no terminados; mensaje si no
   hay ninguno terminado.
 - **Tests ocultos.** 5 proyectos, 2 terminados → 2 tarjetas · todos sin terminar → mensaje ·
   lista vacía → mensaje · sin contar a mano cuántos terminados hay.
 - **Concepto.** Bucle + condición combinados: recorrer y decidir en cada vuelta.
 
-### E9 — "Agrupar por categoría" · Ma2 · skills / proyectos agrupados · N5 · capa 4→5
+### E10 — "Agrupar por categoría" · Ma2 · skills / proyectos agrupados · N5 · capa 4→5
 
 - **Necesidad.** Tus skills están en `datos.skills`, agrupadas por categoría (una lista de listas:
   "Frontend" → [...], "Backend" → [...]). Hay que mostrar cada categoría con su título y sus items
@@ -277,7 +299,7 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
   estructura vacía → mensaje.
 - **Concepto.** Matrices (array de arrays) + primera `function` propia para no repetir código.
 
-### E10 — "Cada proyecto se ve distinto" · Mi2 · render según tipo · N5 · capa 5
+### E11 — "Cada proyecto se ve distinto" · Mi2 · render según tipo · N5 · capa 5
 
 - **Necesidad.** Los proyectos no son todos iguales: unos tienen enlace a demo, otros son solo texto,
   otros tienen imagen. Cada `tipo` se muestra distinto.
@@ -292,7 +314,90 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 
 ---
 
-## 5. Después de los encargos
+## 5. Flujo entre encargos
+
+### 5.1 Estados de un encargo (por estudiante)
+
+| Estado | Significado |
+| --- | --- |
+| `bloqueado` | Su sesión del calendario todavía no llegó |
+| `disponible` | Desbloqueado por calendario; sin código guardado aún |
+| `en_progreso` | Tiene código guardado y/o intentos, pero no pasó todos los casos |
+| `aceptado` | Pasó todos los casos ocultos de la revisión |
+| `checkpoint_pendiente` | Aceptado, pero falta el checkpoint oral (solo en los encargos marcados para checkpoint) |
+
+### 5.2 Qué pasa al aceptar un encargo
+
+1. La revisión devuelve todos los casos en verde → el encargo pasa a `aceptado`.
+2. El panel muestra el sello **"encargo aceptado"** por un instante y **la plataforma pasa sola al
+   siguiente encargo** — sin botón ni confirmación, para no romper la inmersión. Solo pasa si:
+   (a) este encargo es la *frontera* (el siguiente aún no está `aceptado`) y (b) el siguiente ya
+   está `disponible` por calendario (ver 5.3). Si el siguiente está bloqueado por fecha, el sello
+   queda y el texto dice *"El encargo N+1 se abre el <día>"*. Volver a aceptar un encargo viejo no
+   dispara ningún salto.
+3. Al pasar al siguiente encargo, el editor carga el **andamiaje del encargo N+1**, compuesto como
+   `archivo_inicial(N+1) = solución_aceptada(N) + líneas_nuevas(N+1)`. La parte heredada es el
+   código **real** del estudiante (su nombre, sus frases), no un ejemplo — si en E1 escribió
+   "Daniel", E2 arranca con "Daniel". Las líneas nuevas son comentarios y una pista, **sin dar la
+   estructura hecha**: el estudiante deduce el patrón de su propio código y lo escribe (§2.5).
+   Así se cumple el principio de la §2.1: nunca se abre frente a código ajeno ni en piloto automático.
+4. El portafolio de la vista previa es acumulativo: lo construido en encargos anteriores sigue ahí.
+5. Si el encargo tiene checkpoint oral, queda en `checkpoint_pendiente` y el panel añade
+   *"Queda un checkpoint oral pendiente · Agendar"* (pantalla 1c del handoff). El checkpoint no
+   bloquea avanzar al siguiente encargo, pero sí cuenta para la evaluación formativa.
+
+### 5.3 Habilitación por calendario (producción)
+
+Regla del brief (§2.7, §3, §5.3): **el desbloqueo es por día y para todo el grupo a la vez**,
+independiente del avance individual.
+
+- Cada encargo pertenece a una sesión (`E1–E3 → Ma1`, `E4,E5 → Mi1`, `E6,E7 → Ju1`, `E8 → V1`,
+  `E9 → L2`, `E10 → Ma2`, `E11 → Mi2` — ver la tabla de la §4).
+- Un encargo está `disponible` cuando **hoy ≥ la fecha de su sesión**. No importa si terminaste los
+  anteriores ni cuántos intentos llevás.
+- Dentro de una sesión con dos encargos, la plataforma presenta como "activo" el primero que no
+  esté `aceptado`; el estudiante puede volver a cualquiera ya disponible.
+- Quien termina todos los encargos del día **espera al día siguiente** — ese es el punto del
+  desbloqueo por día (evita que quien ya sabe se adelante saltándose el descubrimiento guiado,
+  brief §2.7). Mientras tanto puede tomar retos platino.
+- El calendario de sesiones (fecha por sesión) lo configura el instructor por cohorte. El backend
+  guarda `sesion → fecha` y deriva el estado de cada encargo.
+
+### 5.4 Desarrollo (sin calendario)
+
+**No hay selector manual de encargo en la interfaz.** El avance es solo el automático al aceptar
+(§5.2). La única puerta trasera para desarrollo es la **URL**:
+
+- `/portafolio?e=3` abre el encargo 3 directamente. Sin `?e`, arranca en el 1. El salto automático
+  al aceptar no comprueba fecha (no hay calendario todavía).
+- **Dos caches en `sessionStorage`** (efímeras — sobreviven recargas, se pierden al cerrar la
+  pestaña; mismo criterio "sin persistencia en servidor" del brief §2.6):
+  - `ve:soluciones` — el código **aceptado** por encargo. El siguiente encargo lo prepende
+    (herencia). Si abrís por URL un encargo sin solución previa, se usa el `fallbackHeredado`
+    de `encargos.ts`.
+  - `ve:borradores` — el código **en curso** por encargo. Al cambiar de encargo, el del que salís
+    se guarda y el del que entrás se recupera; así no se pierde trabajo mientras la pestaña esté abierta.
+- Los datos (`datos.js`) y los andamiajes de cada encargo salen de `frontend/src/lib/encargos.ts`.
+
+Cuando exista el backend: `api.encargo(n)` pasa a pegarle a `/encargos/:n`, que responde 403 si la
+sesión aún no abrió. La navegación entre encargos ya disponibles será la pantalla del mapa (1e).
+
+### 5.5 "Mis datos" — el portafolio se siente propio desde E1
+
+El estudiante llena una vez un formulario **"Mis datos"** (nombre, sobre mí, redes, hobbies), abierto
+desde el botón *editar mis datos* de la pestaña `datos.js`. Eso alimenta el objeto `datos` de la
+**vista previa**, así el portafolio muestra *sus* cosas y no un ejemplo genérico.
+
+- Precargado con datos de ejemplo que el estudiante reemplaza por los suyos.
+- `datos` de la preview = **perfil del estudiante** + *override del encargo* (donde el encargo
+  necesita un estado concreto: E5 fuerza `sobreMi: ""` para que se vea el aviso "en construcción").
+- Los **tests ocultos** del servidor siguen inyectando datos de tamaño variable (E7: 0 / 3 / 14
+  hobbies). El perfil no afecta la evaluación — solo la preview. Ownership sin romper la pedagogía.
+- Dev: `localStorage` `ve:perfil`. Producción: pantalla de perfil / diagnóstico inicial (1f).
+
+---
+
+## 6. Después de los encargos
 
 - **Ju2 — Git + deploy.** No es un encargo con autograder: es un módulo guiado (`brief.md` §5.9).
   Inicializar repo, `add`/`commit`/`push`, conectar Vercel/Netlify, verificar que la URL responde.
@@ -300,11 +405,12 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 
 ---
 
-## 6. Decisiones abiertas (para el equipo del taller)
+## 7. Decisiones abiertas (para el equipo del taller)
 
 | # | Tema | Notas |
 | --- | --- | --- |
-| EN1 | **El número de encargos.** La pantalla de entrada (1f) dice "7 encargos" y el handoff marca ese copy como final. Esta progresión tiene 10 | O se actualiza el copy de 1f a "10 encargos", o se agrupan en 7 "entregas" (p. ej. E1+E2 = "entrega 1"). Recomendado: actualizar 1f |
+| EN1 | **El número de encargos.** La pantalla de entrada (1f) dice "7 encargos" y el handoff marca ese copy como final. Esta progresión tiene 11 | O se actualiza el copy de 1f, o se agrupan en "entregas" (p. ej. E1–E3 = "entrega 1"). Recomendado: actualizar 1f |
+| EN7 | **"Mis datos" y el diagnóstico inicial** | El perfil del estudiante (§5.5) probablemente sale del diagnóstico inicial (1f), que lo provee el equipo del taller. Confirmar qué campos capturar y si el estudiante los puede editar después |
 | EN2 | **API: funciones semánticas vs `crearElemento`** | La propuesta reemplaza `crearElemento("h1")` por `crearTitulo` etc. para no exponer HTML. Confirmar |
 | EN3 | **API: `if`/`for` reales vs helpers `si`/`repetir`** | La propuesta usa JS real y lo rotula en español en el panel. Confirmar que no se quiere un DSL |
 | EN4 | **`datos` global vs `obtenerDatos()`** | La propuesta lo hace global para quitar carga del encargo 1. `obtenerDatos()` podría volver como lección sobre valores de retorno más adelante |

@@ -412,6 +412,23 @@
   box-shadow: inset 2px 0 0 var(--color-accent);
 }
 
+.ed-editar-datos {
+  flex: none;
+  align-self: center;
+  margin-right: 4px;
+  padding: 4px 10px;
+  font: 11px/1 ui-monospace, Menlo, monospace;
+  color: var(--color-accent-300);
+  background: transparent;
+  border: 1px solid var(--color-accent-400);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.ed-editar-datos:hover {
+  color: var(--color-accent-200);
+  border-color: var(--color-accent-300);
+}
+
 .ed-colapsar {
   flex: none;
   align-self: center;
@@ -597,4 +614,11 @@
   font-size: 13px;
   text-align: justify;
   color: var(--color-neutral-800);
+}
+.rev-aceptado {
+  margin-top: var(--space-3);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
 }

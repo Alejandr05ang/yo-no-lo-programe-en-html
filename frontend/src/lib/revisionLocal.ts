@@ -1,3 +1,4 @@
+import { ENCARGOS } from './encargos'
 import { ejecutarPreview } from './sandbox'
 import type { ResultadoRevision } from './tipos'
 
@@ -31,6 +32,44 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
       verificar: (d) => d.querySelectorAll('h1').length === 1,
     },
   ],
+
+  2: [
+    {
+      descripcion: 'El título sigue estando',
+      verificar: (d) => !!d.querySelector('h1')?.textContent?.trim(),
+    },
+    {
+      descripcion: 'Hay al menos dos párrafos',
+      verificar: (d) => d.querySelectorAll('p').length >= 2,
+    },
+    {
+      descripcion: 'Ningún párrafo está vacío',
+      verificar: (d) => {
+        const ps = [...d.querySelectorAll('p')]
+        return ps.length > 0 && ps.every((p) => (p.textContent ?? '').trim().length > 0)
+      },
+    },
+  ],
+
+  3: [
+    {
+      descripcion: 'El título y los párrafos siguen estando',
+      verificar: (d) => !!d.querySelector('h1') && d.querySelectorAll('p').length >= 2,
+    },
+    {
+      descripcion: 'Hay un título de sección (subtítulo)',
+      verificar: (d) => !!d.querySelector('h2')?.textContent?.trim(),
+    },
+    {
+      descripcion: 'El subtítulo viene antes de los párrafos',
+      verificar: (d) => {
+        const nodos = [...d.querySelectorAll('h2, p')]
+        const primerH2 = nodos.findIndex((n) => n.tagName === 'H2')
+        const primerP = nodos.findIndex((n) => n.tagName === 'P')
+        return primerH2 !== -1 && primerP !== -1 && primerH2 < primerP
+      },
+    },
+  ],
 }
 
 export async function revisarLocalmente(
@@ -38,7 +77,22 @@ export async function revisarLocalmente(
   codigo: string,
   datos: unknown,
 ): Promise<ResultadoRevision> {
-  const casos = CASOS_POR_ENCARGO[numeroEncargo] ?? []
+  const casos = CASOS_POR_ENCARGO[numeroEncargo]
+
+  // Encargo sin criterios definidos aún: no se puede aceptar (evita el auto-avance).
+  if (!casos || casos.length === 0) {
+    const total = ENCARGOS[numeroEncargo]?.totalCasos ?? 1
+    return {
+      casos: Array.from({ length: total }, (_, i) => ({
+        descripcion: `Caso ${i + 1}`,
+        estado: 'falla' as const,
+      })),
+      casosPasados: 0,
+      casosTotales: total,
+      nota: 'Este encargo todavía no tiene revisión automática (pendiente de diseño del contenido).',
+    }
+  }
+
   const r = await ejecutarPreview(codigo, datos)
   const doc = new DOMParser().parseFromString(
     `<body>${r.ok ? r.html : ''}</body>`,

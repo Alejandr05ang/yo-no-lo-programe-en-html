@@ -1,9 +1,9 @@
 // Cliente HTTP tipado hacia el backend FastAPI.
-// Todavía sin backend: los métodos devuelven los datos de ejemplo de mockEncargo.
+// Todavía sin backend: los métodos leen los mocks de encargos.ts.
 // Cuando exista la API, reemplazar el cuerpo por fetch() y mantener las firmas.
 
-import type { Encargo, ResultadoRevision } from './tipos'
-import { encargoEjemplo } from './mockEncargo'
+import type { ResultadoRevision } from './tipos'
+import { ENCARGOS, type EncargoMock } from './encargos'
 import { revisarLocalmente } from './revisionLocal'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
@@ -18,10 +18,11 @@ async function pedir<T>(ruta: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  async encargoDelDia(): Promise<Encargo> {
-    // return pedir<Encargo>('/encargos/hoy')
+  /** El encargo por número. En producción: GET /encargos/:n (403 si la sesión no abrió). */
+  async encargo(numero: number): Promise<EncargoMock> {
+    // return pedir<EncargoMock>(`/encargos/${numero}`)
     await espera(120)
-    return encargoEjemplo
+    return ENCARGOS[numero] ?? ENCARGOS[1]
   },
 
   async autoguardar(_contenido: string): Promise<{ guardadoHaceSegundos: number }> {
@@ -37,7 +38,7 @@ export const api = {
   ): Promise<ResultadoRevision> {
     // Real: el servidor corre el código contra casos ocultos de tamaño variable; el
     // cliente NUNCA recibe los casos ni la solución.
-    // return pedir<ResultadoRevision>('/entregas/revisar', { method: 'POST', body: JSON.stringify({ contenido }) })
+    // return pedir<ResultadoRevision>('/entregas/revisar', { method: 'POST', body: JSON.stringify({ numeroEncargo, contenido }) })
     await espera(400)
     return revisarLocalmente(numeroEncargo, contenido, datos)
   },

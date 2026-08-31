@@ -2,12 +2,18 @@ import type { ResultadoRevision } from '../../lib/tipos'
 
 interface Props {
   resultado: ResultadoRevision | null
+  /** true cuando el encargo pasó todos los casos. */
+  aceptado: boolean
+  /** Texto bajo el sello de aceptado (p. ej. "Pasando al siguiente encargo…"). */
+  mensajeAceptado: string
 }
 
 // Columna derecha, abajo: revisión automática. Muestra pasa/falla por caso y el
 // conteo agregado. El texto recuerda que los casos ocultos cambian de tamaño en
 // cada corrida y que no se entrega la solución (brief §2.3, §5.4).
-export function PanelRevision({ resultado }: Props) {
+// Al aceptar (todos los casos en verde), la transición al siguiente encargo es
+// automática — sin botón (docs/encargos.md §5.2).
+export function PanelRevision({ resultado, aceptado, mensajeAceptado }: Props) {
   if (!resultado) {
     return (
       <div className="rev">
@@ -43,7 +49,19 @@ export function PanelRevision({ resultado }: Props) {
           ))}
         </tbody>
       </table>
-      <p className="rev-nota">{resultado.nota}</p>
+
+      {aceptado ? (
+        <div className="rev-aceptado">
+          <span className="tag tag-accent mono">encargo aceptado</span>
+          {mensajeAceptado && (
+            <span className="rev-nota" style={{ margin: 0 }}>
+              {mensajeAceptado}
+            </span>
+          )}
+        </div>
+      ) : (
+        <p className="rev-nota">{resultado.nota}</p>
+      )}
     </div>
   )
 }
