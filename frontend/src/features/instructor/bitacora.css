@@ -6,6 +6,8 @@
 
 .bit-nav {
   gap: 18px;
+  position: relative;
+  z-index: 30;
 }
 .bit-nav-sep {
   margin-right: auto;

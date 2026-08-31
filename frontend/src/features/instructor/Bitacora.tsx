@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { BetaBanner } from '../../components/Beta'
+import { ControlesMusica } from '../musica/ControlesMusica'
 import { COHORTE } from '../../lib/cohorte'
 import './bitacora.css'
 
@@ -34,6 +35,7 @@ export function Bitacora() {
         <a href="#">Checkpoints</a>
         <NavLink to="/mapa">Calendario</NavLink>
         <a href="#">Parejas</a>
+        <ControlesMusica />
       </nav>
 
       <BetaBanner>

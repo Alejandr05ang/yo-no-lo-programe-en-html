@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { diagnosticoHecho, marcarAcceso } from '../../lib/acceso'
 import { diaDeEncargo } from '../../lib/encargos'
 import { leerPerfil } from '../../lib/perfil'
+import { iniciar as iniciarMusica } from '../../lib/musica'
 import { encargoFrontera, encargosAceptados } from '../../lib/progreso'
 import { PortadaLayout } from './PortadaLayout'
 
@@ -41,6 +42,7 @@ export function Inicio() {
   const dia = diaDeEncargo(frontera)
 
   const entrar = () => {
+    iniciarMusica() // el clic es el gesto que habilita el audio
     marcarAcceso()
     navigate('/portafolio')
   }

@@ -13,6 +13,8 @@
 /* — barra superior — */
 .ve-nav {
   gap: 18px;
+  position: relative;
+  z-index: 30; /* el popup de música (hijo) cae sobre el editor/preview */
 }
 .ve-nav .nav-brand {
   margin-right: 0;

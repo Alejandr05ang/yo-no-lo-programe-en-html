@@ -27,5 +27,3 @@ Thumbs.db
 # Deno
 .deno/
 
-# Carpeta personal (no del proyecto)
-music/

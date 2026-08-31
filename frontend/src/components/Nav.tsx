@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom'
+import { ControlesMusica } from '../features/musica/ControlesMusica'
 import { BetaTag } from './Beta'
 
 type Seccion = 'portafolio' | 'mapa' | 'retos' | 'bitacora'
@@ -38,6 +39,7 @@ export function Nav({ seccion, dia, iniciales, activo }: Props) {
       <NavLink to="/bitacora" aria-current={activo === 'bitacora' ? 'page' : undefined}>
         Bitácora
       </NavLink>
+      <ControlesMusica />
       <div className="ve-avatar" aria-hidden>
         {iniciales}
       </div>

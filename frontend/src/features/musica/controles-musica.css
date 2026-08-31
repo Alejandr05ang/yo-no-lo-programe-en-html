@@ -1,0 +1,94 @@
+/* Control de música — vive dentro de la barra superior (.nav). */
+.mus {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+}
+
+.mus-nota {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  color: var(--color-neutral-500);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.mus-nota:hover {
+  color: var(--color-text);
+}
+.mus-nota[data-sonando='true'] {
+  color: var(--color-accent-700);
+}
+.mus-reanudar {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--color-accent-700);
+  background: var(--color-bg);
+  border-radius: 999px;
+  padding: 1px;
+}
+
+/* backdrop transparente: cualquier clic afuera cierra el popup */
+.mus-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+}
+
+.mus-pop {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 66;
+  width: 224px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+.mus-pop-titulo {
+  font-size: 11px;
+  color: var(--color-neutral-700);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mus-pop-fila {
+  display: flex;
+  gap: 6px;
+}
+.mus-pbtn {
+  flex: 1;
+  font: 12px/1 var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  color: var(--color-text);
+  background: transparent;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  padding: 6px 8px;
+  cursor: pointer;
+}
+.mus-pbtn:hover {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+.mus-pbtn[data-activo='true'] {
+  color: var(--color-accent-700);
+  border-color: var(--color-accent-300);
+}
+.mus-pbtn-apagar:hover {
+  border-color: var(--color-neutral-500);
+  color: var(--color-neutral-700);
+}

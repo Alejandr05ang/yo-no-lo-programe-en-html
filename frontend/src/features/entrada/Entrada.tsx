@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { BetaTag } from '../../components/Beta'
 import { diagnosticoHecho, marcarAcceso, marcarDiagnostico } from '../../lib/acceso'
+import { iniciar as iniciarMusica } from '../../lib/musica'
 import { guardarPerfil, leerPerfil } from '../../lib/perfil'
 import { PortadaLayout } from './PortadaLayout'
 
@@ -45,6 +46,7 @@ function FormularioDiagnostico({ navigate }: { navigate: ReturnType<typeof useNa
     }
     marcarDiagnostico()
     marcarAcceso()
+    iniciarMusica() // el clic es el gesto que habilita el audio
     navigate('/portafolio')
   }
 

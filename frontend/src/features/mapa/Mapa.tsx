@@ -4,6 +4,7 @@ import { BetaTag } from '../../components/Beta'
 import { Nav } from '../../components/Nav'
 import { diaDeEncargo } from '../../lib/encargos'
 import { reiniciarAcceso } from '../../lib/acceso'
+import { detener as detenerMusica } from '../../lib/musica'
 import { encargoFrontera, reiniciarProgreso } from '../../lib/progreso'
 import { CAPAS, capaActual, sesionesConEstado, type EstadoSesion } from '../../lib/sesiones'
 import './mapa.css'
@@ -149,6 +150,7 @@ export function Mapa() {
               onClick={() => {
                 reiniciarProgreso()
                 reiniciarAcceso()
+                detenerMusica()
                 navigate('/inicio')
               }}
             >
