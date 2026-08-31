@@ -63,3 +63,10 @@ Ver `encargos.md` para el diseño completo. Decisiones que necesitan confirmaci�
 | D6 | Verificación del deploy final del estudiante (Git + Vercel/Netlify) — brief §5.9 | Mostrar la URL pública generada dentro de la plataforma |
 | D7 | Persistencia: ¿SQLite basta para todas las cohortes previstas o se migra a Postgres desde el inicio? | SQLAlchemy hace la migración barata; decidir según nº de cohortes concurrentes esperadas |
 | D8 | ¿Self-hostear Monaco o dejarlo cargar desde CDN? | `@monaco-editor/react` carga Monaco desde jsdelivr por defecto. Un taller presencial con wifi flojo probablemente quiere Monaco servido desde `public/` |
+
+## Bugs conocidos (menores)
+
+| # | Síntoma | Causa | Alcance / mitigación | Estado |
+|---|---|---|---|---|
+| B1 | Al editar `frontend/src/lib/musica.ts` con `npm run dev` activo y música sonando, se escuchan **dos pistas a la vez** con desfase; el botón de pausa solo detiene una | Vite recarga el módulo en caliente (HMR) pero el `<audio>` de la instancia anterior sigue vivo en su clausura; el módulo nuevo crea otro y sus controles solo gobiernan el suyo | **Solo desarrollo**, y solo al tocar ese archivo en vivo — nunca en el build de producción (Netlify). Mitigado: `crearAudio()` llama a `destruirAudio()` antes de instanciar, y `import.meta.hot.dispose()` frena el audio viejo al recargar el módulo. Si ya quedó un audio huérfano, un hard-refresh (Ctrl+Shift+R) lo silencia | 🟡 mitigado, no bloqueante |
+| B2 | Falta la pista `malibu.mp3` en `frontend/public/music/` | El FS de Windows es case-insensitive: al renombrar `Malibu.mp3` → `malibu.mp3` en el reencodeo, el `rm` del original borró el archivo recién creado (mismo nombre para el FS) | El resto de pistas está intacto (sus nombres difieren en más que mayúsculas). Hay que volver a añadir ese archivo, reencodearlo a 128 kbps y sumar `{ archivo: 'malibu.mp3', titulo: 'Malibu' }` a `PISTAS` | ⬜ pendiente de resupply |

@@ -19,6 +19,7 @@ descubre por **necesidad real** dentro del proyecto, no por instrucción directa
   avance automático al aceptar. Flujo de entrada: `/inicio` (primera vez de todas) → `/entrar`
   (diagnóstico) → portafolio; `/bienvenida` la primera vez de cada día; recargar no interrumpe.
 - ⬜ Pantallas 1b/1c (variantes del reto), 1g (móvil).
+- 🟡 Bugs menores conocidos (solo dev / no bloquean) — ver `docs/decisiones.md` §"Bugs conocidos".
 - ⬜ Andamiaje de `backend/` (FastAPI) y el autograder (Deno).
 - ⬜ Cablear frontend ↔ backend.
 
