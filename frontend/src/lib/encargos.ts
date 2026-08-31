@@ -77,8 +77,17 @@ function meta(
   sesion: Sesion,
   desbloqueadoTexto: string,
   parrafos: string[],
+  esBorrador = false,
 ): Encargo {
-  return { numero, titulo, desbloqueadoTexto, parrafos, herramientas: herramientasDe(sesion), pistaDisponibleEn: 300 }
+  return {
+    numero,
+    titulo,
+    desbloqueadoTexto,
+    parrafos,
+    herramientas: herramientasDe(sesion),
+    pistaDisponibleEn: 300,
+    esBorrador,
+  }
 }
 
 function stub(
@@ -99,7 +108,7 @@ function stub(
     andamiajeNuevo:
       `// Encargo ${numero} — el andamiaje detallado está pendiente de diseño (docs/encargos.md §4).\n` +
       `// Escribí tu código acá abajo:\n`,
-    meta: meta(numero, titulo, sesion, DIA_DE_SESION[sesion].toLowerCase(), parrafos),
+    meta: meta(numero, titulo, sesion, DIA_DE_SESION[sesion].toLowerCase(), parrafos, true),
   }
 }
 

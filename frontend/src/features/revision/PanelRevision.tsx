@@ -4,15 +4,13 @@ interface Props {
   resultado: ResultadoRevision | null
   /** true cuando el encargo pasó todos los casos. */
   aceptado: boolean
-  /** Texto bajo el sello de aceptado (p. ej. "Pasando al siguiente encargo…"). */
+  /** Texto bajo el sello de aceptado (solo el último encargo lo usa). */
   mensajeAceptado: string
 }
 
 // Columna derecha, abajo: revisión automática. Muestra pasa/falla por caso y el
-// conteo agregado. El texto recuerda que los casos ocultos cambian de tamaño en
-// cada corrida y que no se entrega la solución (brief §2.3, §5.4).
-// Al aceptar (todos los casos en verde), la transición al siguiente encargo es
-// automática — sin botón (docs/encargos.md §5.2).
+// conteo agregado. Entregar a revisión es lo que hace avanzar al siguiente encargo
+// (docs/encargos.md §5.2): al pasar todos los casos, la plataforma salta sola.
 export function PanelRevision({ resultado, aceptado, mensajeAceptado }: Props) {
   if (!resultado) {
     return (
@@ -20,7 +18,10 @@ export function PanelRevision({ resultado, aceptado, mensajeAceptado }: Props) {
         <div className="rev-cab">
           <h5 style={{ margin: 0 }}>Revisión automática</h5>
         </div>
-        <p className="rev-nota">Aún no has entregado este encargo a revisión.</p>
+        <p className="rev-nota">
+          Cuando creas que está listo, pulsá <strong>Entregar a revisión</strong>. Si pasan todos
+          los casos, el encargo queda aceptado y pasás al siguiente.
+        </p>
       </div>
     )
   }

@@ -329,12 +329,14 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 ### 5.2 Qué pasa al aceptar un encargo
 
 1. La revisión devuelve todos los casos en verde → el encargo pasa a `aceptado`.
-2. El panel muestra el sello **"encargo aceptado"** por un instante y **la plataforma pasa sola al
-   siguiente encargo** — sin botón ni confirmación, para no romper la inmersión. Solo pasa si:
-   (a) este encargo es la *frontera* (el siguiente aún no está `aceptado`) y (b) el siguiente ya
-   está `disponible` por calendario (ver 5.3). Si el siguiente está bloqueado por fecha, el sello
-   queda y el texto dice *"El encargo N+1 se abre el <día>"*. Volver a aceptar un encargo viejo no
-   dispara ningún salto.
+2. El panel muestra el sello **"encargo aceptado"** por un instante y la plataforma **salta sola al
+   encargo N+1** en ~1 s — sin botón, sin aviso, siempre (también si volviste a repasar un encargo
+   ya hecho: pasa al siguiente igual). Para ir a un encargo concreto está el mapa (1e).
+   El último encargo no salta: muestra *"Terminaste el último encargo."*
+   En producción, si el siguiente está bloqueado por fecha, el sello queda sin salto.
+
+   El panel de revisión, antes de entregar, dice explícitamente que **Entregar a revisión** es lo
+   que hace avanzar.
 3. Al pasar al siguiente encargo, el editor carga el **andamiaje del encargo N+1**, compuesto como
    `archivo_inicial(N+1) = solución_aceptada(N) + líneas_nuevas(N+1)`. La parte heredada es el
    código **real** del estudiante (su nombre, sus frases), no un ejemplo — si en E1 escribió

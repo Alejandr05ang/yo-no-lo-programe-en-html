@@ -1,0 +1,39 @@
+/* Marcadores "beta / de prueba". Tinte de acento, discretos pero inequívocos. */
+
+.beta-banner {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-accent-100);
+  border-bottom: 1px solid var(--color-accent-300);
+}
+.beta-banner-chip {
+  flex: none;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-accent-800);
+  border: 1px solid var(--color-accent-400);
+  border-radius: var(--radius-sm);
+  padding: 2px 7px;
+}
+.beta-banner-txt {
+  font-size: 12px;
+  color: var(--color-accent-900);
+}
+
+.beta-tag {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-accent-800);
+  background: var(--color-accent-100);
+  border: 1px solid var(--color-accent-300);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  vertical-align: middle;
+}

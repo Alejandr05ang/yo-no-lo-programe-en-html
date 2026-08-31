@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { BetaTag } from '../../components/Beta'
 import { API_DOCS } from '../../lib/apiDocs'
 import type { Encargo } from '../../lib/tipos'
 import { FichaHerramienta } from './FichaHerramienta'
@@ -68,7 +69,15 @@ export function PanelEncargo({ encargo, abierto, onToggle, onPedirPista }: Props
           ‹
         </button>
       </div>
-      <h3 style={{ margin: 0 }}>{encargo.titulo}</h3>
+      <h3 style={{ margin: 0 }}>
+        {encargo.titulo}
+        {encargo.esBorrador && (
+          <>
+            {' '}
+            <BetaTag>encargo de ejemplo</BetaTag>
+          </>
+        )}
+      </h3>
       <hr className="hr" style={{ margin: 'var(--space-1) 0 var(--space-2)' }} />
 
       {encargo.parrafos.map((p, i) => (

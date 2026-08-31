@@ -17,6 +17,8 @@ export interface Encargo {
   herramientas: HerramientaAPI[]
   /** Segundos hasta que la siguiente pista esté disponible; null si ya lo está. */
   pistaDisponibleEn: number | null
+  /** true = el andamiaje y los tests todavía son de ejemplo, no diseño final. */
+  esBorrador?: boolean
 }
 
 export type EstadoCaso = 'pasa' | 'falla' | 'pendiente'

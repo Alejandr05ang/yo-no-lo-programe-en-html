@@ -12,8 +12,13 @@ descubre por **necesidad real** dentro del proyecto, no por instrucción directa
 
 - ✅ Brief de producto y diseño de alta fidelidad (7 pantallas) — en `docs/` y `design/`.
 - ✅ Stack y arquitectura decididos — ver `docs/arquitectura.md`.
-- ✅ `frontend/` scaffold + **pantalla 1a** funcionando con datos de ejemplo (`cd frontend && npm i && npm run dev`).
-- ⬜ Pantallas 1b–1g.
+- ✅ `frontend/` scaffold + pantallas **1a** (estudiante), **1e** (mapa `/mapa`), **1d**
+  (instructor `/bitacora`, sin rol todavía), **1f** (`/entrar`, diagnóstico) y **bienvenida diaria**
+  (`/bienvenida`), con datos de ejemplo (`cd frontend && npm i && npm run dev`).
+- ✅ Progresión de 11 encargos, herencia de código entre encargos, "Mis datos", fichas de ayuda,
+  avance automático al aceptar. Flujo de entrada: `/inicio` (primera vez de todas) → `/entrar`
+  (diagnóstico) → portafolio; `/bienvenida` la primera vez de cada día; recargar no interrumpe.
+- ⬜ Pantallas 1b/1c (variantes del reto), 1g (móvil).
 - ⬜ Andamiaje de `backend/` (FastAPI) y el autograder (Deno).
 - ⬜ Cablear frontend ↔ backend.
 

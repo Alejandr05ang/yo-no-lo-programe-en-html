@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Navigate, useSearchParams } from 'react-router-dom'
+import { accedioHoy, diagnosticoHecho } from '../../lib/acceso'
 import { Nav } from '../../components/Nav'
 import { api } from '../../lib/api'
 import { componerAndamiaje, diaDeEncargo, NUMEROS_DE_ENCARGO } from '../../lib/encargos'
@@ -55,6 +56,14 @@ function clamp(n: number, lo: number, hi: number) {
 }
 
 export function VistaEstudiante() {
+  // Flujo de entrada (se decide antes de cualquier hook y es estable durante el montaje).
+  // Sin diagnóstico o sin haber entrado hoy → /inicio (decide el resto). Recargar → nada.
+  if (!diagnosticoHecho() || !accedioHoy()) return <Navigate to="/inicio" replace />
+
+  return <VistaEstudianteInterna />
+}
+
+function VistaEstudianteInterna() {
   const [params, setParams] = useSearchParams()
   const numero = clamp(Number(params.get('e')) || MIN_ENCARGO, MIN_ENCARGO, MAX_ENCARGO)
 
@@ -86,7 +95,6 @@ export function VistaEstudiante() {
   const [revision, setRevision] = useState<ResultadoRevision | null>(null)
   const [ejecutando, setEjecutando] = useState(false)
   const [entregando, setEntregando] = useState(false)
-  const [avanzando, setAvanzando] = useState(false)
 
   // `datos` de la preview = perfil del estudiante + override del encargo (donde este necesita
   // un estado concreto). Que sea propio hace que el portafolio se sienta suyo desde E1.
@@ -174,39 +182,29 @@ export function VistaEstudiante() {
   }, [contenido, numero])
 
   const aceptado = !!revision && revision.casosPasados === revision.casosTotales
-  const haySiguiente = numero < MAX_ENCARGO
+  const esUltimo = numero >= MAX_ENCARGO
 
-  // Al aceptar: guardar la solución (para heredarla) y pasar solo al siguiente encargo
-  // si este es la frontera (docs/encargos.md §5.2). Sin botón: la transición es automática.
+  // Al aceptar: guardar la solución (para heredarla) y pasar SOLO al siguiente encargo,
+  // siempre, sin botón ni aviso (docs/encargos.md §5.2). Un instante de sello y salta.
   useEffect(() => {
-    if (!aceptado) {
-      setAvanzando(false)
-      return
-    }
+    if (!aceptado) return
     solucionesRef.current[numero] = contenidoRef.current
     borradoresRef.current[numero] = contenidoRef.current
     persistir(CLAVE_SOLUCIONES, solucionesRef.current)
     persistir(CLAVE_BORRADORES, borradoresRef.current)
 
-    const esFrontera = haySiguiente && !solucionesRef.current[numero + 1]
-    if (!esFrontera) return
-    setAvanzando(true)
-    const id = window.setTimeout(() => irAEncargo(numero + 1), 1600)
+    if (esUltimo) return
+    const id = window.setTimeout(() => irAEncargo(numero + 1), 1000)
     return () => window.clearTimeout(id)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aceptado, numero])
 
-  const mensajeAceptado = !aceptado
-    ? ''
-    : avanzando
-      ? 'Pasando al siguiente encargo…'
-      : haySiguiente
-        ? 'Encargo aceptado.'
-        : 'Terminaste el último encargo. Tu portafolio está completo.'
+  const mensajeAceptado =
+    aceptado && esUltimo ? 'Terminaste el último encargo. Tu portafolio está completo.' : ''
 
   return (
     <div className="ve">
-      <Nav dia={diaDeEncargo(numero)} iniciales="AR" />
+      <Nav seccion="Portafolio" dia={diaDeEncargo(numero)} iniciales="AR" activo="portafolio" />
 
       <div className="solo-escritorio">Editar código requiere computador.</div>
 
