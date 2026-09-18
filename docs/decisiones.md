@@ -51,6 +51,21 @@ Ver `encargos.md` para el diseño completo. Decisiones que necesitan confirmaci�
 | EN5 | Texto estándar del "caso vacío" por sección | Pendiente |
 | EN6 | El grader debe poder simular el paso del tiempo (`cadaSegundo`) | Detalle de implementación del autograder |
 
+## Arquitectura del backend — a confirmar
+
+Propuesta completa (esquema de datos, autorización en capas, autograder integrado) en
+`backend-propuesta.md`. Principio central: **FastAPI es el único servidor** — el cliente nunca le
+habla a Supabase/Firebase directo; lo que se use de ahí es solo Postgres gestionado y, opcionalmente,
+emisión de tokens. Decisiones abiertas, resumidas:
+
+| # | Tema | Notas |
+|---|---|---|
+| BA1 | ¿Postgres de Supabase o de otro proveedor (Neon, Railway, RDS)? | Ya no depende del cliente de Supabase (no se usa); Supabase suma Auth gratis si también se quiere BA2-A |
+| BA2 | Emisión del enlace de acceso: ¿proveedor externo (Supabase/Firebase Auth) o FastAPI propio (T7 original)? | Externo = menos código; propio = cero dependencias externas de identidad |
+| BA3 | ¿Instructor con más de una cohorte en v1? | Cambia si `usuarios.cohorte_id` alcanza o hace falta tabla puente desde el inicio |
+| BA4 | Flujo de creación de la primera cohorte/instructor | Falta describir el "primer admin" |
+| BA5 | Retención de la tabla `intentos` | Crece con cada entrega; definir política antes de que importe |
+
 ## Pendientes de definir (brief §7 + nuevos)
 
 | # | Tema | Notas |

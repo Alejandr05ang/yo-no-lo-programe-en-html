@@ -32,6 +32,7 @@ descubre por **necesidad real** dentro del proyecto, no por instrucción directa
 | Entender **cómo se va a construir** | `docs/arquitectura.md` |
 | Ver la **progresión de encargos** y el API del estudiante | `docs/encargos.md` |
 | Ver **qué está decidido y qué no** | `docs/decisiones.md` |
+| Implementar el **backend** (propuesta de arquitectura) | `docs/backend-propuesta.md` |
 | Los **tokens del design system** (reutilizables tal cual) | `design/styles.css` + `design/design-system/readme.md` |
 
 ## Estructura del repo
@@ -42,6 +43,7 @@ docs/
   design-handoff.md   Guía visual: las 7 pantallas, el design system, comportamiento
   arquitectura.md     Stack, patrón de arquitectura, estructura de carpetas, deploy
   decisiones.md       Registro de decisiones (cerradas y pendientes)
+  backend-propuesta.md Propuesta de arquitectura de backend (BaaS + servicio de autograder) — a confirmar
 design/
   Plataforma Taller.dc.html   Los 7 mockups (1a–1g) en un lienzo con zoom/pan
   styles.css                  Design system Classical — tokens y clases, reutilizable
