@@ -9,9 +9,28 @@ import type { ResultadoRevision } from './tipos'
 // una versión de juguete: corre el código una vez y verifica el DOM resultante contra
 // unos criterios fijos por encargo. No detecta hardcodeo ni prueba con datos distintos.
 
+type DatosLike = Record<string, unknown>
+
 interface CasoLocal {
   descripcion: string
-  verificar: (doc: Document) => boolean
+  verificar: (doc: Document, datos: DatosLike) => boolean
+}
+
+/** Cuántas veces aparece `texto` como substring de `contenido`. */
+function contarOcurrencias(contenido: string, texto: string): number {
+  if (!texto) return 0
+  return contenido.split(texto).length - 1
+}
+
+// Helpers para leer `datos` (unknown) sin asumir su forma exacta — varía por encargo.
+function comoLista(v: unknown): DatosLike[] {
+  return Array.isArray(v) ? (v as DatosLike[]) : []
+}
+function comoObjeto(v: unknown): DatosLike {
+  return v && typeof v === 'object' ? (v as DatosLike) : {}
+}
+function comoTexto(v: unknown): string {
+  return typeof v === 'string' ? v : ''
 }
 
 const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
@@ -70,6 +89,219 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
       },
     },
   ],
+
+  4: [
+    {
+      descripcion: 'Lo anterior sigue ahí (título, párrafos, subtítulo)',
+      verificar: (d) => !!d.querySelector('h1') && d.querySelectorAll('p').length >= 2 && !!d.querySelector('h2'),
+    },
+    {
+      descripcion: 'Hay un enlace por cada red que tenés cargada',
+      verificar: (d, datos) => {
+        const redes = comoObjeto(datos.redes)
+        return d.querySelectorAll('a').length === Object.keys(redes).length
+      },
+    },
+    {
+      descripcion: 'Cada enlace apunta a la dirección correcta',
+      verificar: (d, datos) => {
+        const redes = comoObjeto(datos.redes)
+        const hrefs = [...d.querySelectorAll('a')].map((a) => a.getAttribute('href'))
+        return Object.values(redes).every((url) => hrefs.includes(comoTexto(url)))
+      },
+    },
+  ],
+
+  5: [
+    {
+      descripcion: 'El título sigue estando',
+      verificar: (d) => !!d.querySelector('h1')?.textContent?.trim(),
+    },
+    {
+      descripcion: 'Aparece un aviso de "en construcción"',
+      verificar: (d) =>
+        [...d.querySelectorAll('p')].some((p) => /construcci[oó]n/i.test(p.textContent ?? '')),
+    },
+    {
+      descripcion: 'Ningún párrafo queda vacío',
+      verificar: (d) => {
+        const ps = [...d.querySelectorAll('p')]
+        return ps.length > 0 && ps.every((p) => (p.textContent ?? '').trim().length > 0)
+      },
+    },
+  ],
+
+  6: [
+    {
+      descripcion: 'Hay una lista',
+      verificar: (d) => !!d.querySelector('ul, ol'),
+    },
+    {
+      descripcion: 'La lista tiene al menos 3 items',
+      verificar: (d) => d.querySelectorAll('li').length >= 3,
+    },
+    {
+      descripcion: 'Ningún item está vacío',
+      verificar: (d) => {
+        const lis = [...d.querySelectorAll('li')]
+        return lis.length > 0 && lis.every((li) => (li.textContent ?? '').trim().length > 0)
+      },
+    },
+  ],
+
+  7: [
+    {
+      descripcion: 'Hay una lista',
+      verificar: (d) => !!d.querySelector('ul, ol'),
+    },
+    {
+      descripcion: 'Hay un item por cada hobby en datos.hobbies',
+      verificar: (d, datos) => {
+        const hobbies = comoLista(datos.hobbies)
+        return d.querySelectorAll('li').length === hobbies.length
+      },
+    },
+    {
+      descripcion: 'El texto de cada item sale de datos.hobbies',
+      verificar: (d, datos) => {
+        const hobbies = comoLista(datos.hobbies).map((h) => comoTexto(h))
+        const textos = [...d.querySelectorAll('li')].map((li) => (li.textContent ?? '').trim())
+        return hobbies.length > 0 && hobbies.every((h) => textos.includes(h))
+      },
+    },
+  ],
+
+  // Nivel 6 (niveles.md) — snapshot único: ejecutarPreview corre el código una vez y
+  // captura el resultado de la primera llamada de cadaSegundo(), así que se puede
+  // verificar "qué se ve en el primer instante" pero no el avance automático en sí.
+  8: [
+    {
+      descripcion: 'Muestra una imagen',
+      verificar: (d) => !!d.querySelector('img'),
+    },
+    {
+      descripcion: 'El proyecto mostrado es uno de los destacados',
+      // crearImagen() pone la url en el atributo src — el nombre solo queda en "alt"
+      // (no aparece en textContent), así que se compara contra src, no contra texto.
+      verificar: (d, datos) => {
+        const urls = comoLista(datos.proyectos)
+          .filter((p) => p.destacado === true)
+          .map((p) => comoTexto(p.imagenUrl))
+        const srcs = [...d.querySelectorAll('img')].map((img) => img.getAttribute('src'))
+        return urls.some((u) => srcs.includes(u))
+      },
+    },
+    {
+      descripcion: 'No muestra los proyectos que no son destacados',
+      verificar: (d, datos) => {
+        const urls = comoLista(datos.proyectos)
+          .filter((p) => p.destacado !== true)
+          .map((p) => comoTexto(p.imagenUrl))
+        const srcs = [...d.querySelectorAll('img')].map((img) => img.getAttribute('src'))
+        return !urls.some((u) => srcs.includes(u))
+      },
+    },
+  ],
+
+  9: [
+    {
+      descripcion: 'Se muestran los proyectos terminados',
+      verificar: (d, datos) => {
+        const terminados = comoLista(datos.proyectos)
+          .filter((p) => p.terminado === true)
+          .map((p) => comoTexto(p.nombre))
+        const texto = d.body.textContent ?? ''
+        return terminados.length > 0 && terminados.every((n) => texto.includes(n))
+      },
+    },
+    {
+      descripcion: 'No se muestran los proyectos sin terminar',
+      verificar: (d, datos) => {
+        const sinTerminar = comoLista(datos.proyectos)
+          .filter((p) => p.terminado !== true)
+          .map((p) => comoTexto(p.nombre))
+        const texto = d.body.textContent ?? ''
+        return !sinTerminar.some((n) => texto.includes(n))
+      },
+    },
+    {
+      descripcion: 'Cada proyecto terminado aparece una sola vez',
+      verificar: (d, datos) => {
+        const terminados = comoLista(datos.proyectos)
+          .filter((p) => p.terminado === true)
+          .map((p) => comoTexto(p.nombre))
+        const texto = d.body.textContent ?? ''
+        return terminados.every((n) => contarOcurrencias(texto, n) === 1)
+      },
+    },
+    {
+      descripcion: 'El título y los párrafos de antes siguen estando',
+      verificar: (d) => !!d.querySelector('h1') && d.querySelectorAll('p').length >= 2,
+    },
+  ],
+
+  10: [
+    {
+      descripcion: 'Hay un título por cada categoría de datos.skills',
+      verificar: (d, datos) => {
+        const skills = comoObjeto(datos.skills)
+        const titulos = [...d.querySelectorAll('h2, h3')].map((t) => (t.textContent ?? '').trim())
+        return Object.keys(skills).every((cat) => titulos.includes(cat))
+      },
+    },
+    {
+      descripcion: 'Cada categoría muestra sus items',
+      verificar: (d, datos) => {
+        const skills = comoObjeto(datos.skills)
+        const totalEsperado = Object.values(skills).reduce(
+          (n, items) => n + comoLista(items).length,
+          0,
+        )
+        return d.querySelectorAll('li').length === totalEsperado
+      },
+    },
+    {
+      descripcion: 'El texto de los items sale de datos.skills',
+      verificar: (d, datos) => {
+        const skills = comoObjeto(datos.skills)
+        const esperados = Object.values(skills).flatMap((items) =>
+          comoLista(items).map((i) => comoTexto(i)),
+        )
+        const textos = [...d.querySelectorAll('li')].map((li) => (li.textContent ?? '').trim())
+        return esperados.every((e) => textos.includes(e))
+      },
+    },
+  ],
+
+  11: [
+    {
+      descripcion: 'El proyecto de tipo "demo" muestra un enlace a su url',
+      verificar: (d, datos) => {
+        const demos = comoLista(datos.proyectos).filter((p) => comoTexto(p.tipo) === 'demo')
+        const hrefs = [...d.querySelectorAll('a')].map((a) => a.getAttribute('href'))
+        return demos.length > 0 && demos.every((p) => hrefs.includes(comoTexto(p.url)))
+      },
+    },
+    {
+      descripcion: 'El proyecto de tipo "texto" aparece con su nombre',
+      verificar: (d, datos) => {
+        const textos = comoLista(datos.proyectos).filter((p) => comoTexto(p.tipo) === 'texto')
+        const contenido = d.body.textContent ?? ''
+        return textos.length > 0 && textos.every((p) => contenido.includes(comoTexto(p.nombre)))
+      },
+    },
+    {
+      descripcion: 'Un tipo que no está en la lista conocida no rompe la página',
+      verificar: (d, datos) => {
+        const conocidos = ['demo', 'texto']
+        const desconocidos = comoLista(datos.proyectos).filter(
+          (p) => !conocidos.includes(comoTexto(p.tipo)),
+        )
+        const contenido = d.body.textContent ?? ''
+        return desconocidos.every((p) => contenido.includes(comoTexto(p.nombre)))
+      },
+    },
+  ],
 }
 
 export async function revisarLocalmente(
@@ -99,9 +331,10 @@ export async function revisarLocalmente(
     'text/html',
   )
 
+  const datosObj = comoObjeto(datos)
   const evaluados = casos.map((c) => ({
     descripcion: c.descripcion,
-    estado: (r.ok && safe(() => c.verificar(doc)) ? 'pasa' : 'falla') as 'pasa' | 'falla',
+    estado: (r.ok && safe(() => c.verificar(doc, datosObj)) ? 'pasa' : 'falla') as 'pasa' | 'falla',
   }))
   const pasados = evaluados.filter((c) => c.estado === 'pasa').length
 

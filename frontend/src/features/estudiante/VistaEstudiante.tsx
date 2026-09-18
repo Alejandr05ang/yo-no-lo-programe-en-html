@@ -151,8 +151,11 @@ function VistaEstudianteInterna() {
           : [{ prefijo: 'consola', texto: 'ejecución sin errores' }],
       })
     } else {
+      const mensaje = r.error?.mensaje ?? 'error desconocido'
+      const linea = r.error?.linea
       setSalida({
-        lineas: [{ prefijo: 'consola', texto: r.error?.mensaje ?? 'error desconocido' }],
+        lineas: [{ prefijo: 'consola', texto: linea ? `${mensaje} (línea ${linea})` : mensaje }],
+        linea,
       })
     }
   }, [contenido, datos])

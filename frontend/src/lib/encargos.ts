@@ -38,9 +38,11 @@ const DIA_DE_SESION: Record<Sesion, string> = {
 // Herramientas que desbloquea cada sesión (docs/encargos.md §3.2). Se acumulan.
 const HERRAMIENTAS_POR_SESION: Record<Sesion, string[]> = {
   Ma1: ['crearTitulo()', 'crearSubtitulo()', 'crearParrafo()', 'mostrar()', 'const'],
-  Mi1: ['crearEnlace()', 'condición'],
+  Mi1: ['crearEnlace()', 'condición', 'crearSalto()'],
   Ju1: ['crearLista()', 'crearItem()', 'agregarA()', 'por cada'],
-  V1: ['cadaSegundo()'],
+  // crearImagen() pedagógicamente es del nivel 2 / Mi1 (niveles.md), pero hoy no hay encargo
+  // de Mi1 que la ejercite (D14, pendiente) — se desbloquea acá porque es donde se usa primero.
+  V1: ['cadaSegundo()', 'crearImagen()'],
   L2: [],
   Ma2: ['función'],
   Mi2: [],
@@ -77,6 +79,7 @@ function meta(
   sesion: Sesion,
   desbloqueadoTexto: string,
   parrafos: string[],
+  pista: string,
   esBorrador = false,
 ): Encargo {
   return {
@@ -86,6 +89,7 @@ function meta(
     parrafos,
     herramientas: herramientasDe(sesion),
     pistaDisponibleEn: 300,
+    pista,
     esBorrador,
   }
 }
@@ -98,6 +102,7 @@ function stub(
   fallbackHeredado: string,
   datosOverride: Record<string, unknown>,
   totalCasos: number,
+  pista: string,
 ): EncargoMock {
   return {
     sesion,
@@ -108,7 +113,7 @@ function stub(
     andamiajeNuevo:
       `// Encargo ${numero} — el andamiaje detallado está pendiente de diseño (docs/encargos.md §4).\n` +
       `// Escribí tu código acá abajo:\n`,
-    meta: meta(numero, titulo, sesion, DIA_DE_SESION[sesion].toLowerCase(), parrafos, true),
+    meta: meta(numero, titulo, sesion, DIA_DE_SESION[sesion].toLowerCase(), parrafos, pista, true),
   }
 }
 
@@ -128,10 +133,17 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       '// La página está vacía. Escribe tu nombre entre las comillas y pulsa Ejecutar.\n' +
       'const titulo = crearTitulo("tu nombre")\n' +
       'mostrar(titulo)\n',
-    meta: meta(1, 'Tu nombre', 'Ma1', 'desbloqueado hoy 10:00', [
-      'Esta página va a ser tu portafolio. Ahora mismo no dice nada.',
-      'Lo primero que cualquiera tiene que ver al abrirla es tu nombre. Escríbelo en el código y pulsa Ejecutar para verlo aparecer.',
-    ]),
+    meta: meta(
+      1,
+      'Tu nombre',
+      'Ma1',
+      'desbloqueado hoy 10:00',
+      [
+        'Esta página va a ser tu portafolio. Ahora mismo no dice nada.',
+        'Lo primero que cualquiera tiene que ver al abrirla es tu nombre. Escríbelo en el código y pulsa Ejecutar para verlo aparecer.',
+      ],
+      'Solo tenés que cambiar el texto entre las comillas de crearTitulo(...) — el resto del código ya está armado.',
+    ),
   },
 
   2: {
@@ -145,10 +157,17 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       '// Pista: fijate cómo armaste el título arriba (una variable + mostrar())\n' +
       '// y hacé lo mismo con la herramienta crearParrafo().\n' +
       '// Escribí tu código acá abajo:\n',
-    meta: meta(2, 'Sobre mí', 'Ma1', 'desbloqueado hoy 12:30', [
-      'Un nombre solo no es una página. Falta contar quién sos en un par de frases.',
-      'Agregá al menos dos párrafos sobre vos, debajo del título que ya hiciste.',
-    ]),
+    meta: meta(
+      2,
+      'Sobre mí',
+      'Ma1',
+      'desbloqueado hoy 12:30',
+      [
+        'Un nombre solo no es una página. Falta contar quién sos en un par de frases.',
+        'Agregá al menos dos párrafos sobre vos, debajo del título que ya hiciste.',
+      ],
+      'Fijate cómo armaste el título arriba (una variable + mostrar()) y hacé lo mismo con la herramienta crearParrafo().',
+    ),
   },
 
   3: {
@@ -162,10 +181,17 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       '// Poné un título de sección ("Sobre mí") ANTES de tus párrafos.\n' +
       '// Pista: crearSubtitulo() funciona igual que crearParrafo(), pero hace un título más chico.\n' +
       '// Escribí tu código acá abajo:\n',
-    meta: meta(3, 'Dale forma con secciones', 'Ma1', 'desbloqueado hoy 15:00', [
-      'Tu página ya dice cosas, pero es un bloque de texto sin forma.',
-      'Dividí el contenido en secciones: poné un título de sección arriba de cada parte para que se entienda de un vistazo.',
-    ]),
+    meta: meta(
+      3,
+      'Dale forma con secciones',
+      'Ma1',
+      'desbloqueado hoy 15:00',
+      [
+        'Tu página ya dice cosas, pero es un bloque de texto sin forma.',
+        'Dividí el contenido en secciones: poné un título de sección arriba de cada parte para que se entienda de un vistazo.',
+      ],
+      'crearSubtitulo() funciona igual que crearParrafo(), pero hace un título más chico.',
+    ),
   },
 
   4: stub(
@@ -179,6 +205,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     BASE_CON_PARRAFOS,
     {},
     3,
+    'Por cada red en datos.redes, preguntate: ¿existe? Si existe, creá el enlace con crearEnlace() y mostralo.',
   ),
 
   5: stub(
@@ -186,12 +213,13 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     'En construcción',
     'Mi1',
     [
-      'Si todavía no escribiste tu "sobre mí", un visitante ve una página vacía y rara.',
-      'Mostrá un aviso de "en construcción", pero solo mientras esa parte esté vacía.',
+      'Si todavía no escribiste tu "sobre mí" (datos.sobreMi), un visitante ve una página vacía y rara.',
+      'Mostrá un aviso de "en construcción", pero solo mientras ese dato esté vacío.',
     ],
     BASE_CON_PARRAFOS,
     { sobreMi: '' }, // este encargo quiere ver el estado vacío en la preview
     3,
+    'Un texto vacío es "" — comparalo con datos.sobreMi (no con el párrafo que crees) antes de decidir qué mostrar.',
   ),
 
   6: stub(
@@ -201,7 +229,8 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     ['Agregá tus pasatiempos como una lista.', 'Por ahora poné los tres que quieras, uno por uno.'],
     BASE_CON_PARRAFOS,
     {},
-    2,
+    3,
+    'Primero creá la lista vacía con crearLista() y mostrala; después agregale items uno por uno con agregarA().',
   ),
 
   7: stub(
@@ -215,20 +244,30 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     BASE_CON_PARRAFOS +
       '\n\nconst lista = crearLista()\nmostrar(lista)\nagregarA(lista, crearItem("Escalada"))\nagregarA(lista, crearItem("Fotografía"))\nagregarA(lista, crearItem("Ajedrez"))',
     {},
-    4,
+    3,
+    'En vez de escribir agregarA() a mano por cada hobby, usá "por cada" (for...of) sobre datos.hobbies.',
   ),
 
+  // Nivel 6 (niveles.md) — autónomo, sin charla. Combina imágenes (nivel 2) + bucle (nivel 4):
+  // reutiliza crearImagen(url, descripcion), ya provisto por el runtime (lib/sandbox.ts).
   8: stub(
     8,
-    'El saludo que cambia solo',
+    'Carrusel de proyectos destacados',
     'V1',
     [
-      'La página debería saludar según la hora: "Buenos días", "Buenas tardes" o "Buenas noches".',
-      'Y la hora tiene que seguir corriendo mientras la página esté abierta.',
+      'Tu portafolio tiene proyectos, pero todos se ven igual en la lista — nada resalta lo que más te enorgullece.',
+      'Armá un carrusel que muestre, uno a la vez, solo tus proyectos destacados — y que cambie de proyecto solo, sin que nadie haga nada.',
     ],
     BASE_CON_PARRAFOS,
-    {},
+    {
+      proyectos: [
+        { nombre: 'Reloj web', imagenUrl: 'https://picsum.photos/seed/reloj-web/480/280', destacado: true },
+        { nombre: 'Juego de memoria', imagenUrl: 'https://picsum.photos/seed/memoria/480/280', destacado: false },
+        { nombre: 'Portafolio', imagenUrl: 'https://picsum.photos/seed/portafolio/480/280', destacado: true },
+      ],
+    },
     3,
+    'Filtrá primero los proyectos con destacado true; después usá cadaSegundo() para ir mostrando uno distinto de esa lista cada vez.',
   ),
 
   9: stub(
@@ -248,6 +287,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       ],
     },
     4,
+    'Antes de crear la tarjeta de cada proyecto, preguntate si su campo terminado es true.',
   ),
 
   10: stub(
@@ -261,6 +301,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     BASE_CON_PARRAFOS,
     { skills: { Frontend: ['HTML', 'CSS', 'JavaScript'], Backend: ['Python', 'SQL'] } },
     3,
+    'Vas a necesitar un "por cada" afuera (una vuelta por categoría) y otro adentro (una vuelta por cada item de esa categoría).',
   ),
 
   11: stub(
@@ -276,9 +317,11 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       proyectos: [
         { nombre: 'Reloj web', tipo: 'demo', url: 'https://ejemplo.com' },
         { nombre: 'Charla sobre CSS', tipo: 'texto' },
+        { nombre: 'Cortometraje de animación', tipo: 'video' }, // tipo a propósito no contemplado
       ],
     },
     3,
+    'Un condicional (o varios encadenados) que mire el campo tipo de cada proyecto antes de decidir qué crear.',
   ),
 }
 

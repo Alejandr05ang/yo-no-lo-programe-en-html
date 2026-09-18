@@ -25,13 +25,20 @@ function formatoMinutos(seg: number): string {
 export function PanelEncargo({ encargo, abierto, onToggle, onPedirPista }: Props) {
   const [restante, setRestante] = useState(encargo.pistaDisponibleEn ?? 0)
   const [ficha, setFicha] = useState<{ nombre: string; anclaEl: HTMLElement } | null>(null)
+  const [pistaAbierta, setPistaAbierta] = useState(false)
 
   useEffect(() => {
     setRestante(encargo.pistaDisponibleEn ?? 0)
+    setPistaAbierta(false)
     if (!encargo.pistaDisponibleEn) return
     const t = setInterval(() => setRestante((r) => Math.max(0, r - 1)), 1000)
     return () => clearInterval(t)
-  }, [encargo.pistaDisponibleEn])
+    // Depende del número, no del valor de pistaDisponibleEn: todos los encargos hoy
+    // arrancan en el mismo umbral (300s), así que un cambio de encargo no dispara el
+    // efecto si se compara por valor — y la cuenta atrás/la pista abierta quedarían
+    // arrastradas del encargo anterior.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [encargo.numero])
 
   const pistaBloqueada = restante > 0
   const numero = String(encargo.numero).padStart(2, '0')
@@ -120,6 +127,12 @@ export function PanelEncargo({ encargo, abierto, onToggle, onPedirPista }: Props
         />
       )}
 
+      {pistaAbierta && (
+        <p className="enc-pista-texto">
+          <span className="kicker">Pista</span> {encargo.pista}
+        </p>
+      )}
+
       <div className="enc-pie">
         <span className="mono enc-pista-contador">
           {pistaBloqueada ? `Pista disponible en ${formatoMinutos(restante)}` : 'Pista disponible'}
@@ -128,9 +141,12 @@ export function PanelEncargo({ encargo, abierto, onToggle, onPedirPista }: Props
           className="btn btn-secondary"
           style={{ marginLeft: 'auto' }}
           disabled={pistaBloqueada}
-          onClick={onPedirPista}
+          onClick={() => {
+            setPistaAbierta((v) => !v)
+            onPedirPista?.()
+          }}
         >
-          Pedir pista
+          {pistaAbierta ? 'Ocultar pista' : 'Pedir pista'}
         </button>
       </div>
     </section>

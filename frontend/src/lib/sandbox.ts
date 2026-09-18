@@ -1,3 +1,5 @@
+import { ANDAMIAJE_CSS } from './andamiajeEstilos'
+
 // Ejecuta el código del estudiante en un iframe aislado y devuelve el HTML generado.
 //
 // Reglas (docs/arquitectura.md §2, brief §5.2): nunca eval en la ventana principal.
@@ -37,6 +39,11 @@ const RUNTIME = String.raw`
   const crearTitulo    = (texto) => __crear('h1', texto);
   const crearSubtitulo = (texto) => __crear('h2', texto);
   const crearParrafo   = (texto) => __crear('p', texto);
+  function crearSalto() {
+    const el = document.createElement('div');
+    el.className = 'salto';
+    return el;
+  }
   const crearLista   = () => __crear('ul');
   const crearItem    = (texto) => __crear('li', texto);
   const crearBoton   = (texto) => __crear('button', texto);
@@ -60,17 +67,46 @@ const RUNTIME = String.raw`
   function cadaSegundo(hacer) { hacer(); setInterval(hacer, 1000); }
 `
 
+// El código del estudiante se corre con eval() (en vez de quedar embebido como texto
+// del <script>) y se le pega un "//# sourceURL" al final. Eso hace dos cosas a la vez:
+// 1) los números de línea de cualquier error quedan relativos a SU código (línea 1 =
+//    su primera línea), sin tener que restar cuántas líneas ocupa el andamiaje interno;
+// 2) un error de sintaxis (llave sin cerrar, etc.) pasa a ser una excepción que el
+//    try/catch puede atrapar, en vez de abortar en silencio todo el <script> y que el
+//    estudiante vea "no terminó a tiempo" por un typo (confuso para quien no programa).
 function construirSrcdoc(codigoEstudiante: string, datos: unknown): string {
+  const codigoConFuente = codigoEstudiante + '\n//# sourceURL=estudiante.js'
   return `<!doctype html><html><head><meta charset="utf-8">
-<style>body{margin:0;font:15px/1.6 "Lora",Georgia,serif;color:#201f1d}</style>
+<style>${ANDAMIAJE_CSS}</style>
 </head><body><div id="__raiz"></div><script>
 window.__DATOS__ = ${JSON.stringify(datos)};
 ${RUNTIME}
+
+function __lineaDelError(e) {
+  const m = /estudiante\\.js:(\\d+):(\\d+)/.exec((e && e.stack) || '');
+  if (m) return Number(m[1]);
+  if (e && typeof e.lineNumber === 'number') return e.lineNumber;
+  return undefined;
+}
+
+// Cubre errores que NO pasan por el try/catch de abajo porque ocurren después
+// (por ejemplo, dentro de la función que le pasás a cadaSegundo()).
+window.onerror = function (mensaje, _url, lineno, _colno, error) {
+  parent.postMessage(
+    { tipo: 'preview-error', mensaje: String(mensaje), linea: __lineaDelError(error) ?? lineno, logs: __logs },
+    '*',
+  );
+  return true;
+};
+
 try {
-  ${codigoEstudiante}
+  eval(${JSON.stringify(codigoConFuente)});
   parent.postMessage({ tipo: 'preview-ok', html: document.getElementById('__raiz').innerHTML, logs: __logs }, '*');
 } catch (e) {
-  parent.postMessage({ tipo: 'preview-error', mensaje: String(e && e.message || e), logs: __logs }, '*');
+  parent.postMessage(
+    { tipo: 'preview-error', mensaje: String((e && e.message) || e), linea: __lineaDelError(e), logs: __logs },
+    '*',
+  );
 }
 <\/script></body></html>`
 }
@@ -109,7 +145,7 @@ export function ejecutarPreview(
       if (d?.tipo === 'preview-ok') {
         terminar({ ok: true, html: d.html, logs: d.logs ?? [] })
       } else if (d?.tipo === 'preview-error') {
-        terminar({ ok: false, html: '', error: { mensaje: d.mensaje }, logs: d.logs ?? [] })
+        terminar({ ok: false, html: '', error: { mensaje: d.mensaje, linea: d.linea }, logs: d.logs ?? [] })
       }
     }
 

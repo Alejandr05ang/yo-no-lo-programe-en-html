@@ -16,6 +16,13 @@ const ETIQUETA_ESTADO: Record<EstadoSesion, string> = {
   cerrado: 'cerrado',
 }
 
+// Explica el porqué de las sesiones todavía no navegables — el desbloqueo por día
+// (brief §2.7) no es un error ni una falla del estudiante, es ritmo de grupo.
+const EXPLICACION_BLOQUEO: Partial<Record<EstadoSesion, string>> = {
+  manana: 'Se desbloquea mañana, junto con el resto del grupo.',
+  cerrado: 'Todavía no le toca a esta sesión — se desbloquea el día que le corresponda en el calendario.',
+}
+
 // Escalera de trazos del currículo en espiral: % del track que llena cada capa (1→5).
 const RELLENO_BARRA = ['24%', '43%', '62%', '81%', '100%']
 
@@ -50,6 +57,7 @@ export function Mapa() {
                 key={s.codigo}
                 className="mapa-celda"
                 data-estado={s.estado}
+                title={navegable ? undefined : EXPLICACION_BLOQUEO[s.estado]}
                 {...(navegable
                   ? {
                       type: 'button' as const,

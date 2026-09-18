@@ -17,6 +17,8 @@ export interface Encargo {
   herramientas: HerramientaAPI[]
   /** Segundos hasta que la siguiente pista esté disponible; null si ya lo está. */
   pistaDisponibleEn: number | null
+  /** Texto de la pista (docs/decisiones.md D2: un solo nivel por ahora, no las 3 escalonadas). */
+  pista: string
   /** true = el andamiaje y los tests todavía son de ejemplo, no diseño final. */
   esBorrador?: boolean
 }
@@ -50,4 +52,6 @@ export interface ArchivoEditor {
 export interface SalidaEjecucion {
   /** Líneas de consola con prefijo y detalle. */
   lineas: { prefijo?: string; texto: string; detalle?: string }[]
+  /** Línea (1-based) de portafolio.js donde ocurrió el error, si se pudo determinar. */
+  linea?: number
 }

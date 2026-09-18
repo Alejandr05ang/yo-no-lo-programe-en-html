@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { ANDAMIAJE_CSS } from '../../lib/andamiajeEstilos'
 
 type Viewport = 'movil' | 'tablet' | 'escritorio' | 'completo'
 
@@ -44,7 +45,7 @@ export function PanelPreview({ url, html, enVivo = true, expandido, onToggleExpa
   const doc = useMemo(
     () => `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style>body{margin:0;padding:18px;font:15px/1.6 "Lora",Georgia,serif;color:#201f1d;background:#fff}</style>
+<style>${ANDAMIAJE_CSS}</style>
 </head><body>${html}</body></html>`,
     [html],
   )

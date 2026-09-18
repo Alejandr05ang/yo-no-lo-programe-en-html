@@ -298,6 +298,17 @@
 .enc-ficha-rel-link:hover {
   color: var(--color-accent-200);
 }
+.enc-pista-texto {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-accent) 8%, transparent);
+  font-size: 13.5px;
+  line-height: 1.5;
+}
+.enc-pista-texto .kicker {
+  margin-right: 6px;
+}
 .enc-pie {
   margin-top: auto;
   border-top: 1px solid var(--color-divider);
@@ -504,14 +515,12 @@
   align-items: center;
   gap: var(--space-2);
 }
-/* El outline de acento del sistema no contrasta sobre negro: handoff §Paleta panel oscuro */
-.ed-acciones .btn-primary {
+/* El outline de acento del sistema no contrasta sobre negro: handoff §Paleta panel oscuro.
+   Ambos botones llevan el mismo tratamiento — el spec no los distingue por color. */
+.ed-acciones .btn-primary,
+.ed-acciones .btn-secondary {
   border-color: var(--color-accent-400);
   color: var(--color-accent-300);
-}
-.ed-acciones .btn-secondary {
-  color: #9b9797;
-  border-color: #2d2b2b;
 }
 .ed-sello {
   margin-left: auto;

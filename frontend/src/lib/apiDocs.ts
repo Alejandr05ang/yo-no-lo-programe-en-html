@@ -54,6 +54,15 @@ export const API_DOCS: Record<string, DocHerramienta> = {
     relacionadas: ['crearTitulo()', 'crearSubtitulo()', 'mostrar()'],
   },
 
+  'crearSalto()': {
+    firma: 'crearSalto()',
+    descripcion:
+      'Crea un espacio en blanco para separar dos cosas, aunque no sean párrafos (por ejemplo, dos enlaces seguidos). Usalo cuantas veces quieras.',
+    devuelve: 'el espacio',
+    ejemplo: 'mostrar(crearParrafo("Ingredientes"))\nmostrar(crearSalto())\nmostrar(crearParrafo("Instrucciones"))',
+    relacionadas: ['crearParrafo()', 'mostrar()'],
+  },
+
   'crearLista()': {
     firma: 'crearLista()',
     descripcion:
@@ -79,6 +88,15 @@ export const API_DOCS: Record<string, DocHerramienta> = {
     devuelve: 'el enlace',
     ejemplo: 'mostrar(crearEnlace("Ver la receta completa", "https://ejemplo.com/receta"))',
     relacionadas: ['mostrar()'],
+  },
+
+  'crearImagen()': {
+    firma: 'crearImagen(url, descripcion)',
+    descripcion:
+      'Crea una imagen a partir de una dirección web. La descripción es para quien no puede ver la imagen — contá qué muestra.',
+    devuelve: 'la imagen',
+    ejemplo: 'mostrar(crearImagen("https://ejemplo.com/foto.jpg", "Vista de la ciudad de noche"))',
+    relacionadas: ['mostrar()', 'agregarA()'],
   },
 
   'mostrar()': {
