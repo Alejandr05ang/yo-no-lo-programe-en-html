@@ -1,5 +1,10 @@
 # Niveles de programación — Taller de portafolio web
 
+> **Nota (19-sep):** este catálogo (16 niveles) todavía no se reconcilió con la reorganización de
+> `brief.md` §4.1 de esta misma fecha (numeración N1–N14, sesiones movidas, E8 confirmado como
+> carrusel). Los números de nivel de este documento **no corresponden** a los N1–N14 de
+> `brief.md` — son dos numeraciones distintas por ahora. Ver `docs/decisiones.md`.
+
 Spec técnica derivada de `brief.md` (§4.1). Cubre únicamente los niveles que son ejercicio de
 código con test oculto — no incluye contenido de clase sin ejercicio (DevTools, diagramas de
 flujo/pseudocódigo, HTML semántico por lectura, diagnósticos), que vive como apoyo alrededor de
@@ -17,7 +22,7 @@ nivel N requiere el nivel N-1 completado. Sin ramas, sin niveles en paralelo.
 |---|---|---|---|---|---|
 | 1 | Variables + creación de elementos (DOM) | Ma1 | No | Header + "sobre mí" | — |
 | 2 | Variables/elementos + intro condicionales + insertar imágenes (con límite de espacio) | Mi1 | No | Info de contacto/redes + foto de perfil | Nivel 1 |
-| 3 | Condicionales completos | Ju1 | No | Saludo dinámico + nav/lista | Niveles 1-2 |
+| 3 | Condicionales completos | Ju1 | No | Aviso condicional + nav/lista | Niveles 1-2 |
 | 4 | Intro a bucles | Ju1 | No | (mismo bloque de Ju1) | Niveles 1-3 |
 | 5 | Eventos (`addEventListener`) + formulario de contacto | Ju1 | No | Formulario de contacto | Niveles 1-4 |
 | 6 | Carrusel de proyectos destacados (repetición automática) | V1 | **Sí** | Carrusel de proyectos | Nivel 2 (imágenes) + Nivel 4 (bucle) |

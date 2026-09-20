@@ -36,10 +36,13 @@ const DIA_DE_SESION: Record<Sesion, string> = {
 }
 
 // Herramientas que desbloquea cada sesión (docs/encargos.md §3.2). Se acumulan.
+// Reorganización del 19-sep (docs/decisiones.md): E6 y E7 (hobbies) pasan de Ju1 a Mi1, que
+// ahora concentra tres encargos (E4, E5, E6) en una sola sesión. Ju1 queda como día de
+// personalización visual (review, sin autograder) y no desbloquea herramienta de JS nueva.
 const HERRAMIENTAS_POR_SESION: Record<Sesion, string[]> = {
   Ma1: ['crearTitulo()', 'crearSubtitulo()', 'crearParrafo()', 'mostrar()', 'const'],
-  Mi1: ['crearEnlace()', 'condición', 'crearSalto()'],
-  Ju1: ['crearLista()', 'crearItem()', 'agregarA()', 'por cada'],
+  Mi1: ['crearEnlace()', 'condición', 'crearSalto()', 'crearLista()', 'crearItem()', 'agregarA()', 'por cada'],
+  Ju1: [],
   // crearImagen() pedagógicamente es del nivel 2 / Mi1 (niveles.md), pero hoy no hay encargo
   // de Mi1 que la ejercite (D14, pendiente) — se desbloquea acá porque es donde se usa primero.
   V1: ['cadaSegundo()', 'crearImagen()'],
@@ -102,6 +105,7 @@ function stub(
   fallbackHeredado: string,
   datosOverride: Record<string, unknown>,
   totalCasos: number,
+  andamiajeLineas: string[],
   pista: string,
 ): EncargoMock {
   return {
@@ -111,7 +115,8 @@ function stub(
     datosOverride,
     totalCasos,
     andamiajeNuevo:
-      `// Encargo ${numero} — el andamiaje detallado está pendiente de diseño (docs/encargos.md §4).\n` +
+      andamiajeLineas.map((l) => `// ${l}\n`).join('') +
+      `// Pista: ${pista}\n` +
       `// Escribí tu código acá abajo:\n`,
     meta: meta(numero, titulo, sesion, DIA_DE_SESION[sesion].toLowerCase(), parrafos, pista, true),
   }
@@ -121,6 +126,14 @@ const BASE = 'const titulo = crearTitulo("Ana Rivas")\nmostrar(titulo)'
 const BASE_CON_PARRAFOS =
   BASE +
   '\n\nconst p1 = crearParrafo("Aprendo a construir cosas para internet.")\nmostrar(p1)\nconst p2 = crearParrafo("Este sitio lo escribí yo, línea por línea.")\nmostrar(p2)'
+// Fallbacks de arranque en frío para E7 y E8 (§5.2) — aproximan lo que ya tendría un
+// estudiante que aceptó los encargos anteriores, no una réplica exacta de su código.
+const BASE_CON_HOBBIES =
+  BASE_CON_PARRAFOS +
+  '\n\nconst lista = crearLista()\nmostrar(lista)\nfor (const hobby of datos.hobbies) {\n  agregarA(lista, crearItem(hobby))\n}'
+const BASE_CON_AVISO =
+  BASE_CON_HOBBIES +
+  '\n\nconst bio = crearParrafo(datos.sobreMi)\nmostrar(bio)\nif (datos.sobreMi === "") {\n  mostrar(crearParrafo("Página en construcción — vuelve pronto."))\n}'
 
 export const ENCARGOS: Record<number, EncargoMock> = {
   1: {
@@ -205,38 +218,33 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     BASE_CON_PARRAFOS,
     {},
     3,
+    [
+      'Tus redes viven en datos.redes — no sabés de antemano cuáles están cargadas.',
+      'Por cada una que exista, mostrá un enlace con crearEnlace(). Las que no, ni aparecen.',
+    ],
     'Por cada red en datos.redes, preguntate: ¿existe? Si existe, creá el enlace con crearEnlace() y mostralo.',
   ),
 
+  // Reorganización del 19-sep (docs/decisiones.md): E5–E6 (hobbies) pasan de Ju1 a Mi1, que
+  // ahora concentra E4+E5+E6. El aviso condicional pasa a ser E7 y se dicta el viernes (V1,
+  // tarea autónoma sin charla) junto con el carrusel (E8) — Ju1 queda libre para
+  // personalización visual (review, sin autograder, docs/brief.md §4.1 N4).
   5: stub(
     5,
-    'En construcción',
-    'Mi1',
-    [
-      'Si todavía no escribiste tu "sobre mí" (datos.sobreMi), un visitante ve una página vacía y rara.',
-      'Mostrá un aviso de "en construcción", pero solo mientras ese dato esté vacío.',
-    ],
-    BASE_CON_PARRAFOS,
-    { sobreMi: '' }, // este encargo quiere ver el estado vacío en la preview
-    3,
-    'Un texto vacío es "" — comparalo con datos.sobreMi (no con el párrafo que crees) antes de decidir qué mostrar.',
-  ),
-
-  6: stub(
-    6,
     'Tus hobbies',
-    'Ju1',
+    'Mi1',
     ['Agregá tus pasatiempos como una lista.', 'Por ahora poné los tres que quieras, uno por uno.'],
     BASE_CON_PARRAFOS,
     {},
     3,
+    ['Armá una lista con tus pasatiempos. Por ahora poné los tres que quieras, uno por uno.'],
     'Primero creá la lista vacía con crearLista() y mostrala; después agregale items uno por uno con agregarA().',
   ),
 
-  7: stub(
-    7,
+  6: stub(
+    6,
     'La lista que no se queda quieta',
-    'Ju1',
+    'Mi1',
     [
       'Tus hobbies ahora están en datos.hobbies, un archivo que no escribís vos. Hoy tiene tres.',
       'La semana que viene puede tener catorce, o ninguno, y la página tiene que verse bien en los tres casos sin que vuelvas a tocar el código.',
@@ -245,11 +253,34 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       '\n\nconst lista = crearLista()\nmostrar(lista)\nagregarA(lista, crearItem("Escalada"))\nagregarA(lista, crearItem("Fotografía"))\nagregarA(lista, crearItem("Ajedrez"))',
     {},
     3,
+    [
+      'Tus hobbies ya no los escribís vos: vienen de datos.hobbies, y podés tener cualquier cantidad.',
+      'La lista tiene que armarse sola, sin importar si hay tres o catorce.',
+    ],
     'En vez de escribir agregarA() a mano por cada hobby, usá "por cada" (for...of) sobre datos.hobbies.',
   ),
 
-  // Nivel 6 (niveles.md) — autónomo, sin charla. Combina imágenes (nivel 2) + bucle (nivel 4):
-  // reutiliza crearImagen(url, descripcion), ya provisto por el runtime (lib/sandbox.ts).
+  7: stub(
+    7,
+    'En construcción',
+    'V1',
+    [
+      'Si todavía no escribiste tu "sobre mí" (datos.sobreMi), un visitante ve una página vacía y rara.',
+      'Mostrá un aviso de "en construcción", pero solo mientras ese dato esté vacío.',
+    ],
+    BASE_CON_HOBBIES,
+    { sobreMi: '' }, // este encargo quiere ver el estado vacío en la preview
+    3,
+    [
+      'datos.sobreMi puede venir vacío. Cuando lo esté, mostrá un aviso de "en construcción".',
+      'Cuando no lo esté, mostrá el texto normal — nunca los dos a la vez.',
+    ],
+    'Un texto vacío es "" — comparalo con datos.sobreMi (no con el párrafo que crees) antes de decidir qué mostrar.',
+  ),
+
+  // Nivel 6 (niveles.md) — autónomo, sin charla, mismo día que E7. Combina imágenes (nivel 2)
+  // + bucle (nivel 4): reutiliza crearImagen(url, descripcion), ya provisto por el runtime
+  // (lib/sandbox.ts).
   8: stub(
     8,
     'Carrusel de proyectos destacados',
@@ -258,7 +289,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       'Tu portafolio tiene proyectos, pero todos se ven igual en la lista — nada resalta lo que más te enorgullece.',
       'Armá un carrusel que muestre, uno a la vez, solo tus proyectos destacados — y que cambie de proyecto solo, sin que nadie haga nada.',
     ],
-    BASE_CON_PARRAFOS,
+    BASE_CON_AVISO,
     {
       proyectos: [
         { nombre: 'Reloj web', imagenUrl: 'https://picsum.photos/seed/reloj-web/480/280', destacado: true },
@@ -267,6 +298,10 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       ],
     },
     3,
+    [
+      'De todos tus proyectos (datos.proyectos), solo algunos tienen destacado: true.',
+      'Mostrá uno solo a la vez, y que vaya cambiando cada segundo sin que nadie toque nada.',
+    ],
     'Filtrá primero los proyectos con destacado true; después usá cadaSegundo() para ir mostrando uno distinto de esa lista cada vez.',
   ),
 
@@ -287,6 +322,9 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       ],
     },
     4,
+    [
+      'Cada proyecto en datos.proyectos tiene un campo terminado. Los que no lo tienen en true no van todavía.',
+    ],
     'Antes de crear la tarjeta de cada proyecto, preguntate si su campo terminado es true.',
   ),
 
@@ -301,6 +339,10 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     BASE_CON_PARRAFOS,
     { skills: { Frontend: ['HTML', 'CSS', 'JavaScript'], Backend: ['Python', 'SQL'] } },
     3,
+    [
+      'datos.skills agrupa tus habilidades por categoría: cada categoría es una lista de items.',
+      'Ninguna cantidad está fija — puede haber dos categorías o diez, con dos items o veinte.',
+    ],
     'Vas a necesitar un "por cada" afuera (una vuelta por categoría) y otro adentro (una vuelta por cada item de esa categoría).',
   ),
 
@@ -321,6 +363,10 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       ],
     },
     3,
+    [
+      'Cada proyecto en datos.proyectos trae un campo tipo ("demo", "texto", quizás otro que no viste).',
+      'Decidí qué mostrar según ese campo — y que un tipo desconocido no rompa nada.',
+    ],
     'Un condicional (o varios encadenados) que mire el campo tipo de cada proyecto antes de decidir qué crear.',
   ),
 }

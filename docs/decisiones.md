@@ -125,10 +125,13 @@ el encargo 9 (mostrar todos los proyectos sin filtrar) falla exactamente el caso
 ("No se muestran los proyectos sin terminar"), confirmando que las pruebas sí detectan errores,
 no solo pasan siempre.
 
-**Lo que NO se tocó (aparte, no era el pedido):** el `andamiajeNuevo` de los encargos 4-11 sigue
-siendo el placeholder genérico ("el andamiaje detallado está pendiente de diseño") — eso es el
-código de arranque/pistas en el editor, no la revisión. Escribir el andamiaje narrativo completo
-(al estilo de los encargos 1-3, con comentarios guiados) es un trabajo de contenido aparte.
+**Actualización (2026-09-19):** el `andamiajeNuevo` de los encargos 4-11 ya no es el placeholder
+genérico — se escribió el andamiaje narrativo real (contexto del problema + pista, al estilo de
+1-3, sin regalar la estructura) en `lib/encargos.ts` (`stub()` ahora recibe las líneas narrativas
+en vez de generarlas). Lo que sigue sin tocar: el código de *arranque* en sí (líneas de ejemplo
+parcial como las que sí tienen 1-3) sigue siendo solo el marco narrativo + pista, sin líneas de
+código de andamiaje — eso es contenido pedagógico aparte, no cubierto acá. El tag "beta"
+(`esBorrador`) de estos encargos tampoco se tocó.
 
 ## `crearSalto()` — nueva herramienta (agregada por el usuario)
 
@@ -140,6 +143,94 @@ para separar enlaces de redes). Ya tiene estilo real en el andamiaje CSS curado 
 agregó todavía al `extraLib` de Monaco en `EditorPanel.tsx` (`LIB_API_CURADA`) — hoy no
 autocompleta ni tiene hover-doc en el editor, el mismo síntoma que tenía `crearImagen()` antes de
 la auditoría de H3/D15.
+
+## Vista de consulta móvil (1g) — de bloqueo por ancho a detección por capacidad (19-sep)
+
+Bug encontrado por el usuario: al abrir `/portafolio` en pantalla dividida dentro del propio
+editor de código (una computadora real, con teclado y mouse), aparecía el aviso «Editar código
+requiere computador» — el mismo que debía verse solo en un celular real.
+
+**Causa raíz:** el aviso (`.solo-escritorio`) se activaba con un media query CSS puro,
+`@media (max-width: 1023px)` — medía el ancho de la ventana, no la capacidad del equipo. Una
+ventana angosta por pantalla dividida y un celular real dan exactamente el mismo ancho de
+viewport; no hay forma de distinguirlos con una sola señal de ancho. Esto **no era un bug de
+implementación**: la pantalla 1g (`docs/design-handoff.md`) especificaba textualmente el umbral
+de 1024px, así que el código hacía lo que el documento pedía — el problema estaba en la
+especificación.
+
+**Corregido:** la condición pasó a ser de capacidad del equipo, no de ventana —
+`frontend/src/lib/dispositivo.ts`, evaluada una sola vez al montar (nunca en `resize`, para no
+saltar entre vistas mientras se arrastra el borde de la ventana): puntero grueso
+(`pointer: coarse`) + sin hover real (`hover: hover` no matchea) + pantalla física chica
+(`Math.max(screen.width, screen.height) < 900`). Con eso, una laptop con ventana angosta entra
+al editor (correcto) y un celular real —incluso pidiendo "versión de escritorio"— sigue cayendo
+en consulta (correcto). Se agregó además una vía de escape («Editar de todos modos», persistida
+en `localStorage`) para el equipo que la heurística clasifique mal, y se construyó la pantalla
+de consulta real (`VistaConsultaMovil.tsx`: encargo del día + avance + portafolio publicado en
+solo lectura), reemplazando el placeholder de una sola línea que había antes.
+
+Consecuencia directa: como ya no hay un ancho que bloquee el editor, este pasó a apilarse
+verticalmente por debajo de 1024px (`vista-estudiante.css`) en vez de mostrarse cortado o con
+scroll horizontal — antes esa combinación de anchos nunca se ejercitaba porque el bloqueo la
+tapaba.
+
+**Lo que NO se tocó, pendiente:** `VistaConsultaMovil` es una versión pragmática del contenido de
+1g (mismo propósito, misma información), no una réplica pixel-perfect del mockup (`design/`) —
+no reproduce el layout exacto de "Vista A"/"Vista B" del handoff. Tampoco implementa el botón
+"+ Agregar hobby" que un visitante vería en el portafolio publicado real (eso es una función
+aparte, sin construir en ningún lado todavía — ver C2). `Nav` (la barra superior, con seis
+enlaces + control de música) no se adaptó para ser más angosta; en una vista de consulta muy
+angosta puede desbordar — no verificado visualmente en esta sesión (no se levantó un dev server
+propio para Playwright; validar a mano con `npm run dev` + pantalla angosta antes de dar esto
+por cerrado).
+
+## Reorganización de cronograma y reversión de "cortar E8 sin reemplazo" (19-sep)
+
+`docs/brief.md` se reescribió completo a partir de una revisión propuesta por el equipo del
+taller (misma fuente: "Diseño de Plataforma — Taller de Desarrollo Web para Principiantes",
+versión 19-sep). Dos cambios de fondo, resueltos en esta sesión al chocar la propuesta con lo
+que ya estaba implementado:
+
+**1. El borrador de la revisión decía "se elimina el nivel reloj/saludo (antes E8), sin
+reemplazo" — pero el código ya tenía ese hueco cubierto.** Antes de esta sesión, `encargos.ts`
+ya había reemplazado el saludo dinámico por un **carrusel de proyectos destacados** (usa
+`cadaSegundo()` + filtro por `datos.proyectos[].destacado`) — un cambio de una sesión anterior
+que nunca se documentó en `docs/`. Se optó por **mantener el carrusel** en vez de cortarlo: el
+concepto pedagógico (repetición infinita, `cadaSegundo`) es el mismo que motivó el nivel
+original, pero con peso visual real en un portafolio, mientras que un reloj de saludo no lo
+tiene. `docs/brief.md` §4.1 y §8 quedan corregidos para reflejar esto — la versión que
+eliminaba el nivel sin reemplazo nunca se aplicó al código ni a los docs.
+
+**2. La reorganización de sesiones de la revisión (E4/E6/E7 → Mi1, Ju1 sin encargo de código,
+E5 → V1) dejaba al carrusel sin sesión asignada**, porque V1 pasaba a ser "E5 (aviso) + reto
+creativo" y el carrusel vivía ahí antes. Se resolvió metiendo ambos encargos cortos el mismo
+día: V1 pasa a dictar **dos** encargos (aviso condicional + carrusel), ya que sigue siendo el
+único día "autónomo, sin charla" del calendario y ambos encargos son chicos. Esto forzó
+**renumerar los encargos 5–8** en `frontend/src/lib/encargos.ts` para que la cadena de herencia
+de código (`heredaDe: numero - 1`, ver `docs/encargos.md` §5.2) siguiera el orden real de
+entrega:
+
+| Antes (Ju1/Mi1) | Ahora | Título | Sesión |
+|---|---|---|---|
+| E4 | E4 | Cómo encontrarte | Mi1 (sin cambio) |
+| E6 | **E5** | Tus hobbies, a mano | Mi1 (antes Ju1) |
+| E7 | **E6** | La lista que no se queda quieta | Mi1 (antes Ju1) |
+| E5 | **E7** | En construcción | V1 (antes Mi1) |
+| E8 | E8 | Carrusel de proyectos destacados | V1 (sin cambio) |
+
+`HERRAMIENTAS_POR_SESION` en `encargos.ts` también se movió: `crearLista/crearItem/agregarA/por
+cada` ahora se desbloquean en Mi1 (donde viven E5–E6), no en Ju1 (que queda como día de
+personalización visual, tipo `review`, sin herramienta de JS nueva). Verificado con `tsc
+--noEmit` sin errores tras el renumerado.
+
+**Lo que NO se tocó, pendiente:** el detalle fino de los tests ocultos de E8 (¿0 destacados
+rompe o muestra mensaje?, ¿1 destacado se muestra fijo?, cada cuánto rota exactamente) — ver
+`docs/encargos.md` §7 EN8. La ficha narrativa de N7 (`classList` condicional sobre destacados
+en L2) tampoco se escribió — sigue como extensión de E9 sin ficha propia, tal como ya estaba
+antes de esta sesión (brief §9). `docs/niveles.md` (catálogo técnico de 16 niveles, más viejo
+y con numeración propia distinta a la N1–N14 de `brief.md`) no se reconcilió con esta revisión
+— sigue reflejando el cronograma anterior a este cambio; solo se corrigió ahí la mención
+puntual al "saludo dinámico" para no contradecir la decisión de mantener el carrusel.
 
 ## Bugs conocidos (menores)
 

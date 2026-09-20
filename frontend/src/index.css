@@ -27,22 +27,3 @@ body,
   text-transform: uppercase;
   color: var(--color-accent);
 }
-
-/* Aviso de que editar requiere escritorio (<1024px, handoff §Responsive). */
-.solo-escritorio {
-  display: none;
-}
-@media (max-width: 1023px) {
-  .oculto-en-movil {
-    display: none !important;
-  }
-  .solo-escritorio {
-    display: grid;
-    place-items: center;
-    height: 100%;
-    padding: var(--space-6);
-    text-align: center;
-    color: var(--color-neutral-700);
-    font-size: 15px;
-  }
-}

@@ -4,6 +4,7 @@ import { Navigate, useSearchParams } from 'react-router-dom'
 import { accedioHoy, diagnosticoHecho } from '../../lib/acceso'
 import { Nav } from '../../components/Nav'
 import { api } from '../../lib/api'
+import { esVistaDeConsulta, habilitarEdicionForzada } from '../../lib/dispositivo'
 import { componerAndamiaje, diaDeEncargo, NUMEROS_DE_ENCARGO } from '../../lib/encargos'
 import { datosComoTexto, guardadoEjemplo, portafolioEjemplo } from '../../lib/mockEncargo'
 import { guardarPerfil, leerPerfil, perfilComoDatos } from '../../lib/perfil'
@@ -15,6 +16,7 @@ import { EditorPanel } from '../editor/EditorPanel'
 import { MisDatos } from '../perfil/MisDatos'
 import { PanelPreview } from '../preview/PanelPreview'
 import { PanelRevision } from '../revision/PanelRevision'
+import { VistaConsultaMovil } from './VistaConsultaMovil'
 import './vista-estudiante.css'
 
 const CLAVE_ENCARGO = 've:encargo-abierto'
@@ -77,6 +79,10 @@ function VistaEstudianteInterna() {
   const [previewExpandido, setPreviewExpandido] = useState(false)
   const [misDatosAbierto, setMisDatosAbierto] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
+
+  // Se evalúa una sola vez al montar (lib/dispositivo.ts): por capacidad del equipo, no por
+  // ancho de ventana — una pantalla dividida angosta en una computadora real no debe caer acá.
+  const [vistaConsulta, setVistaConsulta] = useState(esVistaDeConsulta)
 
   const [perfil, setPerfil] = useState(leerPerfil)
   const perfilRef = useRef(perfil)
@@ -205,15 +211,28 @@ function VistaEstudianteInterna() {
   const mensajeAceptado =
     aceptado && esUltimo ? 'Terminaste el último encargo. Tu portafolio está completo.' : ''
 
+  if (vistaConsulta) {
+    return (
+      <VistaConsultaMovil
+        encargo={encargo?.meta ?? null}
+        dia={diaDeEncargo(numero)}
+        previewHtml={previewHtml}
+        urlPortafolio={portafolioEjemplo.url}
+        onEditarDeTodosModos={() => {
+          habilitarEdicionForzada()
+          setVistaConsulta(false)
+        }}
+      />
+    )
+  }
+
   return (
     <div className="ve">
       <Nav seccion="Portafolio" dia={diaDeEncargo(numero)} iniciales="AR" activo="portafolio" />
 
-      <div className="solo-escritorio">Editar código requiere computador.</div>
-
       <div
         ref={gridRef}
-        className="ve-grid oculto-en-movil"
+        className="ve-grid"
         data-encargo={encargoAbierto ? 'abierto' : 'cerrado'}
         data-editor={editorAbierto ? 'abierto' : 'cerrado'}
         data-preview={previewExpandido ? 'expandido' : 'normal'}

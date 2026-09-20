@@ -112,26 +112,9 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
     },
   ],
 
+  // Reorganización del 19-sep (docs/decisiones.md): 5 y 6 (hobbies) cambiaron de lugar con
+  // el aviso condicional (ahora 7) — ver la tabla antes/después en docs/decisiones.md.
   5: [
-    {
-      descripcion: 'El título sigue estando',
-      verificar: (d) => !!d.querySelector('h1')?.textContent?.trim(),
-    },
-    {
-      descripcion: 'Aparece un aviso de "en construcción"',
-      verificar: (d) =>
-        [...d.querySelectorAll('p')].some((p) => /construcci[oó]n/i.test(p.textContent ?? '')),
-    },
-    {
-      descripcion: 'Ningún párrafo queda vacío',
-      verificar: (d) => {
-        const ps = [...d.querySelectorAll('p')]
-        return ps.length > 0 && ps.every((p) => (p.textContent ?? '').trim().length > 0)
-      },
-    },
-  ],
-
-  6: [
     {
       descripcion: 'Hay una lista',
       verificar: (d) => !!d.querySelector('ul, ol'),
@@ -149,7 +132,7 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
     },
   ],
 
-  7: [
+  6: [
     {
       descripcion: 'Hay una lista',
       verificar: (d) => !!d.querySelector('ul, ol'),
@@ -167,6 +150,25 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
         const hobbies = comoLista(datos.hobbies).map((h) => comoTexto(h))
         const textos = [...d.querySelectorAll('li')].map((li) => (li.textContent ?? '').trim())
         return hobbies.length > 0 && hobbies.every((h) => textos.includes(h))
+      },
+    },
+  ],
+
+  7: [
+    {
+      descripcion: 'El título sigue estando',
+      verificar: (d) => !!d.querySelector('h1')?.textContent?.trim(),
+    },
+    {
+      descripcion: 'Aparece un aviso de "en construcción"',
+      verificar: (d) =>
+        [...d.querySelectorAll('p')].some((p) => /construcci[oó]n/i.test(p.textContent ?? '')),
+    },
+    {
+      descripcion: 'Ningún párrafo queda vacío',
+      verificar: (d) => {
+        const ps = [...d.querySelectorAll('p')]
+        return ps.length > 0 && ps.every((p) => (p.textContent ?? '').trim().length > 0)
       },
     },
   ],

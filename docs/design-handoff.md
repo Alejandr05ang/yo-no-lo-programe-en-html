@@ -206,7 +206,34 @@ El **contenido** del diagnóstico lo entrega el equipo del taller (§6 del brief
 
 ### 1g — Móvil (390pt): dos vistas
 
-**Decisión de diseño:** el móvil es de **consulta, no de edición**. Escribir código en 390pt no es realista para un principiante, así que en móvil solo viven el encargo del día, el avance y el portafolio publicado. La vista principal (1a–1c) **no tiene versión móvil**; por debajo de ~1024px se muestra la vista de consulta con el aviso «Editar código requiere computador».
+**Decisión de diseño:** el móvil es de **consulta, no de edición**. Escribir código en un
+celular no es realista para un principiante, así que en esos equipos solo viven el encargo
+del día, el avance y el portafolio publicado. La vista principal (1a–1c) no tiene versión de
+solo-toque.
+
+**La condición NO es un ancho de ventana.** Un ancho angosto (pantalla dividida, una ventana
+redimensionada) no implica falta de teclado/mouse real — una laptop con la ventana a 800px
+sigue siendo una laptop. La condición correcta es de **capacidad del equipo**, evaluada una
+sola vez al montar (nunca en `resize`, o la app saltaría entre vistas mientras se ajusta el
+ancho): puntero grueso (`pointer: coarse`) + sin hover real (`hover: hover` no matchea) +
+pantalla física chica (`Math.max(screen.width, screen.height) < 900`). Implementado en
+`frontend/src/lib/dispositivo.ts`. Casos límite ya cubiertos por esa regla: un iPad con
+teclado/trackpad reporta `pointer: fine` y entra al editor (correcto); un celular en "modo
+escritorio" del navegador sigue reportando puntero grueso y cae en consulta (correcto). Nada
+de esto se resuelve con user-agent sniffing (frágil, se rompe con cada versión de navegador).
+
+**Vía de escape:** como cualquier heurística puede fallar en un equipo no anticipado, la
+vista de consulta lleva un botón «Editar de todos modos» que persiste la elección
+(`localStorage`, `habilitarEdicionForzada()` en `dispositivo.ts`). El costo de una detección
+demasiado permisiva es una estudiante incómoda escribiendo código en un espacio chico; el de
+una demasiado restrictiva es una estudiante que no puede avanzar y no tiene cómo destrabarse
+— por eso la vía de escape es indispensable, no un detalle.
+
+Consecuencia: como ya no hay un umbral de ancho que bloquee el editor, este tiene que ser
+usable en cualquier ventana angosta de una computadora real (pantalla dividida, ventana
+chica) — los tres paneles de la pantalla 1a pasan de lado a lado a apilados verticalmente
+por debajo de 1024px (`frontend/src/features/estudiante/vista-estudiante.css`), reusando el
+mismo colapsado por panel que ya existe en escritorio.
 
 - **Vista A — encargo del día.** Barra de estado simulada, cabecera con marca + tag del día. Cuerpo: kicker, `h3` 22px, resumen del encargo en prosa, una tarjeta de avance (contador `1 / 4` + cuatro barras de 4px, llenas en `--color-accent` y vacías en `--color-neutral-300`, con el aviso de que editar requiere computador), `.hr`, bloque «Se desbloqueó hoy» con los tags de la API nueva, y dos botones a ancho completo.
 - **Vista B — portafolio publicado** (lo que ve cualquier visitante en `ana-rivas.taller.dev`): fondo `#fff`, nombre en Cormorant 32px, reloj/saludo dinámico en mono `--color-accent-700`, «sobre mí», lista de hobbies, botón `+ Agregar hobby` y la aclaración de que lo agregado vive solo en el navegador del visitante. Sección «Proyectos» como marcador punteado: «se construye el lunes (L2)».
@@ -245,7 +272,8 @@ Para cada panel hace falta además: cargando (ejecución en curso, revisión en 
 
 - ≥1280px: layout de tres columnas tal cual.
 - 1024–1280px: la columna del reto colapsa a un panel plegable sobre el editor; el editor y el preview se reparten el ancho.
-- <1024px: se sirve la vista de consulta móvil (1g), sin editor.
+- Por debajo de 1024px de ancho, en un equipo con teclado/mouse real: los tres paneles se apilan verticalmente (cada uno colapsable, igual que en escritorio), no la vista de consulta.
+- En un equipo sin teclado/mouse real (detección por capacidad, no por ancho — ver §1g): se sirve la vista de consulta móvil (1g), sin editor, con vía de escape «Editar de todos modos».
 
 ---
 

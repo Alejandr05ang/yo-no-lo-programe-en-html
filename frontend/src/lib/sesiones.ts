@@ -20,9 +20,9 @@ const encargosDe = (cod: string) =>
 export const SESIONES: Sesion[] = [
   { codigo: 'L1', duracion: '2h', tema: 'Diagnóstico + algoritmos', pieza: 'Setup del entorno', capa: null, encargos: [] },
   { codigo: 'Ma1', duracion: '4h', tema: 'Variables + DOM', pieza: 'Header y "sobre mí"', capa: 1, encargos: encargosDe('Ma1') },
-  { codigo: 'Mi1', duracion: '2h', tema: 'Más elementos', pieza: 'Contacto y redes', capa: 2, encargos: encargosDe('Mi1') },
-  { codigo: 'Ju1', duracion: '4h', tema: 'Condicionales → bucles', pieza: 'Saludo dinámico + lista de hobbies', capa: 3, encargos: encargosDe('Ju1') },
-  { codigo: 'V1', duracion: 'autónomo', tema: 'Bucles que no paran', pieza: 'Carrusel de proyectos destacados', capa: 3, encargos: encargosDe('V1') },
+  { codigo: 'Mi1', duracion: '2h', tema: 'Condicionales → bucles', pieza: 'Contacto, redes y lista de hobbies', capa: 3, encargos: encargosDe('Mi1') },
+  { codigo: 'Ju1', duracion: '4h', tema: 'Personalización visual', pieza: 'Paleta y tipografía propias', capa: null, encargos: encargosDe('Ju1') },
+  { codigo: 'V1', duracion: 'autónomo', tema: 'Condición de estado + bucle que no para', pieza: 'Aviso "en construcción" + carrusel de destacados', capa: 3, encargos: encargosDe('V1') },
   { codigo: 'L2', duracion: '2h', tema: 'Bucle + condición', pieza: 'Proyectos con filtro', capa: 4, encargos: encargosDe('L2') },
   { codigo: 'Ma2', duracion: '4h', tema: 'Matrices + funciones', pieza: 'Skills agrupadas', capa: 5, encargos: encargosDe('Ma2') },
   { codigo: 'Mi2', duracion: '2h', tema: 'Funciones', pieza: 'Render distinto por tipo', capa: 5, encargos: encargosDe('Mi2') },

@@ -10,6 +10,15 @@
 // el portafolio se vea distinto sin tocar el resto. Las clases y sus nombres son fijos
 // (andamiaje entregado, no se inventan clases nuevas desde el código del estudiante).
 
+/** Documento completo para el iframe del portafolio: mismo wrapper en PanelPreview y en la
+ *  vista de consulta (VistaConsultaMovil) — lo que ve un visitante es un único documento. */
+export function documentoPortafolio(html: string): string {
+  return `<!doctype html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>${ANDAMIAJE_CSS}</style>
+</head><body>${html}</body></html>`
+}
+
 export const ANDAMIAJE_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lora:wght@400;600&display=swap');
 

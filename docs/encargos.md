@@ -32,9 +32,14 @@ Cada encargo introduce **un** concepto. Todo lo demás ya se vio y se reutiliza.
 | --- | --- | --- |
 | **N1 · Rellenar** | El código está completo; cambia valores entre comillas | E1 |
 | **N2 · Copiar el patrón** | Hay una línea de ejemplo; escribe 2–3 más iguales | E2, E5 |
-| **N3 · Completar una línea** | Falta media línea (la condición, un dato) | E3, E4 |
-| **N4 · Traducir un plan** | El pseudocódigo/diagrama está escrito; lo pasa a código | E6, E7 |
-| **N5 · Desde las herramientas** | Solo la necesidad y la lista de herramientas disponibles | E8, E9, E10 |
+| **N3 · Completar una línea** | Falta media línea (la condición, un dato) | E3, E4, E7 |
+| **N4 · Traducir un plan** | El pseudocódigo/diagrama está escrito; lo pasa a código | E6, E8 |
+| **N5 · Desde las herramientas** | Solo la necesidad y la lista de herramientas disponibles | E9, E10, E11 |
+
+> **Nota (19-sep):** esta columna "N1–N5" mide **andamiaje** (cuánto código de arranque recibe
+> el estudiante), no confundir con la numeración "N1–N14" de niveles curriculares de
+> `brief.md` §4.1 — son dos escalas distintas que comparten el prefijo "N" por historia del
+> proyecto, no por relación entre sí.
 
 ### 2.4 La necesidad real es una incógnita, no una instrucción
 
@@ -94,11 +99,17 @@ const  ·  if / else  ·  for (const x of lista) { … }  ·  function
 
 ### 3.2 Desbloqueo por día
 
+**Reorganización del 19-sep** (`docs/decisiones.md`): Mi1 pasa a concentrar tres encargos
+(E4, E5, E6) en vez de dos, y Ju1 queda sin encargo de código — es el día de personalización
+visual (paleta, tipografía, columnas propias), revisado por el instructor (`review`, sin test
+oculto), no por autograder. El aviso condicional (antes E5) y el carrusel de destacados pasan
+al viernes (V1, tarea autónoma), que ya no tiene charla en vivo.
+
 | Sesión | Se desbloquea |
 | --- | --- |
 | Ma1 | `crearTitulo`, `crearSubtitulo`, `crearParrafo`, `mostrar`, `const`, `datos` |
-| Mi1 | `crearEnlace`, `if` / `else` |
-| Ju1 | `crearLista`, `crearItem`, `agregarA`, `for … of` |
+| Mi1 | `crearEnlace`, `if` / `else`, `crearLista`, `crearItem`, `agregarA`, `for … of` |
+| Ju1 | (nada nuevo — día de personalización visual, sin autograder) |
 | V1 | `cadaSegundo` |
 | L2 | (nada nuevo — combina `for` + `if`) |
 | Ma2 | `function` |
@@ -167,63 +178,47 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 - **Concepto.** Un segundo nivel de encabezado; empezar a estructurar la página, no solo llenarla.
   Es el paso previo a mover cosas por el espacio, cuadrículas y color (más adelante, fuera de este taller).
 
-### E4 — "Cómo encontrarte" · Mi1 · contacto / redes · N2→N3 · capa 2
+> **Reorganización del 19-sep** (`docs/decisiones.md`, `brief.md` §4.1): E5 y E6 (hobbies) pasan
+> de Ju1 a **Mi1**, que ahora concentra tres encargos en una sola sesión de 2h. Ju1 queda **sin
+> encargo de código** — pasa a ser el día de personalización visual (paleta, tipografía,
+> columnas propias), revisado por el instructor (`review`), no por autograder. El aviso
+> condicional (antes E5, ahora **E7**) y el carrusel de destacados (**E8**, nuevo — reemplaza al
+> "saludo dinámico" que se evaluó y se descartó por no aportar peso visual real a un
+> portafolio) se dictan juntos el viernes (**V1**, tarea autónoma, sin charla en vivo).
+
+### E4 — "Cómo encontrarte" · Mi1 · contacto / redes · N3 · capa 2
 
 - **Necesidad.** Un portafolio sin forma de contactarte no sirve. Tus redes están en `datos.redes`
   y **solo algunas están cargadas** — hay que mostrar los enlaces que existen y ninguno más.
 - **Incógnita.** Cuáles redes cargó el estudiante (y cuáles prueba el evaluador). El código no puede
   asumir que están todas.
-- **Andamiaje inicial:**
+- **Andamiaje inicial** (`frontend/src/lib/encargos.ts`):
   ```
-  // datos.redes puede tener: correo, github, linkedin (o solo algunas)
-  if (datos.redes.github) {
-    mostrar(crearEnlace("GitHub", datos.redes.github))
-  }
-  // haz lo mismo para correo y linkedin
+  // Tus redes viven en datos.redes — no sabés de antemano cuáles están cargadas.
+  // Por cada una que exista, mostrá un enlace con crearEnlace(). Las que no, ni aparecen.
+  // Pista: por cada red en datos.redes, preguntate: ¿existe? Si existe, creá el enlace
+  // con crearEnlace() y mostralo.
   ```
 - **Entrega.** Un enlace por cada red presente en `datos.redes`; ninguno para las ausentes.
 - **Tests ocultos.** Con las 3 redes → 3 enlaces · con 1 red → 1 enlace · con 0 → sin enlaces, sin romper.
 - **Concepto.** Condicional: hacer algo **solo cuando** un dato existe.
 
-### E5 — "En construcción" · Mi1 · aviso condicional · N3 · capa 2
-
-- **Necesidad.** Si todavía no escribiste tu "sobre mí", un visitante ve una página vacía y rara.
-  Debería aparecer un aviso "en construcción" — pero solo mientras esté vacío.
-- **Incógnita.** No sabés si tu bio va a estar vacía cuando alguien abra la página (podrías borrarla;
-  el evaluador prueba con bio vacía y con bio llena).
-- **Andamiaje inicial:**
-  ```
-  const bio = crearParrafo(datos.sobreMi)
-  mostrar(bio)
-
-  const aviso = crearParrafo("Página en construcción — vuelve pronto.")
-  if (/* ¿cuándo debe aparecer? */) {
-    mostrar(aviso)
-  }
-  ```
-- **Entrega.** El aviso aparece si y solo si `datos.sobreMi` está vacío.
-- **Tests ocultos.** bio llena → sin aviso · bio vacía → con aviso · el aviso nunca aparece dos veces.
-- **Concepto.** Condicional sobre el estado de un dato (no solo su existencia).
-
-### E6 — "Tus hobbies, a mano" · Ju1 (1ª mitad) · lista de hobbies · N2 · capa 1
+### E5 — "Tus hobbies, a mano" · Mi1 · lista de hobbies · N2 · capa 1
 
 - **Necesidad.** Agregar tus pasatiempos como una lista.
 - **Incógnita.** Por ahora vos elegís cuántos (tres). **Deliberadamente manual.**
 - **Andamiaje inicial:**
   ```
-  const lista = crearLista()
-  mostrar(lista)
-
-  agregarA(lista, crearItem("Escalada en roca"))
-  agregarA(lista, crearItem("Fotografía analógica"))
-  // agrega tu tercer hobby igual que los de arriba
+  // Armá una lista con tus pasatiempos. Por ahora poné los tres que quieras, uno por uno.
+  // Pista: primero creá la lista vacía con crearLista() y mostrala; después agregale
+  // items uno por uno con agregarA().
   ```
 - **Entrega.** Lista con 3 items.
 - **Tests ocultos.** ≥3 items · textos no vacíos.
 - **Concepto.** `agregarA` con un contenedor propio (no `pagina`); patrón repetido a mano.
-  **Este encargo siembra el tedio** que E7 resuelve.
+  **Este encargo siembra el tedio** que E6 resuelve.
 
-### E7 — "La lista que no se queda quieta" · Ju1 (2ª mitad) / V1 · hobbies desde datos · N4 · capa 3
+### E6 — "La lista que no se queda quieta" · Mi1 · hobbies desde datos · N4 · capa 3
 
 *(este es el encargo que ilustra el mockup)*
 
@@ -231,19 +226,12 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
   tres. La semana que viene puede tener catorce, o ninguno, y la página tiene que verse bien en los
   tres casos sin que vuelvas a tocar el código.
 - **Incógnita.** **Cuántos hobbies hay.** No lo sabés al escribir el código.
-- **Andamiaje inicial** — su propio código de E6 + un plan en pseudocódigo:
+- **Andamiaje inicial** — su propio código de E5 + una pista, sin dar la estructura hecha:
   ```
-  const lista = crearLista()
-  mostrar(lista)
-
-  agregarA(lista, crearItem(datos.hobbies[0]))
-  agregarA(lista, crearItem(datos.hobbies[1]))
-  agregarA(lista, crearItem(datos.hobbies[2]))
-  // ¿y si datos.hobbies tiene 14? ¿y si tiene 0?
-
-  // plan:
-  //   por cada hobby de datos.hobbies:
-  //       agregar a la lista un item con ese hobby
+  // Tus hobbies ya no los escribís vos: vienen de datos.hobbies, y podés tener cualquier cantidad.
+  // La lista tiene que armarse sola, sin importar si hay tres o catorce.
+  // Pista: en vez de escribir agregarA() a mano por cada hobby, usá "por cada" (for...of)
+  // sobre datos.hobbies.
   ```
 - **Entrega.** La lista se construye a partir de `datos.hobbies` sea cual sea su tamaño; si está
   vacío, un mensaje ("Todavía no cargué hobbies") en vez de una lista en blanco.
@@ -251,29 +239,51 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
   (`[0]`, `[1]`, `[2]`) en el código · el resto del portafolio (E1–E5) sigue presente.
 - **Concepto.** Recorrer una colección de tamaño desconocido: `for (const hobby of datos.hobbies)`.
 
-### E8 — "El saludo que cambia solo" · V1 · reloj / saludo dinámico · N4 · capa 3
+### E7 — "En construcción" · V1 (tarea, sin charla) · aviso condicional · N3 · capa 2
 
-- **Necesidad.** La página debería saludar según la hora ("Buenos días / Buenas tardes / Buenas
-  noches") y la hora tiene que seguir corriendo mientras la página esté abierta.
-- **Incógnita.** La hora a la que alguien abre la página **y** que sigue avanzando — imposible de
-  escribir a mano.
-- **Andamiaje inicial** — plan en pseudocódigo:
+- **Necesidad.** Si todavía no escribiste tu "sobre mí", un visitante ve una página vacía y rara.
+  Debería aparecer un aviso "en construcción" — pero solo mientras esté vacío.
+- **Incógnita.** No sabés si tu bio va a estar vacía cuando alguien abra la página (podrías borrarla;
+  el evaluador prueba con bio vacía y con bio llena).
+- **Andamiaje inicial:**
   ```
-  // plan:
-  //   cada segundo:
-  //       mirar la hora
-  //       si es antes del mediodía  -> "Buenos días"
-  //       si es antes de las 19h    -> "Buenas tardes"
-  //       si no                     -> "Buenas noches"
-  //       poner ese saludo en la página
+  // datos.sobreMi puede venir vacío. Cuando lo esté, mostrá un aviso de "en construcción".
+  // Cuando no lo esté, mostrá el texto normal — nunca los dos a la vez.
+  // Pista: un texto vacío es "" — comparalo con datos.sobreMi (no con el párrafo que
+  // crees) antes de decidir qué mostrar.
   ```
-- **Entrega.** El saludo corresponde a la hora y se actualiza solo.
-- **Tests ocultos.** El saludo coincide con la hora simulada que inyecta el test · cambia si el test
-  adelanta el reloj · no se acumulan saludos (uno solo, se reemplaza).
-- **Concepto.** Repetición que no termina (`cadaSegundo`) **con una condición adentro**. Primera vez
-  que se combinan las dos capas.
+- **Entrega.** El aviso aparece si y solo si `datos.sobreMi` está vacío.
+- **Tests ocultos.** bio llena → sin aviso · bio vacía → con aviso · el aviso nunca aparece dos veces.
+- **Concepto.** Condicional sobre el estado de un dato (no solo su existencia).
 
-### E9 — "Solo los proyectos terminados" · L2 · sección de proyectos con filtro · N4→N5 · capa 4
+### E8 — "Carrusel de proyectos destacados" · V1 (tarea, sin charla) · repetición automática · N4 · capa 3
+
+- **Necesidad.** Tu portafolio tiene proyectos, pero todos se ven igual en la lista — nada resalta
+  lo que más te enorgullece. Armá un carrusel que muestre, uno a la vez, solo tus proyectos
+  destacados (`datos.proyectos[].destacado`) — y que cambie de proyecto solo, sin que nadie
+  haga nada.
+- **Incógnita.** Cuántos proyectos están marcados como destacados (puede ser ninguno, puede ser
+  todos) **y** que la rotación siga sola mientras la página esté abierta — imposible de escribir
+  a mano.
+- **Andamiaje inicial:**
+  ```
+  // De todos tus proyectos (datos.proyectos), solo algunos tienen destacado: true.
+  // Mostrá uno solo a la vez, y que vaya cambiando cada segundo sin que nadie toque nada.
+  // Pista: filtrá primero los proyectos con destacado true; después usá cadaSegundo()
+  // para ir mostrando uno distinto de esa lista cada vez.
+  ```
+- **Entrega.** El carrusel muestra un proyecto destacado a la vez y rota solo cada segundo; si no
+  hay ninguno destacado, no rompe (mensaje o carrusel vacío, a definir con el equipo — pendiente,
+  ver §7 EN8).
+- **Tests ocultos.** *(pendiente de detalle — reutiliza el mismo mecanismo de `cadaSegundo` que el
+  "saludo dinámico" original; ver EN6 y EN8 en §7).* 0 destacados → sin romper · 1 destacado → se
+  muestra fijo, sin rotar entre uno solo · ≥2 destacados → rota entre todos sin saltarse ninguno.
+- **Concepto.** Repetición que no termina (`cadaSegundo`) **combinada con un filtro** (`destacado`).
+  Reemplaza al "saludo dinámico" descartado (decisión del 19-sep, `docs/decisiones.md`): mismo
+  concepto pedagógico (repetición infinita), pero con peso real en un portafolio — un reloj de
+  saludo no aporta nada visual, un carrusel de proyectos sí.
+
+### E9 — "Solo los proyectos terminados" · L2 · sección de proyectos con filtro · N5 · capa 4
 
 - **Necesidad.** Mostrar tus proyectos, pero solo los terminados — los que están a medias no van en
   el portafolio todavía. Están en `datos.proyectos`, cada uno con un campo `terminado`.
@@ -353,8 +363,9 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 Regla del brief (§2.7, §3, §5.3): **el desbloqueo es por día y para todo el grupo a la vez**,
 independiente del avance individual.
 
-- Cada encargo pertenece a una sesión (`E1–E3 → Ma1`, `E4,E5 → Mi1`, `E6,E7 → Ju1`, `E8 → V1`,
-  `E9 → L2`, `E10 → Ma2`, `E11 → Mi2` — ver la tabla de la §4).
+- Cada encargo pertenece a una sesión (`E1–E3 → Ma1`, `E4,E5,E6 → Mi1`, `E7,E8 → V1`,
+  `E9 → L2`, `E10 → Ma2`, `E11 → Mi2` — ver la tabla de la §4). Ju1 no tiene encargo de código
+  (personalización visual, `review`).
 - Un encargo está `disponible` cuando **hoy ≥ la fecha de su sesión**. No importa si terminaste los
   anteriores ni cuántos intentos llevás.
 - Dentro de una sesión con dos encargos, la plataforma presenta como "activo" el primero que no
@@ -417,4 +428,5 @@ desde el botón *editar mis datos* de la pestaña `datos.js`. Eso alimenta el ob
 | EN3 | **API: `if`/`for` reales vs helpers `si`/`repetir`** | La propuesta usa JS real y lo rotula en español en el panel. Confirmar que no se quiere un DSL |
 | EN4 | **`datos` global vs `obtenerDatos()`** | La propuesta lo hace global para quitar carga del encargo 1. `obtenerDatos()` podría volver como lección sobre valores de retorno más adelante |
 | EN5 | **Caso vacío: ¿mensaje obligatorio desde E6?** | El brief lo pide (§2.3). Definir el texto estándar del mensaje vacío por sección |
-| EN6 | **`cadaSegundo` y los tests** | El autograder necesita poder simular el paso del tiempo (inyectar la hora, adelantar el reloj). Detalle de implementación del grader |
+| EN6 | **`cadaSegundo` y los tests** | El autograder necesita poder simular el paso del tiempo (adelantar el reloj sin esperar segundos reales de verdad) para validar E8 (carrusel). Detalle de implementación del grader |
+| EN8 | **E8 (carrusel): tests ocultos sin definir** | Falta el detalle fino: ¿qué pasa con 0 destacados (mensaje o carrusel vacío)? ¿con 1 solo (se muestra fijo)? ¿cada cuánto rota exactamente? Confirmar con el equipo antes de escribir el autograder de E8 |

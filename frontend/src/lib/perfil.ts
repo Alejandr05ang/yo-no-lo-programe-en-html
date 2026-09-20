@@ -1,6 +1,6 @@
 // "Mis datos" — la información propia del estudiante que alimenta `datos` en la vista previa.
 // Vive en localStorage (por navegador). Los encargos cuya gracia es "datos que no controlás"
-// (E7 hobbies, etc.) igual reciben datos de tamaño variable en los tests ocultos del servidor;
+// (E6 hobbies, etc.) igual reciben datos de tamaño variable en los tests ocultos del servidor;
 // el perfil solo hace que la PREVIEW se sienta propia.
 // En producción esto lo guarda el backend (pantalla de perfil / diagnóstico).
 

@@ -1,12 +1,23 @@
 # Diseño de Plataforma — Taller de Desarrollo Web para Principiantes
 
+> **Nota de versión:** esta revisión reestructura el cronograma y el sistema de niveles a partir de
+> cuatro decisiones: (1) el entregable (portafolio publicado) manda sobre el temario, no al
+> revés; (2) las sesiones antes marcadas de "4 horas" (martes/jueves) son en realidad la misma
+> clase de 2 horas dictada dos veces para dos grupos, no el doble de contenido; (3) el material
+> teórico de referencia ("Tutorías de Verano") deja de ser guía de calendario y pasa a ser consulta
+> puntual; (4) **corrección del 19-sep** — el nivel "reloj/saludo automático" (antes E8) no se
+> elimina sin reemplazo como se planteó en un primer borrador de esta revisión: se **reemplaza**
+> por un carrusel de proyectos destacados, que enseña el mismo concepto (repetición que no
+> termina) con peso visual real en un portafolio — ver §4.1 nota y `docs/decisiones.md`. Las
+> secciones marcadas **[ACTUALIZADO]** cambian respecto a la versión anterior.
+
 ## 1. Concepto general
 
 Plataforma educativa inspirada en la mecánica de **The Farmer Was Replaced**: en vez de niveles explícitos con instrucciones directas ("ahora usa un bucle"), el estudiante enfrenta **necesidades reales** dentro de un proyecto continuo — un portafolio web personal — que solo pueden resolverse aprendiendo el concepto de programación correspondiente. El aprendizaje se descubre por presión del problema, no por instrucción directa.
 
 **Restricción del equipo:** no basarse en HTML5 como lenguaje principal (no se considera "lenguaje de programación" para efectos del taller). Solución: **JavaScript es el lenguaje real**; el HTML se genera como *salida* del código (manipulación del DOM: `createElement`, `appendChild`, `style`, etc.), con una excepción puntual explicada en la sección 5.
 
-**Objetivo final:** cada estudiante termina el taller con un portafolio web personal, real y publicado en internet (no un ejercicio de juguete), construido pieza por pieza a lo largo de dos semanas.
+**Objetivo final:** cada estudiante termina el taller con un portafolio web personal, real y publicado en internet (no un ejercicio de juguete), construido pieza por pieza a lo largo de dos semanas, **publicado una única vez**, al final, no en publicaciones incrementales.
 
 **Público:** estudiantes recién ingresando a programación. Nivel heterogéneo esperado: aproximadamente mitad con bases previas, mitad sin ninguna experiencia.
 
@@ -15,6 +26,7 @@ Plataforma educativa inspirada en la mecánica de **The Farmer Was Replaced**: e
 ## 2. Principios pedagógicos centrales
 
 ### 2.1 Currículo en espiral
+
 No se enseña "domina X, luego pasa a Y" de forma lineal. Se vuelve sobre los mismos conceptos añadiendo una capa nueva cada vez, igual que la progresión del juego:
 
 1. Acción manual (variables, creación de elementos uno a uno)
@@ -23,184 +35,364 @@ No se enseña "domina X, luego pasa a Y" de forma lineal. Se vuelve sobre los mi
 4. Repetición + condición combinadas
 5. Repetición + acciones distintas según el tipo de dato (funciones/ramificación dentro del bucle)
 
-Cada etapa **incluye y reutiliza** la anterior, no la reemplaza. Evita la fatiga de "dos días enteros solo de if/else" porque cada ejercicio nuevo cambia de contexto (aplica el concepto a una pieza distinta y visible del portafolio) aunque el concepto central se repita.
+Cada etapa **incluye y reutiliza** la anterior, no la reemplaza.
+
+**[ACTUALIZADO] La capa visual (color, tipografía, columnas) sigue esta misma regla — no es un tema aislado.**
+Se introduce una sola vez, con sesión propia (N4, Ju1), pero se **reusa** después en dos momentos
+concretos: al aplicar clases condicionalmente sobre proyectos destacados (N7, L2, reutiliza el `if`
+que ya conocen) y al vestir con grid el contenido ya generado (N12, Ju2). Igual que bucles y
+condicionales, no aparece y desaparece — vuelve con una pregunta nueva cada vez.
 
 ### 2.2 Necesidad real, no instrucción directa
+
 El estudiante nunca recibe "usa un `for`". Recibe un problema (por ejemplo: "tienes 12 proyectos y no puedes escribir el código de cada uno a mano") cuya única salida razonable es el concepto nuevo. El descubrimiento es del *cuándo/cómo*, no del *qué existe* — los nombres de métodos y funciones son siempre claros y descriptivos, nunca ofuscados.
 
-### 2.3 Validación automática + desbloqueo por nivel
+### 2.3 Validación automática + desbloqueo por nivel **[ACTUALIZADO]**
+
 Dos capas independientes que trabajan juntas:
 - **Tests ocultos**: miden comprensión real, no solo que "se vea bien" con el ejemplo dado.
-- **Desbloqueo por nivel**: controla el ritmo del grupo sin sustituir la necesidad genuina como motor del aprendizaje.
+- **Desbloqueo por nivel, no por día ni por fecha del calendario**: un nivel se desbloquea cuando su
+  test pasa (o, si es de tipo `review`, cuando el instructor lo confirma) — no cuando llega su
+  sesión programada. El calendario en §4 indica cuándo se **dicta** cada nivel, no cuándo el
+  estudiante debe completarlo.
 
-**Nota sobre granularidad (revisión post-frontend):** originalmente el desbloqueo se pensó como "un nivel por día", pero con la capa de frontend añadida (§5) varios días ya combinan más de un concepto discreto con su propia necesidad real y su propia pieza de portafolio — evaluarlos como un solo checkpoint pierde precisión diagnóstica (si el test falla, no queda claro cuál de los conceptos del día fue el problema). Se ajusta el modelo a **varios niveles por día cuando el contenido lo amerita**, ver tabla de niveles en §4.1.
+El sistema distingue dos tipos de nivel:
+- **`code`** — se completa vía autograder (test oculto pasa → completado). Es la mayoría.
+- **`review`** — no tiene "respuesta correcta" única (personalización visual, vestir el portafolio).
+  Se marca completo por confirmación del instructor sobre un checklist mínimo (p. ej. "¿cambió al
+  menos una variable de color y aplicó al menos una clase de grid?"), no por test oculto.
+
+Esto reemplaza el modelo anterior de "un nivel por día": con el contenido reorganizado en torno al
+entregable, varios niveles caen en la misma sesión y otros (V1) se resuelven como tarea sin charla —
+ver tabla completa en §4.1.
 
 ### 2.4 Defensa anti-IA vía evaluación, no vía ofuscación
+
 El código sigue siendo legible y con nombres claros. La defensa contra copiar-pegar de una IA está en cómo se evalúa: tests ocultos, checkpoints orales, ejercicios de depuración/lectura de código — no en hacer el código difícil de entender.
 
 ### 2.5 Contenido dinámico sin persistencia en servidor
+
 El estado del portafolio interactivo vive en el navegador del visitante (no hay backend que lo guarde). Simplifica la arquitectura y evita temas fuera de alcance del taller.
 
+### 2.6 El entregable manda sobre el temario **[NUEVO]**
+
+Si un tema teórico normalmente tarda más de lo que el calendario permite, el taller se adelanta
+igual — no se retrasa la construcción del portafolio por completitud teórica. El material de
+referencia ("Tutorías de Verano", ver §5.9) documenta el ecosistema completo de la plataforma; el
+taller solo dicta lo que hace falta para que el estudiante construya y publique su propia página.
+Consecuencia directa: el portafolio se divide en dos columnas (§4.2) — una **vertebral**, que nadie
+sale del taller sin tener, y una de **expansión**, que se dicta en el orden en que el tiempo alcance
+y es lo primero que se recorta si algo se atrasa.
+
 ---
 
-## 3. Manejo de grupo heterogéneo
+## 3. Manejo de grupo heterogéneo **[ACTUALIZADO]**
 
-- Los días de 4 horas (martes/jueves) se dividen en dos bloques: primera mitad explicación a ritmo de principiante para todos, segunda mitad práctica con supervisión cercana a quien no tiene base, mientras quien sí tiene experiencia avanza con menos supervisión hacia los retos opcionales.
-- El diagnóstico final (mismo formato, provisto por superiores) sirve como comparación y como señal para ajustar el ritmo en futuras cohortes.
+Todas las sesiones son de **2 horas de contenido**. Los días antes marcados "martes/jueves = 4h" en
+realidad dictan la misma sesión de 2h **dos veces**, para dos grupos distintos — no el doble de
+contenido en un solo bloque continuo. Esto invalida el modelo anterior de "primera mitad
+explicación general, segunda mitad práctica supervisada con dos velocidades dentro del mismo
+grupo", que dependía de tener 4 horas continuas con un solo grupo.
+
+**Pendiente de definir (ver §9):** cómo se resuelve la práctica supervisada dentro de una sesión de
+2h para quien no tiene base, ahora que no existe el bloque largo que la sostenía.
+
+El diagnóstico final (mismo formato, provisto por superiores) sirve como comparación y como señal para ajustar el ritmo en futuras cohortes.
 
 ---
 
-## 4. Cronograma — 2 semanas, 5 días/semana
+## 4. Cronograma — 2 semanas, 5 días/semana **[REESCRITO]**
 
-Formato de sesión: Lunes/Miércoles/Viernes = 2h · Martes/Jueves = 4h
+Formato de sesión: **todas las sesiones son de 2h**. Martes y jueves se dictan dos veces (dos
+grupos), no se duplica contenido por tener más horas de reloj.
 
-| Día | Duración | Contenido en clase (núcleo) | Pieza del portafolio | Tarea en casa (capa de decoración) |
-|---|---|---|---|---|
-| L1 | 2h | Diagnóstico inicial (provisto por superiores) + intro a programación + cómo funciona una página web (roles de HTML/CSS/JS) + tour rápido de DevTools | Setup del entorno | — |
-| Ma1 | 4h | Diagramas de flujo + pseudocódigo (intro formal) → Variables + creación de elementos vía DOM → HTML semántico de lectura (esqueleto ya dado: `header`, `nav`, `main`, `section`, `footer`) | Header + sección "sobre mí" | Aplicar su propia paleta de colores vía variables CSS en `:root` |
-| Mi1 | 2h | Práctica de variables, más elementos, primer vistazo a condicionales | Info de contacto / redes | Personalizar tipografía (Google Fonts) y espaciados |
-| Ju1 | 4h | Condicionales completos (con flowchart/pseudocódigo breve previo) → intro a bucles → formulario de contacto: leer valores de inputs, `addEventListener` en `submit`, validación mínima con condicionales | Saludo dinámico + navegación/lista repetitiva + formulario de contacto | Estilizar el formulario a su gusto |
-| V1 | — | **Sin charla presencial.** Tarea autónoma: consolidación de bucles (reloj/carrusel) + `addEventListener` en botones (prev/next), con guía escrita y/o video corto de apoyo (ver §7.5) | Reloj/carrusel en la página | Ajustar animación o transición del carrusel |
-| L2 | 2h | Bucle + condicional combinados (filtrar lista de proyectos) → aplicar clases CSS desde JS (`classList.add`) según condición | Sección de proyectos con filtro | — |
-| Ma2 | 4h | Manejo de matrices (arrays de arrays: proyectos agrupados por categoría, tabla de skills) + intro a funciones/métodos + `.length` y otras propiedades/métodos de array y string como herramienta, no como tema aislado → layout con Grid/Flexbox (dividir en columnas/secciones) usando clases ya provistas | Skills o proyectos agrupados, en grid de columnas | Reordenar/personalizar el grid, ajustar breakpoints simples |
-| Mi2 | 2h | Funciones: bucle + acciones distintas según tipo de dato + responsive: media queries básicas ya provistas, probar en DevTools en modo móvil | Proyectos con renderizado distinto según tipo, portafolio responsive | Revisar su propio portafolio en el celular real |
-| Ju2 | 4h | Git/GitHub básico (`add`, `commit`, `push`) + deploy en Vercel/Netlify + pulido general | Página publicada con URL real | Decoración libre final antes de la demo |
-| V2 | 2h | Diagnóstico final (comparación) + demo/presentación de portafolios | — | — |
+### 4.1 Tabla de niveles (13 niveles núcleo + 2 sub-niveles de consola)
 
-Notas:
-- Diagramas de flujo y pseudocódigo no son un bloque teórico aislado: se reutilizan brevemente antes de cada concepto nuevo (condicionales, bucles, etc.) como herramienta de planeación, no como tema separado.
-- Matrices se introducen a mitad de curso, cuando ya existe una necesidad real que las justifica (agrupar por categoría), no al inicio.
-- Git/deploy queda al final, cuando ya hay contenido real que vale la pena publicar.
-- **La capa de decoración (columna derecha) es intencionalmente abierta**: en clase se exige que el ejercicio base funcione (la lógica, el evento, el dato mostrado); la estética personal — colores, tipografía, animaciones, orden del grid — queda para que cada estudiante la resuelva en casa a su ritmo, sin consumir horas de instrucción. Esto es lo que permite meter la capa de frontend completa sin recortar tiempo de lógica.
-- **V1 (primer viernes) no tiene charla presencial.** Los estudiantes avanzan ese nivel por su cuenta, como tarea. Es una excepción deliberada al resto del diseño (que evita instrucción sin supervisión para quien no tiene base, §3), mitigada por dos factores: (a) el contenido de ese día es mayormente **consolidación**, no un concepto nuevo — los bucles ya se explicaron en Ju1, aquí solo se aplican a un caso distinto (repetición automática); solo `addEventListener` en botones es una extensión menor de lo visto en Ju1 (mismo comando, evento distinto); y (b) debe ir acompañado del material de apoyo autónomo de §7.5 (guía escrita paso a paso y/o video corto), que sin esta ausencia de charla sería solo "recomendado" y aquí pasa a ser **necesario** para ese día específico. Ver riesgo y seguimiento en §9.
+El número de nivel es el orden del **concepto**, no de la fecha. "Capa" refiere a la progresión
+espiral de §2.1 (1=acción manual … 5=bucle+tipo de dato). Tipo: `code` (test oculto) o `review`
+(confirmación de instructor).
 
-### 4.1 Niveles (desbloqueo granular, no 1-por-día)
+| N | Tema (un solo concepto) | Tipo | Capa | Sesión | Encargo(s) |
+|---|---|---|---|---|---|
+| N1 | Variables + crear/mostrar elementos (DOM) | code | 1 | L1 (inicio) → Ma1 (cierre) | E1, E2, E3 |
+| N2 | Condicional: mostrar según **exista** un dato | code | 2 | Mi1 | E4 |
+| N3 | Bucle sobre una colección de tamaño desconocido | code | 3 | Mi1 (misma sesión) | E5 → E6 |
+| N4 | Personalización visual: paleta, tipografía, columnas | review | — | Ju1 | — (sin test oculto) |
+| N5 | Condicional sobre el **estado** de un dato + repetición automática con filtro | code | 2→3 | V1 *(tarea, sin charla)* | E7, E8 |
+| N6 | Bucle + condición para filtrar | code | 4 | L2 | E9 |
+| N7 | Clases CSS desde JS según condición (destacados) | review | — | L2 (misma sesión, reusa N6) | E9-ext *(por definir, ver §9)* |
+| N8 | Matrices + primera función propia | code | 5 | Ma2 | E10 |
+| N9 | Función que ramifica según el tipo de dato | code | 5 | Ma2 (misma sesión) | E11 |
+| N10 | Consola — resolver un turno | code | 5 | Mi2 | Batalla A |
+| N11 | Consola — combate completo | code | 5 | V2 *(quien termine temprano)* | Batalla B |
+| N12 | Vestir el portafolio: grid en skills + repaso visual | review | — | Ju2 (reusa N4/N7) | — |
+| N13 | Git: `add` / `commit` / `push` | verificado | — | V2 | — |
+| N14 | Deploy (Netlify/Vercel) — **evento único** | verificado | — | V2 | — |
 
-Con la capa de frontend integrada, varios días desbloquean más de un nivel — cada uno con su propio checkpoint de validación (test oculto). El catálogo detallado (qué es y qué no es un "nivel", numeración, dependencias, reglas de imágenes) vive en `niveles.md` — 16 niveles de tipo `code` en 9 días de contenido efectivo (el conteo inicial de 20 incluía contenido de apoyo sin test oculto, como diagramas de flujo o el tour de DevTools, que no son niveles jugables — ver `niveles.md` §"Cambios de esta revisión").
+**E12 "formulario de contacto" queda sin sesión asignada — ver §9, pendiente crítico.**
 
-No cambia el cronograma ni las horas totales — es la misma secuencia, evaluada con más granularidad. El requisito técnico correspondiente está en §7.3.1: el autograder debe poder desbloquear y validar varios checkpoints dentro de una misma sesión (no solo al cierre del día), y la barra de progreso que ve el estudiante debe reflejar nivel, no día, para que el avance se sienta continuo — más parecido al juego original — en vez de en bloques de una jornada completa.
+**N5 combina dos encargos cortos en el mismo día autónomo (corrección del 19-sep):** un primer
+borrador de esta revisión eliminaba el nivel "reloj/saludo automático" (antes E8) sin
+reemplazo, por considerar que un bucle infinito en pseudocódigo no aportaba peso visual real a
+un portafolio. Se revirtió esa decisión: el concepto (repetición que no termina, `cadaSegundo`)
+se mantiene porque es la única forma de introducir ese patrón antes de la consola (N10/N11), pero
+se **re-encarna** como **carrusel de proyectos destacados** (E8) — filtra `datos.proyectos` por
+`destacado` y rota uno a la vez, en vez de mostrar un saludo según la hora. E8 se dicta el mismo
+día que E7 (aviso condicional), ambos en V1 (tarea autónoma, sin charla), y no consume una sesión
+propia porque los dos encargos son cortos y V1 ya era el día "sin charla" reservado para
+consolidación. Ver `docs/decisiones.md` para el detalle del hallazgo que motivó la reversión.
+
+### 4.2 Columna vertebral vs. expansión
+
+- **Vertebral (nadie sale sin esto):** N1, N2, N3, N6, N13, N14. Identidad + contacto + lista +
+  proyectos filtrados + publicación.
+- **Expansión (se dicta en el orden que el tiempo permita):** N4, N5, N7, N8, N9, N10, N11, N12,
+  y el formulario (E12) una vez ubicado.
+- **Orden de recorte si algo se atrasa** (de lo primero que se cae a lo último, la vertebral nunca
+  se toca): N11 (combate completo) → N9 → N12 → N8 → N7.
+
+### 4.3 Cronograma día a día
+
+**Semana 1 — construir la base vertebral**
+
+| Día | Nivel(es) dictados | Al cerrar la sesión, el estudiante tiene... |
+|---|---|---|
+| L1 | Diagnóstico inicial (externo, fijo) + orientación mínima (DevTools, tour del editor) + arranque de N1 (E1) | Su nombre apareciendo en una página que él mismo generó |
+| Ma1 | N1, cierre (E2, E3) | Identidad completa: nombre + bio + secciones |
+| Mi1 | N2 (E4) + N3 (E5 → E6) | Contacto reactivo a datos + lista de hobbies generada desde un array |
+| Ju1 | N4 — personalización visual | Su paleta, su tipografía, su layout en columnas propios |
+| V1 *(tarea, sin charla — §7.5 obligatorio)* | N5 (E7, E8) + **reto creativo del fin de semana**: embellecer con lo aprendido el jueves | El aviso condicional resuelto, el carrusel de destacados rotando solo, y un portafolio con esfuerzo estético real detrás |
+
+**Semana 2 — completar, vestir y publicar una sola vez**
+
+| Día | Nivel(es) dictados | Al cerrar la sesión, el estudiante tiene... |
+|---|---|---|
+| L2 | N6 (E9) + N7 (destacados con `classList`, reusa N4) | Proyectos filtrados **y** marcados visualmente — columna vertebral del contenido completa |
+| Ma2 | N8 (E10) + N9 (E11) | Skills agrupados por categoría + proyectos renderizados distinto según su tipo |
+| Mi2 | Consolidación N8–N9 + N10, consola "un turno" | Ejercicios reforzados + primer combate resuelto en consola |
+| Ju2 | **Sin terminal, sin comandos, sin ejecución.** N12: vestir el portafolio (grid en skills, repaso de paleta/tipografía/`classList` sobre contenido real). Últimos 15 min: descargar el repo como zip y **leer** el código, sin ejecutar nada | El sitio se ve terminado — pero aún no existe en internet (cliffhanger deliberado) |
+| V2 | N13 + N14: Git y deploy **(evento único)** + diagnóstico final (externo, fijo) + demo. Quien termine temprano → N11, consola "combate completo" | **URL pública real**, publicada el mismo día que se muestra |
 
 ---
 
 ## 5. Capa de frontend — desarrollo completo
 
-Este bloque estaba subdesarrollado en la versión anterior del documento: todo el cronograma resolvía lógica de programación general y el portafolio era solo el escenario donde se veía el resultado, pero CSS, HTML semántico, eventos, formularios y responsive no estaban asignados a ningún día. Se cierran aquí como confirmado por el equipo: **CSS, HTML semántica, eventos, formularios, responsive, división en columnas/secciones (grid/flexbox), y métodos/propiedades como `.length`/`.size`**. A diferencia de diagramas de flujo, pseudocódigo y matrices, el tema de HTML/frontend no viene impuesto por los superiores — es una decisión propia del equipo docente, lo cual da libertad para resolverlo con el criterio de costo-beneficio que sigue.
+### 5.1 Por qué el modelo es "núcleo en clase + decoración en casa"
 
-### 5.1 Por qué el modelo es "base en clase + decoración en casa"
-El límite real del taller son las horas (28 totales, ~24 efectivas descontando diagnósticos y demo), no el temario. Enseñar CSS "de verdad" costaría varias horas que no existen. La salida es separar **funcionalidad** (se explica, se practica, se evalúa en clase) de **estética** (el estudiante la resuelve solo, fuera de clase, sin supervisión). Esto:
-- Mantiene el foco de las horas de clase en lógica + la conexión mínima con el DOM/CSS/eventos.
-- Le da a cada estudiante un portafolio visualmente distinto sin que eso cueste tiempo de instructor.
-- Funciona como gancho motivacional adicional al de "tu página ya existe en internet": también se ve distinta a la de su compañero.
+El límite real del taller son las horas, no el temario. La salida es separar **funcionalidad** (se
+explica, se practica, se evalúa en clase) de **estética libre** (paleta exacta, animaciones,
+cantidad final de columnas — el estudiante la resuelve solo, sin supervisión, más allá de lo que ya
+cubre N4/N12).
 
-### 5.2 CSS — por clases, no por hoja de estilos desde cero
-No se enseña CSS como bloque teórico. Se entrega una librería corta de clases ya escritas (`.card`, `.grid`, `.badge-destacado`, `.nav`, etc.) y el estudiante las aplica **desde JavaScript** con `classList.add()`/`classList.toggle()`. Esto reutiliza los condicionales que ya vieron (*si el proyecto es destacado, agrégale la clase destacado*) y enseña de una sola vez que las clases son el punto de unión entre HTML, CSS y JS. Variables CSS en `:root` para color/tipografía/espaciado son la vía de personalización en casa: cambiar 5 valores basta para que el portafolio se vea distinto.
+### 5.2 CSS — por clases, no por hoja de estilos desde cero **[ACTUALIZADO — vuelve a núcleo]**
+
+Aplicar clases predefinidas (`.card`, `.grid`, `.badge-destacado`, `.nav`) **desde JavaScript** con
+`classList.add()`/`classList.toggle()` es **núcleo evaluado**, no decoración libre — se había
+recortado por presupuesto de horas en una revisión anterior y fue un error: sin esto, la capa
+visual introducida en N4 queda huérfana, sin volver a aparecer en el resto del curso, rompiendo la
+regla del currículo en espiral (§2.1). Vive en dos niveles: N7 (L2, condicional sobre destacados) y
+N12 (Ju2, aplicado al grid de skills).
+
+Variables CSS en `:root` para color/tipografía/espaciado siguen siendo la vía de personalización
+libre además de lo cubierto en N4/N12.
 
 ### 5.3 HTML semántico — por lectura, no por escritura
-Se mantiene la decisión de que el HTML dinámico sale del DOM, nunca escrito a mano por el estudiante — **excepto** el esqueleto base (`index.html` con `header`, `nav`, `main`, `section`, `footer` ya puestos), que se entrega resuelto y se **explica por qué existe cada etiqueta** en 15 minutos (Ma1). El estudiante lee y entiende la semántica; no la escribe desde cero. Esto resuelve la deuda de "todo termina siendo `div`" sin convertir el taller en un curso de HTML.
 
-### 5.4 Eventos — nombrado explícitamente, no improvisado
-En el cronograma anterior, el filtro de proyectos (L2) y el carrusel (V1) ya requerían `addEventListener` sin que el tema estuviera asignado a ningún día, dejándolo a la improvisación de quien dictara esa sesión. Ahora `addEventListener` se introduce formalmente en Ju1 (con el formulario de contacto) y se reutiliza en V1 (carrusel) y L2 (filtro), siguiendo la misma lógica de espiral que el resto del curso: se nombra una vez, se reusa varias.
+Sin cambios: el esqueleto (`header`, `nav`, `main`, `section`, `footer`) se entrega resuelto y se
+explica por lectura en la orientación de L1/Ma1, nunca se escribe a mano.
+
+### 5.4 Eventos
+
+`addEventListener` se necesita para el formulario de contacto (E12). **Sesión pendiente de asignar
+— ver §9.**
 
 ### 5.5 Formularios
-El formulario de contacto (estándar en un portafolio) se resuelve con lo mínimo necesario: leer valores de `input`/`textarea`, `addEventListener` en el evento `submit`, `preventDefault()`, y validación mínima con los condicionales que ya conocen (campo vacío, formato de email simple). No se entra en envío real a servidor (coherente con 2.5: sin persistencia en servidor).
+
+Sin cambios de contenido (leer `input`/`textarea`, `submit` + `preventDefault()`, validación mínima
+con los condicionales que ya conocen). Cambia solo su ubicación en el calendario — pendiente.
 
 ### 5.6 Responsive y DevTools
-Se resuelve en dos momentos baratos: (a) L1, como parte de la orientación inicial ("cómo funciona una página web"), tour de 10-15 min por el inspector/consola — es lo que los vuelve autónomos para depurar sin ayuda; (b) Mi2, media queries básicas ya provistas en las clases entregadas, y prueba real en el celular de cada estudiante como tarea.
 
-### 5.7 División en columnas/secciones (Grid/Flexbox) y métodos como `.length`
-Se introduce en Ma2, en el mismo momento que matrices y funciones, porque ahí aparece la necesidad real: agrupar proyectos por categoría o mostrar skills en tabla ya requiere pensar en filas/columnas visuales, no solo en la estructura de datos. Igual que con las clases CSS, se entrega el layout resuelto (clases de grid/flexbox ya escritas) y el estudiante decide cuántas columnas usar y cómo reordenar según sus datos. `.length` (y equivalentes como `.size` en otras estructuras) se enseña como herramienta que ya necesitan para saber cuántos elementos recorrer o mostrar — no como tema aislado, sino en el momento en que el bucle sobre el array lo exige.
+DevTools se resuelve en 10-15 min dentro de la orientación de L1. **Media queries y prueba en
+celular real salen de la fila de niveles evaluados** (recorte de presupuesto de horas, §4.2): quedan
+como parte del andamiaje entregado (§5.8), no como nivel con test propio.
+
+### 5.7 Grid/Flexbox y `.length`
+
+Grid/flexbox se evalúa en N12 (Ju2), aplicado sobre contenido real ya generado — ya no como nivel
+propio con test oculto de layout desde cero, sino como parte de "vestir el portafolio". `.length`
+se absorbe dentro de N8 (matrices) como herramienta necesaria, no como tema aislado — **sigue
+bloqueado por el hallazgo de beta de §7.4**, sin resolver.
 
 ### 5.8 Resumen por capas
 
 | Capa | Qué significa | Qué entra |
 |---|---|---|
-| **Núcleo** (clase, evaluado) | Se explica, se practica, se evalúa | Lógica completa + DOM + eventos + formularios + aplicar clases CSS/grid desde JS + Git/deploy |
-| **Andamiaje** (entregado, usado) | Se entrega funcionando; el estudiante lo usa y modifica, no lo escribe desde cero | Hoja de estilos con clases y variables `:root`, esqueleto HTML semántico, clases de grid/flexbox, media queries base |
-| **Decoración libre** (tarea, no evaluado como núcleo) | El estudiante lo resuelve solo, a su gusto, fuera de clase | Paleta de colores, tipografía, animaciones, orden/cantidad de columnas, ajustes finos de estilo |
+| **Núcleo** (clase, evaluado) | Se explica, se practica, se evalúa | Lógica completa + DOM + `classList` condicional (N7, N12) + Git/deploy |
+| **Andamiaje** (entregado, usado) | Se entrega funcionando; el estudiante lo usa y modifica | Hoja de estilos con clases y variables `:root`, esqueleto HTML, clases de grid/flexbox, media queries base |
+| **Decoración libre** (sin supervisión) | El estudiante lo resuelve solo, a su gusto | Animaciones, ajustes finos más allá de N4/N12, orden exacto de columnas |
+
+### 5.9 Rol del material teórico de referencia ("Tutorías de Verano") **[NUEVO]**
+
+La página teórica usada para explicar el ecosistema de la plataforma **no es guía de calendario**.
+De sus 10 temas, solo una parte es materia que el estudiante ejercita en el editor:
+
+| Tema de la página | ¿Es currículo del taller? | Dónde vive |
+|---|---|---|
+| 1. Entrada, Proceso y Variables | Sí | N1 |
+| 2. Condicionales | Sí | N2, N5 |
+| 3. Bucles | Sí | N3 |
+| 4. Arrays | Sí | N8 (matrices) |
+| 5. HTML / DOM | Sí, por lectura | §5.3 |
+| 6. CSS y Diseño | Sí, reencuadrado | N4, N7, N12 |
+| 7. React y Componentes | **No** — describe cómo está construida la plataforma, no algo que el estudiante programa | Referencia únicamente |
+| 8. Interactividad y Estado | **No** — describe la arquitectura interna (React state, localStorage del prototipo) | Referencia únicamente |
+| 9. Lógica Combinada | Sí | N9, N10, N11 (consola) |
+| 10. Build y Despliegue | Parcial — el flujo de Netlify descrito ahí es el de referencia; en el taller el deploy es manual, guiado, evento único | N14 |
+
+Si un tema de esta lista tarda más en explicarse de lo que el calendario del taller permite, el
+taller avanza igual (§2.6) — la página queda como consulta posterior, no como bloqueo.
 
 ---
 
 ## 6. Otros elementos del taller
 
 ### 6.1 Sistema de pistas y ejercicios de depuración
-- Módulo opcional de ejercicios de lectura/depuración de código (mostrar código con error o pedir predicción de output) como parte de la evaluación formativa.
 
-### 6.2 Retos opcionales ("platino")
-- Memoria de imágenes, Ahorcado, Buscaminas, Serpiente, Tanques, Space Invaders — implementados como mini-retos **separados** del portafolio principal, con su propio desbloqueo progresivo.
-- No deben bloquear ni ser requisito para avanzar en el portafolio principal.
-- Ejercicios adicionales sugeridos por retroalimentación de beta (banco de retos, no necesariamente en el flujo obligatorio):
-  - Sumas y multiplicaciones básicas como primeros pasos de práctica temprana.
-  - Generar una lista de pares/impares a partir de un array — dos caminos válidos de resolución: con un método de array (ej. `filter`), o con un `for` que incremente de dos en dos desde cero. Útil como ejemplo concreto en la sesión de bucles/arrays por tener más de una solución razonable.
+Módulo de ejercicios de lectura/depuración de código (mostrar código con error o pedir predicción
+de output) como parte de la evaluación formativa. **No ocupa sesión propia** — el contenido de Ju2
+(§4.3) es vestir el portafolio, no depuración; este módulo queda disponible como recurso transversal
+de refuerzo, no como bloque fijo de calendario.
+
+### 6.2 Batalla por turnos en consola — núcleo, no reto opcional **[ACTUALIZADO]**
+
+**Deja de ser un reto "platino" opcional** — es capstone curricular de la capa 5 del espiral (N10,
+N11), con test oculto y sesión asignada (Mi2 y V2). Se ejecuta **únicamente en consola/texto plano**,
+nunca se mezcla con el DOM ni con el preview del portafolio.
+
+- **N10 "Un turno":** dos criaturas con vida y un ataque con tipo. Tests: mismo par de tipos → mismo
+  daño · tipo no previsto en la tabla → daño normal, sin romper · la vida nunca queda negativa.
+- **N11 "Combate completo":** incógnita — cuántos turnos dura, no se sabe al escribir el código.
+  Tests: con acciones fijas inyectadas, el registro coincide turno a turno · el combate siempre
+  termina · gana quien debe ganar · vida inicial en 0 no rompe. Las acciones del jugador entran
+  como array precargado que el test sustituye (igual que `datos.proyectos` en los demás encargos),
+  no vía `prompt()`, para que el autograder corra el combate de forma determinista.
+
+**Retos opcionales ("platino") restantes, sin cambios:** Memoria de imágenes, Ahorcado, Buscaminas,
+Serpiente, Tanques, Space Invaders — separados del portafolio principal, no bloquean el avance,
+desbloqueo propio.
 
 ### 6.3 Módulo de cierre (Git/Deploy)
-- Guía o mini-tutorial integrado para: inicializar repo, `git add`/`commit`/`push`, y conexión con Vercel o Netlify para deploy automático.
-- Idealmente con verificación de que el deploy fue exitoso (mostrar la URL pública generada al estudiante dentro de la plataforma).
+
+Guía o mini-tutorial integrado para: inicializar repo, `git add`/`commit`/`push`, y conexión con
+Vercel o Netlify. **Se ejecuta una sola vez, el viernes final (V2)** — no hay publicaciones
+incrementales durante la semana 2. Idealmente con verificación de que el deploy fue exitoso
+(mostrar la URL pública generada dentro de la plataforma).
 
 ---
 
 ## 7. Requisitos técnicos de la plataforma
 
 ### 7.1 Editor de código
-- Editor embebido en el navegador: Monaco Editor (motor de VS Code) o CodeMirror.
-- Debe soportar resaltado de sintaxis tipo JavaScript.
+
+Editor embebido en el navegador: Monaco Editor (motor de VS Code) o CodeMirror. Debe soportar
+resaltado de sintaxis tipo JavaScript.
 
 ### 7.2 Entorno de ejecución / sandbox
-- Ejecución del código del estudiante en `iframe` aislado o Web Worker.
-- Debe reflejar en vivo el resultado (vista previa del portafolio actualizándose en tiempo real), simulando "ver el dron trabajar" del juego original.
-- La vista previa debe poder alternarse entre tamaño de escritorio y móvil, para la práctica de responsive (Mi2).
+
+Ejecución del código del estudiante en `iframe` aislado o Web Worker, con vista previa en vivo.
+Alternable entre tamaño de escritorio y móvil.
+
+**[NUEVO] Modo consola.** N10 y N11 no tienen DOM ni preview de página — necesitan un modo de
+salida de texto plano dentro del mismo sandbox. El modelo de datos de cada encargo necesita un
+campo de contexto (p. ej. `contexto: 'portafolio' | 'consola'`) para que el frontend sepa qué
+renderizar. Es el cambio técnico más grande de esta revisión — confirmar con el equipo de build
+antes de implementar los encargos de consola.
 
 ### 7.3 Librería de clases CSS y esqueleto entregado
-- El sistema debe poder inyectar en el sandbox del estudiante, desde el día 1: una hoja de estilos base con clases predefinidas (`.card`, `.grid`, `.badge-destacado`, `.nav`, utilidades de grid/flexbox), variables `:root` para paleta/tipografía/espaciado, y el `index.html` esqueleto con etiquetas semánticas.
-- El estudiante no debe poder romper accidentalmente este archivo base al editar solo su JS (separación de archivos: su código vs. el andamiaje entregado).
 
-### 7.3.1 Desbloqueo granular por nivel (no por día)
-- El autograder debe soportar múltiples checkpoints/tests ocultos dentro de una misma sesión de clase, no solo uno al cierre del día — ver tabla de niveles en §4.1 (días de 4h llegan a desbloquear hasta 3 niveles).
-- La barra/indicador de progreso visible para el estudiante debe representar nivel, no día, para que el avance se perciba continuo.
-- El sistema de desbloqueo debe permitir que un nivel quede marcado como "autónomo" (sin charla asociada, ver V1 en §4.1) y aun así validarse con el mismo test oculto que un nivel con charla — la diferencia está en la ausencia de instrucción en vivo, no en el rigor de la evaluación.
+Sin cambios: hoja de estilos base con clases predefinidas, variables `:root`, `index.html`
+esqueleto con etiquetas semánticas, inyectados desde el día 1. Separación de archivos: el
+estudiante no puede romper accidentalmente el andamiaje editando solo su JS.
 
-*(Continúa igual que la versión anterior del documento: sistema de desbloqueo por día, autograder con tests ocultos, manejo de copias/checkpoints orales, retos opcionales, módulo de Git/deploy — ver secciones 6 y 8.)*
+### 7.3.1 Desbloqueo por nivel, no por día
 
-### 7.4 Hallazgos de la beta con tester técnico (retroalimentación por audio, 12-sep)
+El autograder soporta múltiples checkpoints por sesión (ver §2.3). La barra de progreso visible
+para el estudiante representa **nivel**, no día ni fecha. Un nivel `review` se marca completo por
+confirmación del instructor sobre un checklist, no por test oculto — mismo pipeline de
+"completado/pendiente" que un nivel `code`, pero validado distinto.
 
-Un compañero con experiencia en programación probó la plataforma beta. Al ya conocer código, su lectura de "qué falta" pesa más en lo técnico que en la experiencia de un estudiante nuevo — pero él mismo advierte que para alguien de primer/segundo ciclo el punto de entrada sería más confuso todavía que lo que él vivió. Se separan ambos tipos de hallazgo:
+### 7.4 Hallazgo de beta pendiente — `.length` en el autocompletado
 
-**Correcciones de UI (bug, no diseño):**
-- El botón "Entregar a revisión" tiene muy poco contraste frente al botón "Ejecutar", que sí resalta bien — el tester literalmente no lo encontró estando justo al lado. Requiere el mismo tratamiento visual (color/tono destacado) que "Ejecutar".
-- El flujo de bloqueo por checkpoint (el sistema le impidió seguir probando porque "faltaba código de una revisión anterior") no comunica con claridad qué falta o qué revisar — riesgo de frustración también para un estudiante real, no solo para un tester.
+**Sigue sin resolver.** El autocompletado del editor no incluye `.length` actualmente, lo cual
+choca con su uso como herramienta necesaria en N8 (matrices). Debe confirmarse antes de esa sesión
+si se habilita en el editor o si el diseño de N8 debe ajustarse a lo que la plataforma permite hoy.
+El autocompletado también muestra entradas ambiguas sin distinguir origen (`decodeURI`, `document`,
+`date`, `image`, `file`) — pendiente de auditoría.
 
-**Desalineación entre diseño y build actual — requiere resolución antes de Ma2:**
-- El autocompletado del editor **solo expone las funciones que el proyecto habilita explícitamente**, y actualmente **no incluye `.length`** ni condicionales asociadas a su uso. Esto choca directamente con la decisión de §5.7 (`.length` como parte del núcleo curricular en Ma2, enseñado en el momento en que el bucle sobre el array lo exige). Antes de llegar a esa sesión del taller, hay que confirmar si `.length` (y equivalentes que se necesiten, como comparar tamaño de dos strings) van a habilitarse en el editor, o si el diseño pedagógico debe ajustarse a lo que la plataforma realmente permite.
-- El autocompletado también muestra entradas ambiguas sin distinguir origen ni funcionalidad: `decodeURI`, `decodeURIComponent`, `document`, `date`/`var date`, `image`, `file`. No queda claro para el usuario cuáles son nativas de JS, cuáles son del proyecto, ni si todas funcionan correctamente. Pendiente: auditar qué se expone en el editor, ocultar lo que no debe estar visible en esta etapa del curso, y documentar el resto.
+### 7.5 Onboarding para V1 (día sin charla)
 
-### 7.5 Onboarding para primer contacto con el editor
-
-Recomendación (no cerrada, sugerida por el tester como idea abierta): dado que él pudo intuir el flujo por su experiencia previa, pero anticipa que un estudiante de primer ciclo sin experiencia lo encontraría "riesgoso"/confuso al inicio, se evalúan dos mecanismos de entrada:
-- **Video corto (1-2 min)** de demostración del flujo básico del editor — no un tutorial exhaustivo, sino "aquí escribes, aquí pasa esto, siguiente paso" (referencia: tutoriales de setup rápido tipo servidores de Minecraft).
-- **Tour guiado en el primer uso** del editor, al estilo Google Sheets/Docs, señalando qué es cada botón/zona de la interfaz.
-
-Ambos quedan como mejora recomendada para la plataforma en general, a evaluar según tiempo de desarrollo disponible — no bloquean el lanzamiento de la beta.
-
-**Excepción:** para el día V1 (§4, sin charla presencial), al menos uno de los dos mecanismos deja de ser opcional y pasa a ser **necesario**, porque ese día no hay instructor explicando en vivo — el material de apoyo es la única guía que tendrá el estudiante para N10/N11.
+Sigue siendo **obligatorio**, no opcional, para V1: video corto (1-2 min) y/o tour guiado del
+editor — es la única guía que el estudiante tiene ese día para N5 y para el reto creativo del fin
+de semana, al no haber instructor en vivo.
 
 ---
 
 ## 8. Resumen de decisiones ya cerradas (no requieren más discusión)
 
-- Lenguaje real: JavaScript. HTML dinámico como salida del DOM; el único HTML escrito de antemano es el esqueleto semántico entregado y explicado por lectura (ver 5.3).
-- El sistema de niveles del juego original se traduce en "necesidad real" + desbloqueo por nivel (granular, no un checkpoint único por día — ver §4.1), no en instrucciones directas tipo "usa un for".
+- Lenguaje real: JavaScript. HTML dinámico como salida del DOM; único HTML escrito de antemano es
+  el esqueleto semántico entregado y explicado por lectura (§5.3).
+- Desbloqueo por **nivel**, no por día ni por fecha — el calendario en §4 es guía de dictado, no
+  contrato de avance.
 - Nombres de funciones/métodos descriptivos, sin ofuscación.
-- Defensa anti-IA vía evaluación (tests ocultos + checkpoints orales + depuración), no vía dificultar la lectura del código.
-- Portafolio construido de forma incremental y acumulativa (currículo en espiral), no en bloques separados por tema.
-- Diagnósticos inicial y final: provistos por los superiores del equipo — fuera del alcance de diseño de este documento.
-- Minijuegos: opcionales, fuera del flujo obligatorio, con su propio desbloqueo progresivo.
-- **Frontend (CSS, HTML semántico, eventos, formularios, responsive, grid/flexbox) resuelto por capas**: núcleo evaluado en clase + andamiaje entregado + decoración libre en casa. Este tema no viene impuesto por los superiores, es decisión propia del equipo docente.
+- Defensa anti-IA vía evaluación (tests ocultos + checkpoints orales + depuración), no vía
+  dificultar la lectura del código.
+- Portafolio construido de forma incremental y acumulativa (currículo en espiral), no en bloques
+  separados por tema.
+- Diagnósticos inicial y final: provistos por los superiores, fijos en L1 y V2 respectivamente —
+  fuera del alcance de diseño de este documento.
+- Minijuegos "platino" (Memoria, Ahorcado, Buscaminas, Serpiente, Tanques, Space Invaders):
+  opcionales, fuera del flujo obligatorio. **La batalla por turnos en consola ya NO es parte de
+  esta lista — es núcleo curricular (N10, N11), §6.2.**
+- Frontend (CSS, HTML semántico, eventos, formularios, responsive, grid/flexbox) resuelto por
+  capas: núcleo evaluado + andamiaje entregado + decoración libre — **`classList` condicional
+  vuelve a ser núcleo evaluado (§5.2), no decoración.**
+- **Todas las sesiones son de 2 horas de contenido**; los días "martes/jueves" dictan la misma
+  sesión dos veces para dos grupos, no duplican contenido.
+- **El deploy es un evento único**, al final del taller (V2) — no hay publicaciones incrementales
+  durante la semana 2; el código se sube a GitHub el mismo viernes, no antes.
+- **El nivel "reloj/saludo automático" (antes E8) se reemplaza por un carrusel de proyectos
+  destacados** (decisión del 19-sep, revierte un borrador previo que lo cortaba sin reemplazo) —
+  mismo concepto de repetición infinita, con peso visual real en un portafolio. Se dicta en V1,
+  junto con el aviso condicional (E7).
+- El material teórico "Tutorías de Verano" es consulta de referencia, no guía de calendario (§5.9);
+  de sus 10 temas, 7 y 8 no son currículo del taller (describen la arquitectura interna de la
+  plataforma, no algo que el estudiante programa).
 
-## 9. Pendiente de definir
+## 9. Pendiente de definir **[ACTUALIZADO]**
 
-- Si el progreso en los retos opcionales suma a la nota final o es extra-crédito no determinante.
-- Detalle de implementación exacta del sistema de pistas progresivas (umbral de tiempo/repetición para activarlas).
-- Formato final de los checkpoints orales (¿registrados en la plataforma o solo proceso manual del instructor?).
-- Si la "decoración libre" en casa se revisa/valida de alguna forma mínima (por ejemplo, checklist de que no rompió el andamiaje) o queda totalmente sin supervisión hasta la demo final.
-- **Resolver antes de Ma2**: si `.length` y equivalentes se habilitan en el autocompletado del editor (requisito de §5.7) o si el diseño pedagógico de esa sesión debe ajustarse a lo que la plataforma actual permite (ver hallazgo de beta, §7.4).
-- Si se invierte tiempo de desarrollo en el onboarding sugerido (video corto y/o tour guiado, §7.5) o si se deja para una iteración posterior a la primera cohorte.
-- **Riesgo de V1 sin charla (§4, §4.1)**: es el único día autónomo de toda la primera semana, y cae temprano en el taller (día 5 de 10), cuando la mitad del grupo sin base previa aún depende de supervisión cercana (§3). Falta definir: qué pasa con quien no logre N10/N11 por su cuenta — ¿se retoma al inicio de L2, se ofrece una sesión de dudas breve, o queda como deuda que se resuelve en la práctica de Mi1/L2 sin bloquear el avance?
+- **Crítico — sin sesión asignada:** dónde entra el formulario de contacto (E12, `addEventListener`
+  + validación). Se cayó de la tabla al reintegrar `classList` en L2 y no se reubicó todavía.
+- **Riesgo V2:** Git + deploy + diagnóstico final + demo, y opcionalmente N11 (consola), todo en una
+  sola sesión de 2h. Si el diagnóstico se extiende, puede no alcanzar el tiempo para que todos
+  publiquen antes de la demo. Dos salidas sin decidir: (A) la demo se hace con lo que cada uno
+  tenga, publicado o no, y el deploy pendiente se cierra como cola post-taller; (B) se recorta N11
+  de V2 para asegurar el tiempo de deploy.
+- **Riesgo Ma2:** matrices (N8) + función-según-tipo (N9) el mismo día de 2h — sigue siendo la
+  sesión más pesada del curso, sin bloque largo que la sostenga tras el cambio de §3.
+  Mi2 ayuda parcialmente (consolidación antes de consola) pero no lo resuelve del todo.
+- **Modelo de práctica supervisada sin definir** tras eliminar los bloques de 4h continuos (§3): con
+  qué mecanismo se atiende a quien no tiene base dentro de una sesión de 2h.
+- N7 (`classList` sobre destacados en L2) necesita su propio encargo narrativo — hoy solo está
+  descrito como extensión de E9, sin ficha propia (necesidad/incógnita/tests) como las demás.
+- **N5 (E8, carrusel) necesita el detalle fino de sus tests ocultos** (0 destacados, 1 destacado,
+  granularidad de la rotación) — ver `docs/encargos.md` §7 EN8. El concepto y la sesión ya están
+  decididos; falta la especificación exacta para el autograder.
+- Si `.length` se habilita en el autocompletado antes de N8, o si el diseño de esa sesión se ajusta
+  a lo que la plataforma permite hoy (§7.4).
+- Si se invierte tiempo de desarrollo en el onboarding de V1 (§7.5) más allá de lo ya obligatorio.
+- Si la decoración libre restante (animaciones, ajustes finos más allá de N4/N12) se revisa de
+  alguna forma mínima o queda sin supervisión hasta la demo.
+- Formato final de los checkpoints orales (¿registrados en la plataforma o proceso manual?).
+- Si el progreso en los retos opcionales "platino" suma a la nota final o es extra-crédito no
+  determinante.
