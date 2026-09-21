@@ -223,8 +223,19 @@
       overflow: hidden
     }
 
+    /* Una sola capa manda el scroll y las otras la copian. Construyendo manda el
+       textarea, para que el caret, la seleccion y el mapeo del clic los resuelva
+       el navegador; jugando manda la capa de color, porque el textarea no esta.
+       Antes scrolleaba el contenedor y el color se compensaba ademas por su
+       cuenta, asi que el codigo se veia dos lineas por encima de donde estaba. */
     .gutter {
       flex: 0 0 auto;
+      overflow: hidden;
+      user-select: none;
+      background: var(--code-bg);
+    }
+
+    .gutter-lines {
       padding: 14px 10px 14px 14px;
       text-align: right;
       color: var(--ink-faint);
@@ -232,23 +243,23 @@
       font-size: 13px;
       line-height: 1.7;
       white-space: pre;
-      user-select: none;
-      background: var(--code-bg);
     }
 
     .code-wrap {
       position: relative;
       flex: 1 1 auto;
       min-width: 0;
-      overflow: auto
+      overflow: hidden;
     }
 
-    .highlight,
-    #codearea {
+    /* Metricas compartidas por las dos capas de texto: cualquier diferencia aqui
+       separa el color del caracter que se esta editando. */
+    .code-layer {
       margin: 0;
       padding: 14px 16px;
       font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
       font-size: 13px;
+      font-weight: 400;
       line-height: 1.7;
       white-space: pre;
       tab-size: 2;
@@ -258,14 +269,30 @@
     .highlight {
       position: absolute;
       inset: 0;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
       pointer-events: none;
-      color: var(--ink)
+    }
+
+    .editor.jugando .highlight {
+      overflow: auto;
+      pointer-events: auto;
+    }
+
+    #highlight {
+      display: block;
+      min-width: 100%;
+      min-height: 100%;
+      color: var(--ink);
     }
 
     #codearea {
-      position: relative;
+      position: absolute;
+      inset: 0;
       width: 100%;
-      min-height: 100%;
+      height: 100%;
+      overflow: auto;
       background: transparent;
       color: transparent;
       caret-color: var(--accent);
@@ -273,7 +300,6 @@
       outline: 0;
       resize: none;
       display: block;
-      overflow: hidden;
     }
 
     .c-com {
@@ -1000,10 +1026,10 @@
         <span class="tab readonly mono">reglas.js — solo lectura</span>
       </div>
       <div class="editor">
-        <div class="gutter mono" id="gutter">1</div>
+        <div class="gutter mono" id="gutterbox"><div class="gutter-lines" id="gutter">1</div></div>
         <div class="code-wrap" id="codewrap">
-          <pre class="highlight mono" id="highlight" aria-hidden="true"></pre>
-          <textarea id="codearea" class="mono" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
+          <pre class="highlight mono" id="highlightbox" aria-hidden="true"><code class="code-layer" id="highlight"></code></pre>
+          <textarea id="codearea" class="mono code-layer" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
         </div>
       </div>
       <div class="console mono" id="console">consola vacía — el nivel se dibuja mientras editás</div>
@@ -1239,7 +1265,20 @@
     const sceneWrap = $("sceneWrap");
     const codearea = $("codearea");
     const highlightEl = $("highlight");
+    const highlightBox = $("highlightbox");
     const gutter = $("gutter");
+    const gutterBox = $("gutterbox");
+    const editorEl = document.querySelector(".editor");
+
+    // El color y los numeros copian el scroll de quien manda en cada modo.
+    function syncScroll(origen) {
+      const fuente = origen || (mode === "play" ? highlightBox : codearea);
+      if (fuente !== highlightBox) {
+        highlightBox.scrollTop = fuente.scrollTop;
+        highlightBox.scrollLeft = fuente.scrollLeft;
+      }
+      gutterBox.scrollTop = fuente.scrollTop;
+    }
     const viewport = $("viewport");
     const consoleEl = $("console");
 
@@ -1343,9 +1382,21 @@
       const lines = text.split("\n").length;
       let g = ""; for (let i = 1; i <= lines; i++) g += i + "\n";
       gutter.textContent = g;
-      // autosize textarea height so it scrolls with wrapper
-      codearea.style.height = "auto";
-      codearea.style.height = codearea.scrollHeight + "px";
+      ajustarCapaColor();
+      syncScroll();
+    }
+
+    /* El recorrido de la capa de color tiene que ser identico al del textarea o
+       su scrollTop se clampea antes y el color se queda atras. No basta con
+       copiar scrollHeight: el textarea reserva sitio para sus barras y la capa
+       de color no tiene, asi que hay que sumarle ese hueco. */
+    function ajustarCapaColor() {
+      const barraH = codearea.offsetHeight - codearea.clientHeight;
+      const barraV = codearea.offsetWidth - codearea.clientWidth;
+      highlightEl.style.minHeight = (codearea.scrollHeight + barraH) + "px";
+      highlightEl.style.minWidth = (codearea.scrollWidth + barraV) + "px";
+      // Los numeros de linea tampoco tienen barras propias: mismo ajuste.
+      gutter.style.minHeight = (codearea.scrollHeight + barraH) + "px";
     }
     codearea.addEventListener("input", () => {
       paintCode(codearea.value);
@@ -1382,9 +1433,11 @@
         bump("editaste el código");
       }, 120);
     });
-    $("codewrap").addEventListener("scroll", e => {
-      highlightEl.style.transform = `translateY(${-e.target.scrollTop}px)`;
+    codearea.addEventListener("scroll", () => syncScroll(codearea));
+    window.addEventListener("resize", () => {
+      if (mode === "build") { ajustarCapaColor(); syncScroll(); }
     });
+    highlightBox.addEventListener("scroll", () => syncScroll(highlightBox));
 
     function setCode(text) { codearea.value = text; paintCode(text); }
 
@@ -1673,14 +1726,18 @@
       html += `\n<span class="c-obj">meta</span>.<span class="c-prop">x</span> = <span class="c-num">${n(level.meta.x)}</span>\n`;
       html += `<span class="c-obj">meta</span>.<span class="c-prop">y</span> = <span class="c-num">${n(level.meta.y)}</span>\n`;
       highlightEl.innerHTML = html;
+      highlightEl.style.minHeight = "100%";
+      highlightEl.style.minWidth = "100%";
       // gutter
       const lines = html.split("\n").length;
       let g = ""; for (let i = 1; i <= lines; i++) g += i + "\n"; gutter.textContent = g;
+      syncScroll();
     }
 
     function startPlay() {
       mode = "play";
       notifyMode("play");
+      editorEl.classList.add("jugando");
       document.querySelector(".tabs .tab").textContent = "nivel.js — corriendo";
       codearea.style.display = "none";
       $("zoom-toolbar").style.display = "none";
@@ -1712,6 +1769,7 @@
       mode = "build";
       cancelAnimationFrame(raf); raf = null;
       notifyMode("build");
+      editorEl.classList.remove("jugando");
       document.querySelector(".tabs .tab").textContent = "nivel.js";
       codearea.style.display = "block";
       $("zoom-toolbar").style.display = "flex";
