@@ -8,6 +8,7 @@ const MESSAGES: Record<string, string> = {
   FORBIDDEN: 'Tu cuenta no tiene acceso a esta sección.',
   RATE_LIMITED: 'Has realizado varios intentos. Espera un momento y vuelve a intentarlo.',
   VALIDATION_ERROR: 'Revisa los datos del formulario e inténtalo de nuevo.',
+  PAYLOAD_TOO_LARGE: 'Lo que intentas guardar es demasiado grande. Quita algo e inténtalo de nuevo.',
   SERVICE_UNAVAILABLE: 'El servicio del taller no está disponible en este momento. Inténtalo de nuevo.',
   NETWORK_ERROR: 'No se pudo conectar con el taller. Revisa tu conexión e inténtalo de nuevo.',
   INVALID_RESPONSE: 'El taller devolvió una respuesta inesperada. Inténtalo de nuevo.',
