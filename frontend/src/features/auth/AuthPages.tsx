@@ -122,7 +122,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
         <button className="btn btn-primary btn-block" disabled={disabled}>{action.pending ? 'Un momento…' : register ? 'Crear mi cuenta' : 'Iniciar sesión'}</button>
       </form>
       <p className="auth-footer">{register ? '¿Ya tienes cuenta?' : '¿Es tu primera vez?'} <Link to={register ? '/login' : '/registro'}>{register ? 'Inicia sesión' : 'Crea tu cuenta'}</Link></p>
-      <p className="auth-help">Si compartes este computador, cierra sesión al terminar. Tu acceso se conserva solo en esta pestaña.</p>
+      <p className="auth-help">Tu acceso queda guardado en este navegador para que no tengas que entrar cada día. Si compartes este computador, cierra sesión al terminar.</p>
     </AuthLayout>
   )
 }

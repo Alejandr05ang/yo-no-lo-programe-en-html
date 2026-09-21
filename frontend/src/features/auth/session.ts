@@ -11,6 +11,18 @@ export function onboardingPath(state: OnboardingState): string {
   return paths[state]
 }
 
+/**
+ * 'pending' while Firebase is still reading its persisted store — a restored
+ * user is not visible yet, and treating that moment as anonymous would bounce
+ * the student to /login only to sign them back in a tick later.
+ */
+export type AccessDecision = 'pending' | 'granted' | 'anonymous'
+
+export function accessDecision(initialized: boolean, user: unknown): AccessDecision {
+  if (!initialized) return 'pending'
+  return user ? 'granted' : 'anonymous'
+}
+
 export function friendlyAuthError(error: unknown): string {
   if (error instanceof ApiError) return error.message
   const code = typeof error === 'object' && error !== null && 'code' in error ? error.code : ''

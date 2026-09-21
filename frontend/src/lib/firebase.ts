@@ -1,5 +1,41 @@
 import { getApps, initializeApp } from 'firebase/app'
-import { browserPopupRedirectResolver, browserSessionPersistence, getAuth, initializeAuth, type Auth } from 'firebase/auth'
+import {
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
+  browserSessionPersistence,
+  getAuth,
+  indexedDBLocalPersistence,
+  initializeAuth,
+  type Auth,
+} from 'firebase/auth'
+
+const STORES = {
+  indexedDBLocal: indexedDBLocalPersistence,
+  browserLocal: browserLocalPersistence,
+  browserSession: browserSessionPersistence,
+}
+
+/**
+ * Stores to keep the signed-in user in, tried in this order: the first one the
+ * browser actually grants wins.
+ *
+ * The two local stores come first so that closing the browser at the end of one
+ * class and opening it at the start of the next does not sign the student out.
+ * Session storage stays last for private or locked-down windows, where no local
+ * store is writable and the alternative would be no sign-in at all.
+ *
+ * Spelled as names because that is the part a test can still read: bundled for
+ * Node, every store collapses onto one in-memory stub, so comparing the objects
+ * themselves would pass whichever order they were in.
+ */
+export const AUTH_PERSISTENCE_ORDER = ['indexedDBLocal', 'browserLocal', 'browserSession'] as const
+
+/**
+ * Passed to initializeAuth rather than applied later with setPersistence, so
+ * the store is settled before any sign-in can run and a first login cannot land
+ * in the wrong one.
+ */
+export const AUTH_PERSISTENCE = AUTH_PERSISTENCE_ORDER.map((name) => STORES[name])
 
 /** Only public Firebase web configuration belongs here. No Admin credentials. */
 export function configureFirebaseAuth(): { auth: Auth | null; error: string | null } {
@@ -17,7 +53,7 @@ export function configureFirebaseAuth(): { auth: Auth | null; error: string | nu
   try {
     const existing = getApps().find((app) => app.name === 'tutorias-auth')
     const auth = existing ? getAuth(existing) : initializeAuth(initializeApp(config, 'tutorias-auth'), {
-      persistence: browserSessionPersistence,
+      persistence: AUTH_PERSISTENCE,
       popupRedirectResolver: browserPopupRedirectResolver,
     })
     auth.languageCode = 'es'
