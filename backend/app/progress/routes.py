@@ -12,18 +12,19 @@ from app.progress.schemas import ProgressUpdateBody, ProgressView, SubmitBody, S
 
 router = APIRouter(prefix="/api/challenges", tags=["progress"])
 
+
 @router.get("/{challenge_key}/progress", response_model=ProgressView)
 async def get_progress(challenge_key: str, user: CurrentUser, session: SessionDep):
     cohort, challenge = await require_challenge_access(session, user, challenge_key)
-    
+
     progress = await session.scalar(
         select(Progress).where(
             Progress.user_id == user.id,
             Progress.cohort_id == cohort.id,
-            Progress.challenge_id == challenge.id
+            Progress.challenge_id == challenge.id,
         )
     )
-    
+
     if not progress:
         return ProgressView(
             cohort_id=cohort.id,
@@ -34,9 +35,9 @@ async def get_progress(challenge_key: str, user: CurrentUser, session: SessionDe
             cases_passed=0,
             cases_total=0,
             last_saved_at=None,
-            accepted_at=None
+            accepted_at=None,
         )
-        
+
     return ProgressView(
         cohort_id=progress.cohort_id,
         challenge_id=progress.challenge_id,
@@ -46,24 +47,26 @@ async def get_progress(challenge_key: str, user: CurrentUser, session: SessionDe
         cases_passed=progress.cases_passed,
         cases_total=progress.cases_total,
         last_saved_at=progress.last_saved_at,
-        accepted_at=progress.accepted_at
+        accepted_at=progress.accepted_at,
     )
 
 
 @router.put("/{challenge_key}/progress", response_model=ProgressView)
-async def update_progress(challenge_key: str, body: ProgressUpdateBody, user: CurrentUser, session: SessionDep):
+async def update_progress(
+    challenge_key: str, body: ProgressUpdateBody, user: CurrentUser, session: SessionDep
+):
     cohort, challenge = await require_challenge_access(session, user, challenge_key)
-    
+
     progress = await session.scalar(
         select(Progress).where(
             Progress.user_id == user.id,
             Progress.cohort_id == cohort.id,
-            Progress.challenge_id == challenge.id
+            Progress.challenge_id == challenge.id,
         )
     )
-    
+
     now = datetime.now(UTC)
-    
+
     if not progress:
         progress = Progress(
             user_id=user.id,
@@ -73,7 +76,7 @@ async def update_progress(challenge_key: str, body: ProgressUpdateBody, user: Cu
             draft_code=body.draft_code or "",
             cases_passed=body.cases_passed or 0,
             cases_total=body.cases_total or 0,
-            last_saved_at=now
+            last_saved_at=now,
         )
         session.add(progress)
     else:
@@ -85,14 +88,13 @@ async def update_progress(challenge_key: str, body: ProgressUpdateBody, user: Cu
             progress.cases_passed = body.cases_passed
         if body.cases_total is not None:
             progress.cases_total = body.cases_total
-            
+
         progress.last_saved_at = now
         if progress.status == "accepted" and not progress.accepted_at:
             progress.accepted_at = now
-            
+
     await session.commit()
-    await session.refresh(progress)
-    
+
     return ProgressView(
         cohort_id=progress.cohort_id,
         challenge_id=progress.challenge_id,
@@ -102,36 +104,37 @@ async def update_progress(challenge_key: str, body: ProgressUpdateBody, user: Cu
         cases_passed=progress.cases_passed,
         cases_total=progress.cases_total,
         last_saved_at=progress.last_saved_at,
-        accepted_at=progress.accepted_at
+        accepted_at=progress.accepted_at,
     )
 
 
 @router.post("/{challenge_key}/submit", response_model=SubmitResponse)
-async def submit_challenge(challenge_key: str, body: SubmitBody, user: CurrentUser, session: SessionDep):
+async def submit_challenge(
+    challenge_key: str, body: SubmitBody, user: CurrentUser, session: SessionDep
+):
     cohort, challenge = await require_challenge_access(session, user, challenge_key)
-    
+
     from sqlalchemy.exc import IntegrityError
-    
+
     for _ in range(3):
         attempt_number = await session.scalar(
-            select(func.coalesce(func.max(Submission.attempt_number), 0))
-            .where(
+            select(func.coalesce(func.max(Submission.attempt_number), 0)).where(
                 Submission.user_id == user.id,
                 Submission.cohort_id == cohort.id,
-                Submission.challenge_id == challenge.id
+                Submission.challenge_id == challenge.id,
             )
         )
         attempt_number += 1
-        
+
         submission = Submission(
             user_id=user.id,
             cohort_id=cohort.id,
             challenge_id=challenge.id,
             attempt_number=attempt_number,
-            code_submitted=body.code_submitted
+            code_submitted=body.code_submitted,
         )
         session.add(submission)
-        
+
         try:
             # begin_nested enables savepoints to recover from IntegrityError inside a transaction
             async with session.begin_nested():
@@ -141,12 +144,12 @@ async def submit_challenge(challenge_key: str, body: SubmitBody, user: CurrentUs
             continue
     else:
         raise ApiError(409, "SUBMISSION_CONFLICT", "Error al crear la entrega. Intenta nuevamente.")
-    
+
     progress = await session.scalar(
         select(Progress).where(
             Progress.user_id == user.id,
             Progress.cohort_id == cohort.id,
-            Progress.challenge_id == challenge.id
+            Progress.challenge_id == challenge.id,
         )
     )
     if progress:
@@ -162,15 +165,12 @@ async def submit_challenge(challenge_key: str, body: SubmitBody, user: CurrentUs
             attempts_count=attempt_number,
             cases_passed=0,
             cases_total=0,
-            last_saved_at=now
+            last_saved_at=now,
         )
         session.add(progress)
-    
+
     await session.commit()
-    await session.refresh(submission)
-    
+
     return SubmitResponse(
-        id=submission.id,
-        attempt_number=submission.attempt_number,
-        created_at=submission.created_at
+        id=submission.id, attempt_number=submission.attempt_number, created_at=submission.created_at
     )

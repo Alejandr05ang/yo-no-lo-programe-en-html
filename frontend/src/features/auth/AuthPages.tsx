@@ -209,6 +209,7 @@ export function AccountPage({ stage }: { stage?: 'profile' | 'class' }) {
         {stage === 'profile' && state === 'PROFILE_REQUIRED' && <ProfileForm />}
         {stage === 'class' && state === 'JOIN_CLASS_REQUIRED' && <JoinClassForm />}
         {!stage && state && state !== 'READY' && <Link to={onboardingPath(state)}>Ver el siguiente paso</Link>}
+        {!stage && state === 'READY' && <Link to="/mapa" className="btn btn-primary">Ir al mapa</Link>}
       </section>}
       <section className="card account-status">
         <h2>Métodos de acceso</h2>

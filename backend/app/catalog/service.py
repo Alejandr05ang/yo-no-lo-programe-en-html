@@ -116,7 +116,7 @@ async def require_challenge_access(
     session: AsyncSession, user: User, challenge_key: str
 ) -> tuple[Cohort, Challenge]:
     cohort, cohort_state = await user_cohort(session, user)
-    
+
     # Fetch the challenge and its override
     row = (
         await session.execute(
@@ -130,34 +130,32 @@ async def require_challenge_access(
             .where(
                 Challenge.key == challenge_key,
                 Challenge.status == "published",
-                SessionCatalog.is_published.is_(True)
+                SessionCatalog.is_published.is_(True),
             )
         )
     ).first()
-    
+
     if not row:
         raise ApiError(404, "NOT_FOUND", "Reto no encontrado.")
-        
+
     challenge, session_cat, override = row
-    
+
     unlocked = False
     if cohort_state and cohort_state.active_session_id:
         active = await session.get(SessionCatalog, cohort_state.active_session_id)
         if active and session_cat.order_index <= active.order_index:
             unlocked = True
-            
+
     if override and override.unlocked is not None:
         unlocked = override.unlocked
-        
+
     if not unlocked:
         raise ApiError(403, "CHALLENGE_LOCKED", "Este reto todavía no está disponible.")
-        
+
     return cohort, challenge
 
 
-async def session_detail(
-    session: AsyncSession, user: User, session_id: UUID
-) -> SessionDetail:
+async def session_detail(session: AsyncSession, user: User, session_id: UUID) -> SessionDetail:
     cohort, state = await user_cohort(session, user)
     item = await session.get(SessionCatalog, session_id)
     active = (

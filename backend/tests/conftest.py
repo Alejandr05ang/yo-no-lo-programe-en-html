@@ -8,6 +8,7 @@ from sqlalchemy.ext.compiler import compiles
 def compile_jsonb_sqlite(type_, compiler, **kw):
     return "JSON"
 
+
 import httpx
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
@@ -48,11 +49,14 @@ async def auth_harness(tmp_path):
         f"sqlite+aiosqlite:///{tmp_path / 'test.db'}",
         execution_options={"schema_translate_map": {"app": None}},
     )
-    
+
     # Remove Postgres specific server_default for sqlite testing and enable autoincrement
+    from sqlalchemy import Integer
+
+    AuditLog.__table__.c.id.type = Integer()
     AuditLog.__table__.c.id.server_default = None
     AuditLog.__table__.c.id.autoincrement = True
-    
+
     async with engine.begin() as connection:
         await connection.run_sync(
             lambda conn: Base.metadata.create_all(

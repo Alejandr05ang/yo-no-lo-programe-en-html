@@ -59,23 +59,40 @@ export function JoinClassForm() {
   const [code, setCode] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [successData, setSuccessData] = useState<{ cohort_name: string; joined: boolean } | null>(null)
+
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     if (!auth.api || pending) return
     setPending(true)
     setError(null)
     try {
-      await auth.api.request('/cohorts/join', { method: 'POST', json: { code } })
+      const response = await auth.api.request<{ cohort_name: string, joined: boolean }>('/cohorts/join', { method: 'POST', json: { code } })
+      setSuccessData(response)
       await auth.refresh()
+      setTimeout(() => {
+        window.location.assign('/mapa')
+      }, 2000)
     } catch (failure) {
       setError(friendlyAuthError(failure))
-    } finally {
       setPending(false)
     }
   }
+
+  if (successData) {
+    return <div className="auth-form onboarding-form">
+      <p className="auth-message" role="status" style={{ background: '#d4edda', color: '#155724', padding: '1rem', borderRadius: '4px' }}>
+        <strong>¡Te has unido a la clase!</strong><br />
+        Clase: {successData.cohort_name}<br />
+        Membresía: Activa
+      </p>
+      <p>Redirigiendo a tu mapa...</p>
+    </div>
+  }
+
   return <form className="auth-form onboarding-form" onSubmit={(event) => void submit(event)} aria-busy={pending}>
     {error && <p className="auth-message" role="alert">{error}</p>}
     <div className="field"><label htmlFor="join-code">Código de clase</label><input id="join-code" className="input mono" minLength={8} maxLength={80} autoCapitalize="characters" autoComplete="off" required value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} /></div>
-    <button className="btn btn-primary" disabled={pending}>{pending ? 'Comprobando…' : 'Unirme a la clase'}</button>
+    <button className="btn btn-primary" disabled={pending}>{pending ? 'Comprobando…' : 'Entrar a clase'}</button>
   </form>
 }

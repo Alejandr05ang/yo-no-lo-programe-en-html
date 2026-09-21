@@ -112,6 +112,7 @@ class RequestSafetyMiddleware:
 
             await self.app(scope, replay, safe_send)
         except Exception:
+            logger.error("Exception in request", exc_info=True)
             # Catch before ServerErrorMiddleware can re-raise/log sensitive exception details.
             if status == 500:
                 await error_response(500, "INTERNAL_ERROR", "No se pudo completar la solicitud.")(

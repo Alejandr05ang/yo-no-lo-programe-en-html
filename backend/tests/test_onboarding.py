@@ -44,9 +44,7 @@ async def test_profile_forbids_mass_assignment_and_requires_https(auth_harness):
 
 def test_avatar_decodes_and_reencodes_without_metadata():
     source = io.BytesIO()
-    Image.new("RGBA", (900, 600), (120, 50, 20, 128)).save(
-        source, format="PNG", pnginfo=None
-    )
+    Image.new("RGBA", (900, 600), (120, 50, 20, 128)).save(source, format="PNG", pnginfo=None)
     processed = process_avatar(source.getvalue())
     with Image.open(io.BytesIO(processed)) as image:
         assert image.format == "WEBP"
@@ -122,9 +120,7 @@ async def test_map_has_teasers_but_future_detail_is_forbidden(auth_harness):
             ]
         )
         future_id = future.id
-    response = await auth_harness.client.get(
-        "/api/map", headers={"Authorization": "Bearer token"}
-    )
+    response = await auth_harness.client.get("/api/map", headers={"Authorization": "Bearer token"})
     assert response.status_code == 200
     body = response.json()
     assert "INSTRUCCION_PROTEGIDA" not in str(body)

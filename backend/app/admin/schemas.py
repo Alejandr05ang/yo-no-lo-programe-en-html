@@ -22,7 +22,9 @@ class CohortCreateBody(BaseModel):
 class CohortUpdateBody(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
     name: str | None = Field(None, min_length=2, max_length=100)
-    slug: str | None = Field(None, min_length=2, max_length=100, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
+    slug: str | None = Field(
+        None, min_length=2, max_length=100, pattern=r"^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    )
     description: str | None = None
     starts_on: date | None = None
     ends_on: date | None = None

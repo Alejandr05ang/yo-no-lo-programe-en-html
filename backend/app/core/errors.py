@@ -34,4 +34,7 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(Exception)
     async def unexpected_error(request: Request, exc: Exception):
+        import logging
+
+        logging.error(f"Unexpected error: {exc}", exc_info=True)
         return error_response(500, "INTERNAL_ERROR", "No se pudo completar la solicitud.")

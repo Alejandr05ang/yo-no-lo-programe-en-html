@@ -9,9 +9,7 @@ router = APIRouter(prefix="/api/cohorts", tags=["cohorts"])
 
 
 @router.post("/join", response_model=MembershipView)
-async def join(
-    request: Request, payload: JoinCohortBody, user: CurrentUser, session: SessionDep
-):
+async def join(request: Request, payload: JoinCohortBody, user: CurrentUser, session: SessionDep):
     limiter: JoinAttemptLimiter = request.app.state.join_attempt_limiter
     limiter.check(user.id)
     cohort, membership, joined = await join_cohort(session, user, payload.code)

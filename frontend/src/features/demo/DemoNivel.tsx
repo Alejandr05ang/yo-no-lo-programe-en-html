@@ -1,31 +1,20 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { alternarPausa, estado as estadoMusica, iniciar } from '../../lib/musica'
 import { ControlesMusica } from '../musica/ControlesMusica'
 import './demo-nivel.css'
 
-// Demo de arranque — Día 1. Enganche interactivo, no un encargo evaluado:
-// sin autograder ni "Entregar a revisión". El nivel vive en un HTML
-// autocontenido (public/nivel-demo.html) montado en iframe sandboxeado,
-// igual que se aísla el código del estudiante en el resto del taller.
-// No pasa por <Nav>, así que la música (si venía sonando desde /inicio)
-// se controla con este botón flotante en vez de la barra superior.
 export function DemoNivel() {
+  const iframeRef = useRef<HTMLIFrameElement>(null)
+
   useEffect(() => {
-    // musica.ts retoma la música tras un F5 con el primer clic/tecla en
-    // cualquier parte de la página, pero ese listener vive en este documento
-    // y nunca ve los gestos que ocurren dentro del iframe (sandbox, sin
-    // allow-same-origin). El iframe nos avisa por postMessage; acá cubrimos
-    // tres casos:
-    //   1. Primera vez (música no activa): iniciar()
-    //   2. Pausada por recarga (F5): alternarPausa() la reanuda
-    //   3. Ya sonando: no hacer nada
     const onMessage = (e: MessageEvent) => {
+      if (e.source !== iframeRef.current?.contentWindow) return
       if (e.data?.source !== 'nivel-demo') return
       const s = estadoMusica()
       if (!s.activa) {
-        iniciar()             // primer gesto del usuario — activa el audio
+        iniciar()
       } else if (s.pausadoPorRecarga) {
-        alternarPausa()       // reanudar tras F5
+        alternarPausa()
       }
     }
     window.addEventListener('message', onMessage)
@@ -38,6 +27,7 @@ export function DemoNivel() {
         <ControlesMusica />
       </div>
       <iframe
+        ref={iframeRef}
         className="demo-nivel__frame"
         src="/nivel-demo.html"
         title="Constructor de niveles — Demo Día 1"

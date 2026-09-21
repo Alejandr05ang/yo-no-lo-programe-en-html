@@ -9,7 +9,12 @@ from app.db.models import Cohort, CohortMembership, CohortState, Submission, Sub
 from app.db.session import SessionDep
 from app.instructor.schemas import ActiveSessionUpdate, ReviewBody
 
-router = APIRouter(prefix="/api/instructor", tags=["instructor"], dependencies=[Depends(require_role("instructor", "admin"))])
+router = APIRouter(
+    prefix="/api/instructor",
+    tags=["instructor"],
+    dependencies=[Depends(require_role("instructor", "admin"))],
+)
+
 
 @router.get("/cohorts")
 async def list_instructor_cohorts(user: CurrentUser, session: SessionDep):
@@ -50,43 +55,44 @@ async def get_submission(submission_id: UUID, user: CurrentUser, session: Sessio
     submission = await session.scalar(select(Submission).where(Submission.id == submission_id))
     if not submission:
         raise ApiError(404, "NOT_FOUND", "Entrega no encontrada.")
-        
+
     await require_cohort_access(submission.cohort_id, user, session, staff=True)
     return submission
 
 
 @router.post("/submissions/{submission_id}/review")
-async def create_submission_review(submission_id: UUID, body: ReviewBody, user: CurrentUser, session: SessionDep):
+async def create_submission_review(
+    submission_id: UUID, body: ReviewBody, user: CurrentUser, session: SessionDep
+):
     submission = await session.scalar(select(Submission).where(Submission.id == submission_id))
     if not submission:
         raise ApiError(404, "NOT_FOUND", "Entrega no encontrada.")
-        
+
     await require_cohort_access(submission.cohort_id, user, session, staff=True)
-    
+
     review = SubmissionReview(
-        submission_id=submission.id,
-        reviewer_id=user.id,
-        verdict=body.verdict,
-        note=body.note
+        submission_id=submission.id, reviewer_id=user.id, verdict=body.verdict, note=body.note
     )
     session.add(review)
     await session.commit()
-    
+
     return review
 
 
 @router.patch("/cohorts/{cohort_id}/active-session")
-async def update_cohort_active_session(cohort_id: UUID, body: ActiveSessionUpdate, user: CurrentUser, session: SessionDep):
+async def update_cohort_active_session(
+    cohort_id: UUID, body: ActiveSessionUpdate, user: CurrentUser, session: SessionDep
+):
     await require_cohort_access(cohort_id, user, session, staff=True)
-    
+
     state = await session.scalar(select(CohortState).where(CohortState.cohort_id == cohort_id))
     if not state:
         state = CohortState(cohort_id=cohort_id)
         session.add(state)
         await session.flush()
-        
+
     state.active_session_id = body.active_session_id
     state.updated_by = user.id
-    
+
     await session.commit()
     return state

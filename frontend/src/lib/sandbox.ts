@@ -139,7 +139,7 @@ try {
     '*',
   );
 }
-<\/script></body></html>`
+</script></body></html>`
 }
 
 /** Corre el código en un iframe efímero y resuelve con el HTML resultante. */
