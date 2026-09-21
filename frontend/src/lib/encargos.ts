@@ -41,11 +41,11 @@ const DIA_DE_SESION: Record<Sesion, string> = {
 // personalización visual (review, sin autograder) y no desbloquea herramienta de JS nueva.
 const HERRAMIENTAS_POR_SESION: Record<Sesion, string[]> = {
   Ma1: ['crearTitulo()', 'crearSubtitulo()', 'crearParrafo()', 'mostrar()', 'const'],
-  Mi1: ['crearEnlace()', 'condición', 'crearSalto()', 'crearLista()', 'crearItem()', 'agregarA()', 'por cada'],
+  Mi1: ['crearEnlace()', 'condición', 'crearSalto()', 'crearLista()', 'crearItem()', 'agregarA()', 'vaciar()', 'por cada'],
   Ju1: [],
   // crearImagen() pedagógicamente es del nivel 2 / Mi1 (niveles.md), pero hoy no hay encargo
   // de Mi1 que la ejercite (D14, pendiente) — se desbloquea acá porque es donde se usa primero.
-  V1: ['cadaSegundo()', 'crearImagen()'],
+  V1: ['crearCarrusel()', 'proyectosDestacados()', 'cadaSegundo()', 'crearImagen()'],
   L2: [],
   Ma2: ['función'],
   Mi2: [],
@@ -135,6 +135,25 @@ const BASE_CON_AVISO =
   BASE_CON_HOBBIES +
   '\n\nconst bio = crearParrafo(datos.sobreMi)\nmostrar(bio)\nif (datos.sobreMi === "") {\n  mostrar(crearParrafo("Página en construcción — vuelve pronto."))\n}'
 
+const PROYECTOS_PORTAFOLIO = [
+  {
+    nombre: 'Reloj web', imagenUrl: 'https://picsum.photos/seed/reloj-web/480/280', destacado: true,
+    terminado: true, tipo: 'demo', url: 'https://ejemplo.com/reloj',
+  },
+  {
+    nombre: 'Juego de memoria', imagenUrl: 'https://picsum.photos/seed/memoria/480/280', destacado: false,
+    terminado: false, tipo: 'texto',
+  },
+  {
+    nombre: 'Portafolio', imagenUrl: 'https://picsum.photos/seed/portafolio/480/280', destacado: true,
+    terminado: true, tipo: 'texto',
+  },
+  {
+    nombre: 'Agenda de estudio', imagenUrl: 'https://picsum.photos/seed/agenda-estudio/480/280', destacado: true,
+    terminado: true, tipo: 'video',
+  },
+]
+
 export const ENCARGOS: Record<number, EncargoMock> = {
   1: {
     sesion: 'Ma1',
@@ -191,7 +210,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     totalCasos: 3,
     andamiajeNuevo:
       '// Tu página es un montón de párrafos seguidos. Cuesta saber de qué va cada parte.\n' +
-      '// Poné un título de sección ("Sobre mí") ANTES de tus párrafos.\n' +
+      '// Agregá un título de sección (por ejemplo, "Sobre mí") para que se entienda de qué tratan tus párrafos.\n' +
       '// Pista: crearSubtitulo() funciona igual que crearParrafo(), pero hace un título más chico.\n' +
       '// Escribí tu código acá abajo:\n',
     meta: meta(
@@ -201,7 +220,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       'desbloqueado hoy 15:00',
       [
         'Tu página ya dice cosas, pero es un bloque de texto sin forma.',
-        'Dividí el contenido en secciones: poné un título de sección arriba de cada parte para que se entienda de un vistazo.',
+        'Dividí el contenido en secciones: agregá un título de sección para que se entienda de un vistazo.',
       ],
       'crearSubtitulo() funciona igual que crearParrafo(), pero hace un título más chico.',
     ),
@@ -213,16 +232,16 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     'Mi1',
     [
       'Un portafolio sin forma de contactarte no sirve de mucho.',
-      'Tus redes están en datos.redes y solo algunas están cargadas. Mostrá un enlace por cada una que exista, y ninguno para las que no.',
+      'Tus redes están en datos.redes. Cada una tiene un nombre y una dirección, pero algunas direcciones están vacías. Mostrá un enlace solo para las que tengan dirección.',
     ],
     BASE_CON_PARRAFOS,
     {},
     3,
     [
-      'Tus redes viven en datos.redes — no sabés de antemano cuáles están cargadas.',
-      'Por cada una que exista, mostrá un enlace con crearEnlace(). Las que no, ni aparecen.',
+      'Tus redes viven en datos.redes. Cada red tiene red.nombre y red.url.',
+      'Por cada red, si red.url tiene una dirección, mostrá un enlace con crearEnlace(). Las que están vacías no aparecen.',
     ],
-    'Por cada red en datos.redes, preguntate: ¿existe? Si existe, creá el enlace con crearEnlace() y mostralo.',
+    'Por cada red en datos.redes, preguntate: ¿red.url tiene una dirección? Si la tiene, creá el enlace con red.nombre y red.url.',
   ),
 
   // Reorganización del 19-sep (docs/decisiones.md): E5–E6 (hobbies) pasan de Ju1 a Mi1, que
@@ -255,9 +274,9 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     3,
     [
       'Tus hobbies ya no los escribís vos: vienen de datos.hobbies, y podés tener cualquier cantidad.',
-      'La lista tiene que armarse sola, sin importar si hay tres o catorce.',
+      'La lista que ya hiciste sigue siendo la misma. Vaciála y dejá que se arme sola, sin importar si hay tres o catorce.',
     ],
-    'En vez de escribir agregarA() a mano por cada hobby, usá "por cada" (for...of) sobre datos.hobbies.',
+    'Primero vaciá tu lista anterior. Después, en vez de escribir agregarA() a mano por cada hobby, usá "por cada" (for...of) sobre datos.hobbies.',
   ),
 
   7: stub(
@@ -290,19 +309,13 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       'Armá un carrusel que muestre, uno a la vez, solo tus proyectos destacados — y que cambie de proyecto solo, sin que nadie haga nada.',
     ],
     BASE_CON_AVISO,
-    {
-      proyectos: [
-        { nombre: 'Reloj web', imagenUrl: 'https://picsum.photos/seed/reloj-web/480/280', destacado: true },
-        { nombre: 'Juego de memoria', imagenUrl: 'https://picsum.photos/seed/memoria/480/280', destacado: false },
-        { nombre: 'Portafolio', imagenUrl: 'https://picsum.photos/seed/portafolio/480/280', destacado: true },
-      ],
-    },
+    { proyectos: PROYECTOS_PORTAFOLIO },
     3,
     [
-      'De todos tus proyectos (datos.proyectos), solo algunos tienen destacado: true.',
-      'Mostrá uno solo a la vez, y que vaya cambiando cada segundo sin que nadie toque nada.',
+      'proyectosDestacados(datos.proyectos) prepara solo los que tienen destacado: true.',
+      'Creá y mostrá un carrusel. Después, cadaSegundo() cambia su contenido sin acumular imágenes.',
     ],
-    'Filtrá primero los proyectos con destacado true; después usá cadaSegundo() para ir mostrando uno distinto de esa lista cada vez.',
+    'Guardá los destacados, creá el carrusel y pasale ambos a cadaSegundo(). La última parte crea la imagen de cada proyecto.',
   ),
 
   9: stub(
@@ -314,13 +327,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       'Están en datos.proyectos, cada uno con un campo "terminado".',
     ],
     BASE_CON_PARRAFOS,
-    {
-      proyectos: [
-        { nombre: 'Reloj web', terminado: true },
-        { nombre: 'Juego de memoria', terminado: false },
-        { nombre: 'Portafolio', terminado: true },
-      ],
-    },
+    { proyectos: PROYECTOS_PORTAFOLIO },
     4,
     [
       'Cada proyecto en datos.proyectos tiene un campo terminado. Los que no lo tienen en true no van todavía.',
@@ -333,14 +340,20 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     'Agrupar por categoría',
     'Ma2',
     [
-      'Tus skills están en datos.skills, agrupadas por categoría.',
+      'Tus skills están en datos.skills. Cada grupo tiene una categoría y una lista de items.',
       'Mostrá cada categoría con su título y sus items debajo, para cualquier cantidad de categorías e items.',
     ],
     BASE_CON_PARRAFOS,
-    { skills: { Frontend: ['HTML', 'CSS', 'JavaScript'], Backend: ['Python', 'SQL'] } },
+    {
+      proyectos: PROYECTOS_PORTAFOLIO,
+      skills: [
+        { categoria: 'Frontend', items: ['HTML', 'CSS', 'JavaScript'] },
+        { categoria: 'Backend', items: ['Python', 'SQL'] },
+      ],
+    },
     3,
     [
-      'datos.skills agrupa tus habilidades por categoría: cada categoría es una lista de items.',
+      'Cada grupo de datos.skills tiene grupo.categoria y grupo.items.',
       'Ninguna cantidad está fija — puede haber dos categorías o diez, con dos items o veinte.',
     ],
     'Vas a necesitar un "por cada" afuera (una vuelta por categoría) y otro adentro (una vuelta por cada item de esa categoría).',
@@ -356,10 +369,11 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     ],
     BASE_CON_PARRAFOS,
     {
-      proyectos: [
-        { nombre: 'Reloj web', tipo: 'demo', url: 'https://ejemplo.com' },
-        { nombre: 'Charla sobre CSS', tipo: 'texto' },
-        { nombre: 'Cortometraje de animación', tipo: 'video' }, // tipo a propósito no contemplado
+      proyectos: PROYECTOS_PORTAFOLIO,
+      // E11 conserva el código de E10: sus grupos siguen disponibles.
+      skills: [
+        { categoria: 'Frontend', items: ['HTML', 'CSS', 'JavaScript'] },
+        { categoria: 'Backend', items: ['Python', 'SQL'] },
       ],
     },
     3,

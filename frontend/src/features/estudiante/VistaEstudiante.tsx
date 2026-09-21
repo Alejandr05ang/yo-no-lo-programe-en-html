@@ -183,7 +183,7 @@ function VistaEstudianteInterna() {
   useEffect(() => {
     if (!contenido) return
     const t = setTimeout(() => {
-      void api.autoguardar(contenido)
+      void api.autoguardar(numero, contenido)
       borradoresRef.current[numero] = contenido
       persistir(CLAVE_BORRADORES, borradoresRef.current)
     }, 800)

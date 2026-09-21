@@ -188,16 +188,16 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 
 ### E4 — "Cómo encontrarte" · Mi1 · contacto / redes · N3 · capa 2
 
-- **Necesidad.** Un portafolio sin forma de contactarte no sirve. Tus redes están en `datos.redes`
-  y **solo algunas están cargadas** — hay que mostrar los enlaces que existen y ninguno más.
+- **Necesidad.** Un portafolio sin forma de contactarte no sirve. `datos.redes` es una lista y
+  cada red trae `nombre` y `url`; algunas URLs están vacías. Hay que mostrar los enlaces que
+  existen y ninguno más.
 - **Incógnita.** Cuáles redes cargó el estudiante (y cuáles prueba el evaluador). El código no puede
   asumir que están todas.
 - **Andamiaje inicial** (`frontend/src/lib/encargos.ts`):
   ```
-  // Tus redes viven en datos.redes — no sabés de antemano cuáles están cargadas.
-  // Por cada una que exista, mostrá un enlace con crearEnlace(). Las que no, ni aparecen.
-  // Pista: por cada red en datos.redes, preguntate: ¿existe? Si existe, creá el enlace
-  // con crearEnlace() y mostralo.
+  // Tus redes viven en datos.redes. Cada red tiene red.nombre y red.url.
+  // Por cada red, si red.url tiene una dirección, mostrá un enlace con crearEnlace().
+  // Las que están vacías no aparecen.
   ```
 - **Entrega.** Un enlace por cada red presente en `datos.redes`; ninguno para las ausentes.
 - **Tests ocultos.** Con las 3 redes → 3 enlaces · con 1 red → 1 enlace · con 0 → sin enlaces, sin romper.
@@ -229,13 +229,15 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 - **Andamiaje inicial** — su propio código de E5 + una pista, sin dar la estructura hecha:
   ```
   // Tus hobbies ya no los escribís vos: vienen de datos.hobbies, y podés tener cualquier cantidad.
-  // La lista tiene que armarse sola, sin importar si hay tres o catorce.
-  // Pista: en vez de escribir agregarA() a mano por cada hobby, usá "por cada" (for...of)
-  // sobre datos.hobbies.
+  // La lista que ya hiciste sigue siendo la misma. Vaciála y dejá que se arme sola.
+  // Pista: primero usá vaciar(lista). Después, en vez de escribir agregarA() a mano por cada
+  // hobby, usá "por cada" (for...of) sobre datos.hobbies.
   ```
-- **Entrega.** La lista se construye a partir de `datos.hobbies` sea cual sea su tamaño; si está
-  vacío, un mensaje ("Todavía no cargué hobbies") en vez de una lista en blanco.
-- **Tests ocultos.** 3 → 3 items · 14 → 14 · 0 → mensaje, sin romper · **sin índices fijos**
+- **Entrega.** La lista que empezó en E5 se vacía y se vuelve a construir a partir de
+  `datos.hobbies`, sea cual sea su tamaño. Si está vacío, queda vacía sin error.
+- **Herencia.** `vaciar(lista)` conserva la lista creada en E5 y evita duplicar la sección al
+  volver a llenarla.
+- **Tests ocultos.** 3 → 3 items · 14 → 14 · 0 → lista vacía, sin romper · **sin índices fijos**
   (`[0]`, `[1]`, `[2]`) en el código · el resto del portafolio (E1–E5) sigue presente.
 - **Concepto.** Recorrer una colección de tamaño desconocido: `for (const hobby of datos.hobbies)`.
 
@@ -267,18 +269,18 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
   a mano.
 - **Andamiaje inicial:**
   ```
-  // De todos tus proyectos (datos.proyectos), solo algunos tienen destacado: true.
-  // Mostrá uno solo a la vez, y que vaya cambiando cada segundo sin que nadie toque nada.
-  // Pista: filtrá primero los proyectos con destacado true; después usá cadaSegundo()
-  // para ir mostrando uno distinto de esa lista cada vez.
+  // proyectosDestacados(datos.proyectos) prepara solo los que tienen destacado: true.
+  // Creá y mostrá un carrusel. Después, cadaSegundo() cambia su contenido sin acumular imágenes.
   ```
-- **Entrega.** El carrusel muestra un proyecto destacado a la vez y rota solo cada segundo; si no
-  hay ninguno destacado, no rompe (mensaje o carrusel vacío, a definir con el equipo — pendiente,
-  ver §7 EN8).
-- **Tests ocultos.** *(pendiente de detalle — reutiliza el mismo mecanismo de `cadaSegundo` que el
-  "saludo dinámico" original; ver EN6 y EN8 en §7).* 0 destacados → sin romper · 1 destacado → se
-  muestra fijo, sin rotar entre uno solo · ≥2 destacados → rota entre todos sin saltarse ninguno.
-- **Concepto.** Repetición que no termina (`cadaSegundo`) **combinada con un filtro** (`destacado`).
+- **Entrega.** `proyectosDestacados()` selecciona los proyectos con `destacado: true` y
+  `cadaSegundo()` mantiene una sola imagen en el carrusel. Con 0 destacados muestra un aviso; con
+  1 repite el mismo; con varios rota en ciclo.
+- **Validación local.** Solo observa el primer snapshot: hay un carrusel, tiene una imagen y esa
+  imagen es destacada. No puede validar el paso del tiempo.
+- **Grader futuro.** 0 destacados → aviso · 1 destacado → se mantiene · ≥2 destacados → rota entre
+  todos sin acumular imágenes ni saltarse ninguno.
+- **Concepto.** Repetición que no termina (`cadaSegundo`). La selección de destacados se entrega
+  como una herramienta explícita para no adelantar el filtro manual, que se trabaja en E9.
   Reemplaza al "saludo dinámico" descartado (decisión del 19-sep, `docs/decisiones.md`): mismo
   concepto pedagógico (repetición infinita), pero con peso real en un portafolio — un reloj de
   saludo no aporta nada visual, un carrusel de proyectos sí.
@@ -298,12 +300,12 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 
 ### E10 — "Agrupar por categoría" · Ma2 · skills / proyectos agrupados · N5 · capa 4→5
 
-- **Necesidad.** Tus skills están en `datos.skills`, agrupadas por categoría (una lista de listas:
-  "Frontend" → [...], "Backend" → [...]). Hay que mostrar cada categoría con su título y sus items
-  debajo.
+- **Necesidad.** Tus skills están en `datos.skills` como una lista de grupos. Cada grupo trae
+  `categoria` y `items` (por ejemplo, `{ categoria: "Frontend", items: [...] }`). Hay que mostrar
+  cada categoría con su título y sus items debajo.
 - **Incógnita.** Cuántas categorías y cuántos items por categoría.
-- **Andamiaje inicial.** Necesidad + herramientas + una pista: "vas a repetir lo mismo por cada
-  categoría — ponelo en una `function` para no copiar y pegar".
+- **Andamiaje inicial.** Necesidad + herramientas + una pista: primero una vuelta por cada grupo;
+  dentro, otra vuelta por sus items. No requiere `Object.entries()` ni desestructuración.
 - **Entrega.** Un bloque por categoría (título + lista), para cualquier cantidad de categorías/items.
 - **Tests ocultos.** 3 categorías → 3 bloques · una categoría vacía → título sin items (o se omite) ·
   estructura vacía → mensaje.

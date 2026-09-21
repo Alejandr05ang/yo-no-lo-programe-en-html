@@ -1,0 +1,1883 @@
+{
+  "tables": [
+    {
+      "name": "app.users",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "firebase_uid",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "email",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "full_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "''::text"
+        },
+        {
+          "name": "display_name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "''::text"
+        },
+        {
+          "name": "description",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "''::text"
+        },
+        {
+          "name": "avatar_path",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "github_url",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "linkedin_url",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "website_url",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "role",
+          "data_type": "USER-DEFINED",
+          "format": "system_role",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'student'::app.system_role",
+          "enums": [
+            "student",
+            "instructor",
+            "admin"
+          ]
+        },
+        {
+          "name": "email_verified",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "profile_completed_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "is_active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "user_links_user_id_fkey",
+          "source_table": "app.user_links",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "admin_allowlist_added_by_fkey",
+          "source_table": "app.admin_allowlist",
+          "source_columns": [
+            "added_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "cohorts_created_by_fkey",
+          "source_table": "app.cohorts",
+          "source_columns": [
+            "created_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "cohort_memberships_user_id_fkey",
+          "source_table": "app.cohort_memberships",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "challenges_created_by_fkey",
+          "source_table": "app.challenges",
+          "source_columns": [
+            "created_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "cohort_state_updated_by_fkey",
+          "source_table": "app.cohort_state",
+          "source_columns": [
+            "updated_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "challenge_overrides_updated_by_fkey",
+          "source_table": "app.challenge_overrides",
+          "source_columns": [
+            "updated_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "progress_user_id_fkey",
+          "source_table": "app.progress",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "submissions_user_id_fkey",
+          "source_table": "app.submissions",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "submission_reviews_reviewer_id_fkey",
+          "source_table": "app.submission_reviews",
+          "source_columns": [
+            "reviewer_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "diagnostic_responses_user_id_fkey",
+          "source_table": "app.diagnostic_responses",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "feature_flags_updated_by_fkey",
+          "source_table": "app.feature_flags",
+          "source_columns": [
+            "updated_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "audit_log_actor_user_id_fkey",
+          "source_table": "app.audit_log",
+          "source_columns": [
+            "actor_user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.admin_allowlist",
+      "rls_enabled": true,
+      "rows": 2,
+      "columns": [
+        {
+          "name": "email",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "added_by",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "email"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "admin_allowlist_added_by_fkey",
+          "source_table": "app.admin_allowlist",
+          "source_columns": [
+            "added_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.cohorts",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "name",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "slug",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ],
+          "check": "slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'::text"
+        },
+        {
+          "name": "join_code_hash",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "description",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "''::text"
+        },
+        {
+          "name": "starts_on",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "ends_on",
+          "data_type": "date",
+          "format": "date",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "is_active",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "created_by",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "cohorts_created_by_fkey",
+          "source_table": "app.cohorts",
+          "source_columns": [
+            "created_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "cohort_memberships_cohort_id_fkey",
+          "source_table": "app.cohort_memberships",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "cohort_state_cohort_id_fkey",
+          "source_table": "app.cohort_state",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "challenge_overrides_cohort_id_fkey",
+          "source_table": "app.challenge_overrides",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "progress_cohort_id_fkey",
+          "source_table": "app.progress",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "submissions_cohort_id_fkey",
+          "source_table": "app.submissions",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "feature_flags_cohort_id_fkey",
+          "source_table": "app.feature_flags",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.cohort_memberships",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "cohort_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "role",
+          "data_type": "USER-DEFINED",
+          "format": "membership_role",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'student'::app.membership_role",
+          "enums": [
+            "student",
+            "instructor"
+          ]
+        },
+        {
+          "name": "status",
+          "data_type": "USER-DEFINED",
+          "format": "membership_status",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'active'::app.membership_status",
+          "enums": [
+            "pending",
+            "active",
+            "removed"
+          ]
+        },
+        {
+          "name": "joined_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "cohort_id",
+        "user_id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "cohort_memberships_user_id_fkey",
+          "source_table": "app.cohort_memberships",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "cohort_memberships_cohort_id_fkey",
+          "source_table": "app.cohort_memberships",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.sessions_catalog",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "code",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "day_number",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "check": "day_number >= 1"
+        },
+        {
+          "name": "order_index",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable",
+            "unique"
+          ],
+          "check": "order_index >= 1"
+        },
+        {
+          "name": "title",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "teaser_summary",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "''::text"
+        },
+        {
+          "name": "description",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "''::text"
+        },
+        {
+          "name": "is_published",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "challenges_session_id_fkey",
+          "source_table": "app.challenges",
+          "source_columns": [
+            "session_id"
+          ],
+          "target_table": "app.sessions_catalog",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "cohort_state_active_session_id_fkey",
+          "source_table": "app.cohort_state",
+          "source_columns": [
+            "active_session_id"
+          ],
+          "target_table": "app.sessions_catalog",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.challenges",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "session_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "key",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable",
+            "unique"
+          ]
+        },
+        {
+          "name": "title",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "teaser_summary",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "''::text"
+        },
+        {
+          "name": "instructions",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "''::text"
+        },
+        {
+          "name": "kind",
+          "data_type": "USER-DEFINED",
+          "format": "challenge_kind",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'core'::app.challenge_kind",
+          "enums": [
+            "core",
+            "platinum",
+            "manual"
+          ]
+        },
+        {
+          "name": "status",
+          "data_type": "USER-DEFINED",
+          "format": "challenge_status",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'draft'::app.challenge_status",
+          "enums": [
+            "draft",
+            "published",
+            "disabled"
+          ]
+        },
+        {
+          "name": "sort_order",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "preview_visible",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "requires_submission",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "true"
+        },
+        {
+          "name": "created_by",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "submissions_challenge_id_fkey",
+          "source_table": "app.submissions",
+          "source_columns": [
+            "challenge_id"
+          ],
+          "target_table": "app.challenges",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "challenge_overrides_challenge_id_fkey",
+          "source_table": "app.challenge_overrides",
+          "source_columns": [
+            "challenge_id"
+          ],
+          "target_table": "app.challenges",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "challenges_created_by_fkey",
+          "source_table": "app.challenges",
+          "source_columns": [
+            "created_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "challenges_session_id_fkey",
+          "source_table": "app.challenges",
+          "source_columns": [
+            "session_id"
+          ],
+          "target_table": "app.sessions_catalog",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "progress_challenge_id_fkey",
+          "source_table": "app.progress",
+          "source_columns": [
+            "challenge_id"
+          ],
+          "target_table": "app.challenges",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.cohort_state",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "cohort_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "active_session_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "updated_by",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "cohort_id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "cohort_state_cohort_id_fkey",
+          "source_table": "app.cohort_state",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "cohort_state_active_session_id_fkey",
+          "source_table": "app.cohort_state",
+          "source_columns": [
+            "active_session_id"
+          ],
+          "target_table": "app.sessions_catalog",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "cohort_state_updated_by_fkey",
+          "source_table": "app.cohort_state",
+          "source_columns": [
+            "updated_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.challenge_overrides",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "cohort_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "challenge_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "preview_visible",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "unlocked",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "updated_by",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "cohort_id",
+        "challenge_id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "challenge_overrides_cohort_id_fkey",
+          "source_table": "app.challenge_overrides",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "challenge_overrides_challenge_id_fkey",
+          "source_table": "app.challenge_overrides",
+          "source_columns": [
+            "challenge_id"
+          ],
+          "target_table": "app.challenges",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "challenge_overrides_updated_by_fkey",
+          "source_table": "app.challenge_overrides",
+          "source_columns": [
+            "updated_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.progress",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "cohort_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "challenge_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "status",
+          "data_type": "USER-DEFINED",
+          "format": "progress_status",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'not_started'::app.progress_status",
+          "enums": [
+            "not_started",
+            "draft",
+            "in_progress",
+            "accepted"
+          ]
+        },
+        {
+          "name": "draft_code",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "''::text"
+        },
+        {
+          "name": "attempts_count",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "attempts_count >= 0"
+        },
+        {
+          "name": "cases_passed",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "cases_passed >= 0"
+        },
+        {
+          "name": "cases_total",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0",
+          "check": "cases_total >= 0"
+        },
+        {
+          "name": "last_saved_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "accepted_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "user_id",
+        "cohort_id",
+        "challenge_id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "progress_user_id_fkey",
+          "source_table": "app.progress",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "progress_cohort_id_fkey",
+          "source_table": "app.progress",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "progress_challenge_id_fkey",
+          "source_table": "app.progress",
+          "source_columns": [
+            "challenge_id"
+          ],
+          "target_table": "app.challenges",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.submissions",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "cohort_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "challenge_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "attempt_number",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "check": "attempt_number >= 1"
+        },
+        {
+          "name": "code_submitted",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "auto_result",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "auto_passed",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "grader_duration_ms",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "nullable",
+            "updatable"
+          ],
+          "check": "grader_duration_ms IS NULL OR grader_duration_ms >= 0"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "submissions_user_id_fkey",
+          "source_table": "app.submissions",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "submissions_cohort_id_fkey",
+          "source_table": "app.submissions",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "submissions_challenge_id_fkey",
+          "source_table": "app.submissions",
+          "source_columns": [
+            "challenge_id"
+          ],
+          "target_table": "app.challenges",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "submission_reviews_submission_id_fkey",
+          "source_table": "app.submission_reviews",
+          "source_columns": [
+            "submission_id"
+          ],
+          "target_table": "app.submissions",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.submission_reviews",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "submission_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "reviewer_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "verdict",
+          "data_type": "USER-DEFINED",
+          "format": "review_verdict",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'not_reviewed'::app.review_verdict",
+          "enums": [
+            "approved",
+            "changes_requested",
+            "not_reviewed"
+          ]
+        },
+        {
+          "name": "note",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "''::text"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "submission_reviews_submission_id_fkey",
+          "source_table": "app.submission_reviews",
+          "source_columns": [
+            "submission_id"
+          ],
+          "target_table": "app.submissions",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "submission_reviews_reviewer_id_fkey",
+          "source_table": "app.submission_reviews",
+          "source_columns": [
+            "reviewer_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.diagnostic_responses",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "phase",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ],
+          "check": "phase = ANY (ARRAY['initial'::text, 'final'::text])"
+        },
+        {
+          "name": "question_key",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "response",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "diagnostic_responses_user_id_fkey",
+          "source_table": "app.diagnostic_responses",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.feature_flags",
+      "rls_enabled": true,
+      "rows": 3,
+      "columns": [
+        {
+          "name": "key",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "cohort_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "enabled",
+          "data_type": "boolean",
+          "format": "bool",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "false"
+        },
+        {
+          "name": "config",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "'{}'::jsonb"
+        },
+        {
+          "name": "updated_by",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "updated_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        },
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "feature_flags_cohort_id_fkey",
+          "source_table": "app.feature_flags",
+          "source_columns": [
+            "cohort_id"
+          ],
+          "target_table": "app.cohorts",
+          "target_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "feature_flags_updated_by_fkey",
+          "source_table": "app.feature_flags",
+          "source_columns": [
+            "updated_by"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.audit_log",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "bigint",
+          "format": "int8",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "nextval('app.audit_log_id_seq'::regclass)"
+        },
+        {
+          "name": "actor_user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "action",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "entity_type",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "entity_id",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "before_state",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "after_state",
+          "data_type": "jsonb",
+          "format": "jsonb",
+          "options": [
+            "nullable",
+            "updatable"
+          ]
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "audit_log_actor_user_id_fkey",
+          "source_table": "app.audit_log",
+          "source_columns": [
+            "actor_user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "app.user_links",
+      "rls_enabled": true,
+      "rows": 0,
+      "columns": [
+        {
+          "name": "id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "gen_random_uuid()"
+        },
+        {
+          "name": "user_id",
+          "data_type": "uuid",
+          "format": "uuid",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "label",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "url",
+          "data_type": "text",
+          "format": "text",
+          "options": [
+            "updatable"
+          ]
+        },
+        {
+          "name": "sort_order",
+          "data_type": "integer",
+          "format": "int4",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "0"
+        },
+        {
+          "name": "created_at",
+          "data_type": "timestamp with time zone",
+          "format": "timestamptz",
+          "options": [
+            "updatable"
+          ],
+          "default_value": "now()"
+        }
+      ],
+      "primary_keys": [
+        "id"
+      ],
+      "foreign_key_constraints": [
+        {
+          "name": "user_links_user_id_fkey",
+          "source_table": "app.user_links",
+          "source_columns": [
+            "user_id"
+          ],
+          "target_table": "app.users",
+          "target_columns": [
+            "id"
+          ]
+        }
+      ]
+    }
+  ]
+}

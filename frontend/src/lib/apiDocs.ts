@@ -99,6 +99,24 @@ export const API_DOCS: Record<string, DocHerramienta> = {
     relacionadas: ['mostrar()', 'agregarA()'],
   },
 
+  'crearCarrusel()': {
+    firma: 'crearCarrusel()',
+    descripcion:
+      'Prepara un espacio para mostrar un proyecto destacado a la vez. Primero mostralo con mostrar().',
+    devuelve: 'el espacio donde va cambiando el proyecto',
+    ejemplo: 'const destacado = crearCarrusel()\nmostrar(destacado)',
+    relacionadas: ['cadaSegundo()', 'mostrar()'],
+  },
+
+  'proyectosDestacados()': {
+    firma: 'proyectosDestacados(proyectos)',
+    descripcion:
+      'De una lista de proyectos, conserva solo los que vienen marcados como destacados. Así el carrusel no muestra los demás.',
+    devuelve: 'una lista de proyectos destacados',
+    ejemplo: 'const destacados = proyectosDestacados(datos.proyectos)',
+    relacionadas: ['cadaSegundo()'],
+  },
+
   'mostrar()': {
     firma: 'mostrar(elemento)',
     descripcion: 'Pone un elemento en la página, al final de lo que ya haya.',
@@ -112,6 +130,14 @@ export const API_DOCS: Record<string, DocHerramienta> = {
       'Pone un elemento DENTRO de otro (por ejemplo, un item dentro de una lista). Distinto de mostrar(), que lo pone directo en la página.',
     ejemplo: 'const compras = crearLista()\nagregarA(compras, crearItem("pan"))',
     relacionadas: ['mostrar()', 'crearLista()', 'crearItem()'],
+  },
+
+  'vaciar()': {
+    firma: 'vaciar(contenedor)',
+    descripcion:
+      'Quita lo que hay dentro de un contenedor, pero conserva el contenedor para volver a llenarlo.',
+    ejemplo: 'vaciar(compras)\nagregarA(compras, crearItem("pan"))',
+    relacionadas: ['agregarA()', 'crearLista()'],
   },
 
   'si / sino': {
@@ -140,10 +166,12 @@ export const API_DOCS: Record<string, DocHerramienta> = {
   },
 
   'cadaSegundo()': {
-    firma: 'cadaSegundo(() => { … })',
+    firma: 'cadaSegundo(carrusel, lista, proyecto => crearImagen(...))',
     descripcion:
-      'Repite algo una vez por segundo, para siempre, mientras la página esté abierta. Sirve para un reloj o algo que se actualiza solo.',
-    ejemplo: 'let cuenta = 0\ncadaSegundo(() => {\n  cuenta = cuenta + 1\n  console.log(cuenta)\n})',
+      'En un carrusel, cambia al siguiente elemento de una lista una vez por segundo y vuelve al primero al llegar al final. Si la lista está vacía, muestra un aviso.',
+    ejemplo:
+      'cadaSegundo(destacado, destacados, proyecto =>\n  crearImagen(proyecto.imagenUrl, proyecto.nombre)\n)',
+    relacionadas: ['crearCarrusel()', 'proyectosDestacados()', 'crearImagen()'],
   },
 
   'función': {

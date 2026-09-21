@@ -12,6 +12,10 @@ venv/
 .env
 .env.*
 !.env.example
+*firebase-adminsdk*.json
+*service-account*.json
+credentials/
+secrets/
 
 # SQLite
 *.db
@@ -26,4 +30,3 @@ Thumbs.db
 
 # Deno
 .deno/
-

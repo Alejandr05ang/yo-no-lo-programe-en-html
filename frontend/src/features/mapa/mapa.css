@@ -43,6 +43,9 @@
   border-bottom: 1px solid var(--color-divider);
   min-height: 200px;
 }
+.mapa-real { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+.mapa-real .mapa-celda { min-height: 240px; }
+.mapa-real .mapa-reto-txt { display: grid; gap: 3px; margin-top: var(--space-3); font-size: 12px; }
 .mapa-celda {
   text-align: left;
   font: inherit;

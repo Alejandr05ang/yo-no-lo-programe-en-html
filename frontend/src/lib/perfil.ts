@@ -44,8 +44,15 @@ export function guardarPerfil(p: Perfil) {
   }
 }
 
-/** El perfil en la forma del objeto `datos` (redes vacías fuera). */
+/** El perfil en la forma del objeto `datos`.
+ * `redes` es una lista con nombre y url: se puede recorrer con `for...of` sin
+ * introducir Object.entries() ni desestructuración antes de tiempo. Las urls vacías
+ * se conservan para que E4 pueda decidir cuáles mostrar. */
 export function perfilComoDatos(p: Perfil): Record<string, unknown> {
-  const redes = Object.fromEntries(Object.entries(p.redes).filter(([, v]) => v.trim() !== ''))
+  const redes = [
+    { nombre: 'GitHub', url: p.redes.github },
+    { nombre: 'LinkedIn', url: p.redes.linkedin },
+    { nombre: 'Correo', url: p.redes.correo },
+  ]
   return { nombre: p.nombre, sobreMi: p.sobreMi, redes, hobbies: p.hobbies }
 }

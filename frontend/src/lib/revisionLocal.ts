@@ -33,6 +33,26 @@ function comoTexto(v: unknown): string {
   return typeof v === 'string' ? v : ''
 }
 
+/** Busca una lista concreta por sus items directos, sin contar listas heredadas de otras secciones. */
+function encontrarListaConItems(doc: Document, esperados: string[]): Element | null {
+  for (const lista of [...doc.querySelectorAll('ul, ol')]) {
+    const items = [...lista.children]
+      .filter((n) => n.tagName === 'LI')
+      .map((n) => (n.textContent ?? '').trim())
+    if (items.length === esperados.length && esperados.every((item) => items.includes(item))) {
+      return lista
+    }
+  }
+  return null
+}
+
+function gruposDeSkills(v: unknown): { categoria: string; items: string[] }[] {
+  return comoLista(v).map((grupo) => ({
+    categoria: comoTexto(grupo.categoria),
+    items: comoLista(grupo.items).map((item) => comoTexto(item)),
+  }))
+}
+
 const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
   1: [
     {
@@ -80,13 +100,8 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
       verificar: (d) => !!d.querySelector('h2')?.textContent?.trim(),
     },
     {
-      descripcion: 'El subtítulo viene antes de los párrafos',
-      verificar: (d) => {
-        const nodos = [...d.querySelectorAll('h2, p')]
-        const primerH2 = nodos.findIndex((n) => n.tagName === 'H2')
-        const primerP = nodos.findIndex((n) => n.tagName === 'P')
-        return primerH2 !== -1 && primerP !== -1 && primerH2 < primerP
-      },
+      descripcion: 'El subtítulo tiene texto',
+      verificar: (d) => !!d.querySelector('h2')?.textContent?.trim(),
     },
   ],
 
@@ -98,16 +113,16 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
     {
       descripcion: 'Hay un enlace por cada red que tenés cargada',
       verificar: (d, datos) => {
-        const redes = comoObjeto(datos.redes)
-        return d.querySelectorAll('a').length === Object.keys(redes).length
+        const redes = comoLista(datos.redes).filter((red) => comoTexto(red.url).trim() !== '')
+        return d.querySelectorAll('a').length === redes.length
       },
     },
     {
       descripcion: 'Cada enlace apunta a la dirección correcta',
       verificar: (d, datos) => {
-        const redes = comoObjeto(datos.redes)
+        const redes = comoLista(datos.redes).filter((red) => comoTexto(red.url).trim() !== '')
         const hrefs = [...d.querySelectorAll('a')].map((a) => a.getAttribute('href'))
-        return Object.values(redes).every((url) => hrefs.includes(comoTexto(url)))
+        return redes.every((red) => hrefs.includes(comoTexto(red.url)))
       },
     },
   ],
@@ -134,21 +149,26 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
 
   6: [
     {
-      descripcion: 'Hay una lista',
-      verificar: (d) => !!d.querySelector('ul, ol'),
+      descripcion: 'Hay una lista para los hobbies que vienen en datos',
+      verificar: (d, datos) => {
+        const hobbies = comoLista(datos.hobbies).map((h) => comoTexto(h))
+        return hobbies.length > 0 && !!encontrarListaConItems(d, hobbies)
+      },
     },
     {
-      descripcion: 'Hay un item por cada hobby en datos.hobbies',
+      descripcion: 'Esa lista tiene un item por cada hobby',
       verificar: (d, datos) => {
-        const hobbies = comoLista(datos.hobbies)
-        return d.querySelectorAll('li').length === hobbies.length
+        const hobbies = comoLista(datos.hobbies).map((h) => comoTexto(h))
+        const lista = encontrarListaConItems(d, hobbies)
+        return !!lista && lista.children.length === hobbies.length
       },
     },
     {
       descripcion: 'El texto de cada item sale de datos.hobbies',
       verificar: (d, datos) => {
         const hobbies = comoLista(datos.hobbies).map((h) => comoTexto(h))
-        const textos = [...d.querySelectorAll('li')].map((li) => (li.textContent ?? '').trim())
+        const lista = encontrarListaConItems(d, hobbies)
+        const textos = lista ? [...lista.children].map((li) => (li.textContent ?? '').trim()) : []
         return hobbies.length > 0 && hobbies.every((h) => textos.includes(h))
       },
     },
@@ -178,8 +198,8 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
   // verificar "qué se ve en el primer instante" pero no el avance automático en sí.
   8: [
     {
-      descripcion: 'Muestra una imagen',
-      verificar: (d) => !!d.querySelector('img'),
+      descripcion: 'Hay un carrusel con una imagen',
+      verificar: (d) => !!d.querySelector('[data-carrusel] img'),
     },
     {
       descripcion: 'El proyecto mostrado es uno de los destacados',
@@ -189,7 +209,7 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
         const urls = comoLista(datos.proyectos)
           .filter((p) => p.destacado === true)
           .map((p) => comoTexto(p.imagenUrl))
-        const srcs = [...d.querySelectorAll('img')].map((img) => img.getAttribute('src'))
+        const srcs = [...d.querySelectorAll('[data-carrusel] img')].map((img) => img.getAttribute('src'))
         return urls.some((u) => srcs.includes(u))
       },
     },
@@ -199,8 +219,9 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
         const urls = comoLista(datos.proyectos)
           .filter((p) => p.destacado !== true)
           .map((p) => comoTexto(p.imagenUrl))
-        const srcs = [...d.querySelectorAll('img')].map((img) => img.getAttribute('src'))
-        return !urls.some((u) => srcs.includes(u))
+        const imgs = [...d.querySelectorAll('[data-carrusel] img')]
+        const srcs = imgs.map((img) => img.getAttribute('src'))
+        return imgs.length === 1 && !urls.some((u) => srcs.includes(u))
       },
     },
   ],
@@ -246,31 +267,27 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
     {
       descripcion: 'Hay un título por cada categoría de datos.skills',
       verificar: (d, datos) => {
-        const skills = comoObjeto(datos.skills)
+        const skills = gruposDeSkills(datos.skills)
         const titulos = [...d.querySelectorAll('h2, h3')].map((t) => (t.textContent ?? '').trim())
-        return Object.keys(skills).every((cat) => titulos.includes(cat))
+        return skills.length > 0 && skills.every((grupo) => titulos.includes(grupo.categoria))
       },
     },
     {
-      descripcion: 'Cada categoría muestra sus items',
+      descripcion: 'Cada categoría tiene su propia lista de items',
       verificar: (d, datos) => {
-        const skills = comoObjeto(datos.skills)
-        const totalEsperado = Object.values(skills).reduce(
-          (n, items) => n + comoLista(items).length,
-          0,
-        )
-        return d.querySelectorAll('li').length === totalEsperado
+        const skills = gruposDeSkills(datos.skills)
+        return skills.length > 0 && skills.every((grupo) => !!encontrarListaConItems(d, grupo.items))
       },
     },
     {
       descripcion: 'El texto de los items sale de datos.skills',
       verificar: (d, datos) => {
-        const skills = comoObjeto(datos.skills)
-        const esperados = Object.values(skills).flatMap((items) =>
-          comoLista(items).map((i) => comoTexto(i)),
-        )
-        const textos = [...d.querySelectorAll('li')].map((li) => (li.textContent ?? '').trim())
-        return esperados.every((e) => textos.includes(e))
+        const skills = gruposDeSkills(datos.skills)
+        return skills.length > 0 && skills.every((grupo) => {
+          const lista = encontrarListaConItems(d, grupo.items)
+          const textos = lista ? [...lista.children].map((item) => (item.textContent ?? '').trim()) : []
+          return grupo.items.every((item) => textos.includes(item))
+        })
       },
     },
   ],
@@ -345,7 +362,7 @@ export async function revisarLocalmente(
     casosPasados: pasados,
     casosTotales: evaluados.length,
     nota: r.ok
-      ? 'Cada revisión prueba con datos distintos. Ninguno te dice cómo arreglarlo.'
+      ? 'Esta revisión mira el resultado visible al ejecutar. Ningún caso te dice cómo arreglarlo.'
       : `El código no llegó a ejecutarse: ${r.error?.mensaje ?? 'error'}.`,
   }
 }

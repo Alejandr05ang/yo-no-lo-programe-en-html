@@ -1,10 +1,7 @@
-// Cliente HTTP tipado hacia el backend FastAPI.
-// Todavía sin backend: los métodos leen los mocks de encargos.ts.
-// Cuando exista la API, reemplazar el cuerpo por fetch() y mantener las firmas.
-
 import type { ResultadoRevision } from './tipos'
 import { ENCARGOS, type EncargoMock } from './encargos'
 import { revisarLocalmente } from './revisionLocal'
+import { challengeKeyFromNumero } from './challengeIdentity'
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api'
 
@@ -18,29 +15,37 @@ async function pedir<T>(ruta: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  /** El encargo por número. En producción: GET /encargos/:n (403 si la sesión no abrió). */
+  /** El encargo por número. */
   async encargo(numero: number): Promise<EncargoMock> {
-    // return pedir<EncargoMock>(`/encargos/${numero}`)
     await espera(120)
     return ENCARGOS[numero] ?? ENCARGOS[1]
   },
 
-  async autoguardar(_contenido: string): Promise<{ guardadoHaceSegundos: number }> {
-    // return pedir('/entregas/autoguardar', { method: 'POST', body: JSON.stringify({ contenido }) })
-    await espera(80)
+  async autoguardar(numero: number, draft_code: string): Promise<{ guardadoHaceSegundos: number }> {
+    const key = challengeKeyFromNumero(numero)
+    await pedir(`/challenges/${key}/progress`, {
+      method: 'PUT',
+      body: JSON.stringify({ draft_code, status: 'in_progress' })
+    })
     return { guardadoHaceSegundos: 0 }
   },
 
   async entregarARevision(
-    numeroEncargo: number,
+    numero: number,
     contenido: string,
     datos: unknown,
   ): Promise<ResultadoRevision> {
-    // Real: el servidor corre el código contra casos ocultos de tamaño variable; el
-    // cliente NUNCA recibe los casos ni la solución.
-    // return pedir<ResultadoRevision>('/entregas/revisar', { method: 'POST', body: JSON.stringify({ numeroEncargo, contenido }) })
+    const key = challengeKeyFromNumero(numero)
+    // 1. Submit to backend
+    await pedir(`/challenges/${key}/submit`, {
+      method: 'POST',
+      body: JSON.stringify({ code_submitted: contenido })
+    })
+    // 2. Client side grader for now, until Deno grader is ready (Phase 10)
     await espera(400)
-    return revisarLocalmente(numeroEncargo, contenido, datos)
+    const result = revisarLocalmente(numero, contenido, datos)
+    // 3. Optional: update auto_result in backend via another endpoint, but for now MVP is just saving it.
+    return result
   },
 }
 
@@ -48,5 +53,3 @@ function espera(ms: number) {
   return new Promise((r) => setTimeout(r, ms))
 }
 
-// Silenciar el "no usado" de pedir() hasta que se cablee el backend.
-void pedir
