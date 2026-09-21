@@ -40,6 +40,7 @@ export const PISTAS: Pista[] = [
   { archivo: 'masaru-imada-nowin.mp3', titulo: 'Masaru Imada — Nowin' },
   { archivo: 'masayoshi-takanaka-sayonara-fuji-san.mp3', titulo: 'Masayoshi Takanaka — サヨナラ…FUJIさん' },
   { archivo: 'painted-paradise.mp3', titulo: 'ペインテッド・パラダイス' },
+  { archivo: 'Madison Avenue - Don\'t Call Me Baby [OFFICIAL VIDEO].mp3', titulo: 'Madison Avenue — Don\'t Call Me Baby' },
 ]
 
 const CLAVE = 've:musica'

@@ -9,6 +9,7 @@ const applicationRoutes: RouteObject[] = [
   { path: '/login', element: <AuthPage key="login" /> },
   { path: '/registro', element: <AuthPage key="registro" register /> },
   { path: '/recuperar', element: <RecoveryPage /> },
+  { path: '/demo', lazy: async () => ({ Component: (await import('./features/demo/DemoNivel')).DemoNivel }) },
   { element: <RequireAuth />, children: [
     { path: '/verificar-email', element: <VerificationPage /> },
     { path: '/cuenta', element: <AccountPage /> },
@@ -38,6 +39,7 @@ const routes: RouteObject[] = import.meta.env.DEV && import.meta.env.VITE_ENABLE
     { path: '/', element: <Navigate to="/inicio" replace /> },
     { path: '/inicio', lazy: async () => ({ Component: (await import('./features/entrada/Inicio')).Inicio }) },
     { path: '/entrar', lazy: async () => ({ Component: (await import('./features/entrada/Entrada')).Entrada }) },
+    { path: '/demo', lazy: async () => ({ Component: (await import('./features/demo/DemoNivel')).DemoNivel }) },
     { path: '/portafolio', lazy: async () => ({ Component: (await import('./features/estudiante/VistaEstudiante')).VistaEstudiante }) },
     { path: '/mapa', lazy: async () => ({ Component: (await import('./features/mapa/Mapa')).Mapa }) },
     { path: '/bitacora', lazy: async () => ({ Component: (await import('./features/instructor/Bitacora')).Bitacora }) },
