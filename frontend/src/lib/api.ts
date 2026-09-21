@@ -15,17 +15,9 @@ async function pedir<T>(ruta: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
-  /** El encargo por nÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Âºmero. */
-  async getDemoProgress(): Promise<any> {
-    return await pedir('/demo/progress')
-  },
-
-  async updateDemoProgress(payload: any): Promise<any> {
-    return await pedir('/demo/progress', {
-      method: 'PUT',
-      body: JSON.stringify(payload)
-    })
-  },
+  // El progreso de /demo no vive aquí: este cliente no adjunta el token de
+  // Firebase, así que cualquier ruta autenticada responde 401. DemoNivel usa
+  // auth.api (lib/http.ts), que sí lo hace.
 
   async getProgress(numero: number): Promise<{ draft_code: string, status: string }> {
     const key = challengeKeyFromNumero(numero)

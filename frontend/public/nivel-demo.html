@@ -1593,9 +1593,14 @@
       $("s-ex").textContent = e ? Math.round(e.x) : "—";
       $("s-mo").textContent = "0/" + level.monedas.length;
     }
-    function bump(msg) {
+    function bump(msg, notificar = true) {
       changes++;
-      try { window.parent.postMessage({ source: "nivel-demo", type: "state-changed", payload: { schema_version: 1, state: level, draft_code: document.getElementById("codearea") ? document.getElementById("codearea").value : "" } }, "*"); } catch(e) {}
+      // notificar=false al restaurar: avisar de un estado que acaba de llegar del
+      // padre le haría guardarlo otra vez, y pisaría el servidor con lo que
+      // acabamos de leer de él.
+      if (notificar) {
+        try { window.parent.postMessage({ source: "nivel-demo", type: "state-changed", payload: { schema_version: 1, state: level, draft_code: document.getElementById("codearea") ? document.getElementById("codearea").value : "" } }, "*"); } catch(e) {}
+      }
       $("savemeta").textContent = "sincronizado · " + changes + " cambios";
       consoleEl.innerHTML = "<b>ok</b> — " + msg + " · nivel redibujado";
     }
@@ -1896,10 +1901,13 @@
       } else if (e.data.type === "restore-state") {
         const state = e.data.payload && e.data.payload.state;
         if (state && Object.keys(state).length > 0) {
+          // Un nivel se restaura para seguir construyéndolo, nunca a mitad de
+          // partida: stopPlay antes de cargarlo deja la escena y el editor listos.
+          if (mode === "play") stopPlay();
           level = Object.assign(defaultLevel(), state);
           ANCHO = level.ancho;
           setCode(genCode(level)); applyBuildView(); renderScene(); updateStats();
-          bump("nivel restaurado");
+          bump("nivel restaurado", false);
         }
       }
     });
