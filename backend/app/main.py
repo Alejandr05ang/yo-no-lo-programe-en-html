@@ -18,6 +18,7 @@ from app.core.errors import install_error_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import RequestSafetyMiddleware
 from app.db.session import create_database
+from app.demo.routes import router as demo_router
 from app.instructor.routes import router as instructor_router
 from app.profile.routes import router as profile_router
 from app.progress.routes import router as progress_router
@@ -34,7 +35,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if engine is not None:
             await engine.dispose()
 
-    app = FastAPI(title="Tutorías de Verano", lifespan=lifespan)
+    app = FastAPI(title="TutorÃƒÂ­as de Verano", lifespan=lifespan)
     app.state.settings = settings
     app.state.firebase_verifier = FirebaseVerifier(settings)
     app.state.join_attempt_limiter = JoinAttemptLimiter()
@@ -49,6 +50,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(catalog_router)
     app.include_router(admin_router)
     app.include_router(progress_router)
+    app.include_router(demo_router)
     app.include_router(instructor_router)
     app.add_middleware(RequestSafetyMiddleware, settings=settings)
     app.add_middleware(

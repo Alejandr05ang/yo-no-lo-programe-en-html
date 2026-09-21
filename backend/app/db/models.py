@@ -498,3 +498,18 @@ class UserLink(Base):
     url: Mapped[str] = mapped_column(Text)
     sort_order: Mapped[int] = mapped_column(Integer, server_default=text("0"))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+class DemoProgress(Base):
+    __tablename__ = "demo_progress"
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey("app.users.id", ondelete="CASCADE", name="demo_progress_user_id_fkey"),
+        primary_key=True,
+    )
+    schema_version: Mapped[int] = mapped_column(Integer, server_default=text("1"))
+    state_json: Mapped[Any] = mapped_column(JSONB, nullable=False, server_default=text("'{}'"))
+    draft_code: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+

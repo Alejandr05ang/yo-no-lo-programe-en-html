@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="es">
 
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Taller · Constructor de niveles — Demo Día 1</title>
+  <title>Taller Â· Constructor de niveles â€” Demo DÃ­a 1</title>
   <style>
     :root {
-      /* paleta clara — coincide con el resto de la app (design-system.css) */
+      /* paleta clara â€” coincide con el resto de la app (design-system.css) */
       --bg: #f3f2f2;
       --panel: #eae9e9;
       --panel-2: #e2dfdd;
@@ -34,8 +34,8 @@
       padding-bottom: env(safe-area-inset-bottom, 0px);
     }
 
-    /* el editor de código y su barra son su propio módulo oscuro (igual que el
-     Monaco real del taller, que también es oscuro dentro de una app clara) */
+    /* el editor de cÃ³digo y su barra son su propio mÃ³dulo oscuro (igual que el
+     Monaco real del taller, que tambiÃ©n es oscuro dentro de una app clara) */
     .center {
       --line: #2b2620;
       --line-soft: #221f19;
@@ -256,7 +256,7 @@
       line-height: 1.5
     }
 
-    /* ---------- center: editor (módulo oscuro, ver .center arriba) ---------- */
+    /* ---------- center: editor (mÃ³dulo oscuro, ver .center arriba) ---------- */
     .center {
       flex: 1 1 0;
       min-width: 0;
@@ -576,9 +576,9 @@
       flex: 0 0 auto;
     }
 
-    /* cielo — fondo pixel art en bucle infinito, 8 capas de parallax.
-     .sky se recorta dinámicamente desde JS (updateBgScale) para que
-     coincida exactamente con la línea del suelo real a cualquier zoom.
+    /* cielo â€” fondo pixel art en bucle infinito, 8 capas de parallax.
+     .sky se recorta dinÃ¡micamente desde JS (updateBgScale) para que
+     coincida exactamente con la lÃ­nea del suelo real a cualquier zoom.
      bottom se sobreescribe via style desde JS; inset:0 como base. */
     .sky {
       position: absolute;
@@ -891,7 +891,7 @@
 
     /* ===== FONDO PIXEL ART INLINEADO (fondo.css) ===== */
     /* =========================================================================
-   FONDO PIXEL ART EN BUCLE INFINITO — CSS puro, sin imagenes ni JS
+   FONDO PIXEL ART EN BUCLE INFINITO â€” CSS puro, sin imagenes ni JS
    -------------------------------------------------------------------------
    Escala: 1 pixel de arte = 4 px CSS. Lienzo real 320 x 180 -> 1280 x 720.
    Cada capa es un patron que se repite en horizontal (repeat-x) y se anima
@@ -1043,24 +1043,36 @@
 
 <body>
   <header>
-    <span class="brand">Taller <span class="dot">·</span> Portafolio</span>
+    <span class="brand">Taller <span class="dot">Â·</span> Portafolio</span>
     <span class="tag beta">BETA</span>
-    <span class="tag day">Demo · Día 1</span>
+    <span class="tag day">Demo Â· DÃ­a 1</span>
     <span class="spacer"></span>
+    <span id="demo-save-status" style="font-size: 12px; color: var(--ink-dim); margin-right: 10px;"></span>
+    <div id="auth-controls" style="display: flex; gap: 8px; margin-right: 14px;">
+       <button id="btn-login" class="btn" style="padding: 5px 12px; font-size: 12px; display: none;" onclick="window.parent.postMessage({source: 'nivel-demo', type: 'logout'}, '*')">Iniciar sesión</button>
+       <button id="btn-account" class="btn" style="padding: 5px 12px; font-size: 12px; display: none;" onclick="window.parent.postMessage({source: 'nivel-demo', type: 'go-account'}, '*')">Mi cuenta</button>
+       <button id="btn-logout" class="btn" style="padding: 5px 12px; font-size: 12px; display: none;" onclick="window.parent.postMessage({source: 'nivel-demo', type: 'logout'}, '*')">Cerrar sesión</button>
+    </div>
+<!-- removed --> style="font-size: 12px; color: var(--ink-dim); margin-right: 10px;"></span>
+    <div id="auth-controls" style="display: flex; gap: 8px; margin-right: 14px;">
+       <button id="btn-login" class="btn" style="padding: 5px 12px; font-size: 12px; display: none;" onclick="window.parent.postMessage({source: 'nivel-demo', type: 'logout'}, '*')">Iniciar sesin</button>
+       <button id="btn-account" class="btn" style="padding: 5px 12px; font-size: 12px; display: none;" onclick="window.parent.postMessage({source: 'nivel-demo', type: 'go-account'}, '*')">Mi cuenta</button>
+       <button id="btn-logout" class="btn" style="padding: 5px 12px; font-size: 12px; display: none;" onclick="window.parent.postMessage({source: 'nivel-demo', type: 'logout'}, '*')">Cerrar sesin</button>
+    </div>
     <div class="modeswitch">
-      <button id="mode-build" class="active">✎ Constructor</button>
-      <button id="mode-play">▶ Jugar</button>
+      <button id="mode-build" class="active">âœŽ Constructor</button>
+      <button id="mode-play">â–¶ Jugar</button>
     </div>
   </header>
 
   <main>
     <!-- LEFT RAIL -->
     <aside class="rail">
-      <div class="eyebrow">Día 1</div>
+      <div class="eyebrow">DÃ­a 1</div>
       <h2>Cruzar hasta la bandera</h2>
       <p>El nivel tiene un <b>hueco y una pared</b> en el camino a la meta, y algunas <b>monedas</b> para juntar de
-        paso. Se puede cruzar tal cual está, pero movés y agregás bloques para hacerlo a tu manera.</p>
-      <p>Movés los bloques con el mouse <b>o</b> cambiás los números en el código. Todo se sincroniza en vivo.</p>
+        paso. Se puede cruzar tal cual estÃ¡, pero movÃ©s y agregÃ¡s bloques para hacerlo a tu manera.</p>
+      <p>MovÃ©s los bloques con el mouse <b>o</b> cambiÃ¡s los nÃºmeros en el cÃ³digo. Todo se sincroniza en vivo.</p>
       <div class="divider"></div>
       <div class="sec-label">Bloques disponibles</div>
       <div class="chips">
@@ -1072,20 +1084,20 @@
         <span class="chip add" id="add-hueco">+ hueco</span>
         <span class="chip add" id="add-coin">+ moneda</span>
       </div>
-      <div class="hint-row">Doble clic sobre un bloque, pared o hueco para quitarlo. Si agrandás <code
-          class="mono">nivel.ancho</code> en el código, usá el zoom de abajo a la derecha del juego para navegar el
+      <div class="hint-row">Doble clic sobre un bloque, pared o hueco para quitarlo. Si agrandÃ¡s <code
+          class="mono">nivel.ancho</code> en el cÃ³digo, usÃ¡ el zoom de abajo a la derecha del juego para navegar el
         nivel.</div>
       <div class="divider"></div>
       <div class="sec-label">Idea</div>
-      <p style="font-size:12.5px">Esto es la misma pantalla que vas a usar todos los días: código de un lado, resultado
-        del otro. Hoy jugás. Desde mañana, vos escribís las reglas.</p>
+      <p style="font-size:12.5px">Esto es la misma pantalla que vas a usar todos los dÃ­as: cÃ³digo de un lado, resultado
+        del otro. Hoy jugÃ¡s. Desde maÃ±ana, vos escribÃ­s las reglas.</p>
     </aside>
 
     <!-- CENTER: CODE -->
     <section class="center">
       <div class="tabs">
         <span class="tab active mono" id="tab-name">nivel.js</span>
-        <span class="tab readonly mono">reglas.js — solo lectura</span>
+        <span class="tab readonly mono">reglas.js â€” solo lectura</span>
       </div>
       <div class="editor">
         <div class="gutter mono" id="gutter">1</div>
@@ -1094,18 +1106,18 @@
           <textarea id="codearea" class="mono" spellcheck="false" autocomplete="off" autocapitalize="off"></textarea>
         </div>
       </div>
-      <div class="console mono" id="console">consola vacía — el nivel se dibuja mientras editás</div>
+      <div class="console mono" id="console">consola vacÃ­a â€” el nivel se dibuja mientras editÃ¡s</div>
       <div class="actionbar">
-        <button class="btn play" id="btn-play">▶ Jugar nivel</button>
-        <button class="btn" id="btn-reset">↺ Reiniciar ejemplo</button>
-        <span class="am-meta" id="savemeta">sincronizado · 0 cambios</span>
+        <button class="btn play" id="btn-play">â–¶ Jugar nivel</button>
+        <button class="btn" id="btn-reset">â†º Reiniciar ejemplo</button>
+        <span class="am-meta" id="savemeta">sincronizado Â· 0 cambios</span>
       </div>
     </section>
 
     <!-- RIGHT: VIEWPORT / GAME -->
     <section class="right">
       <div class="urlbar">
-        <span class="pill" id="livepill"><span class="led"></span><span id="livelabel">en edición</span></span>
+        <span class="pill" id="livepill"><span class="led"></span><span id="livelabel">en ediciÃ³n</span></span>
         <div class="url">taller.dev/nivel/ana</div>
         <span class="pill">nivel-01</span>
       </div>
@@ -1113,7 +1125,7 @@
         <div class="zoom-toolbar" id="zoom-toolbar">
           <span>Zoom del constructor</span>
           <div class="zoom-controls">
-            <button class="zbtn" id="zoom-out" title="Alejar">−</button>
+            <button class="zbtn" id="zoom-out" title="Alejar">âˆ’</button>
             <span class="zoom-value" id="zoom-label">Ajustar</span>
             <button class="zbtn" id="zoom-in" title="Acercar">+</button>
             <button class="zbtn" id="zoom-fit" title="Ajustar al ancho">Ajustar</button>
@@ -1136,7 +1148,7 @@
             <div id="scene"></div>
           </div>
           <div class="overlay" id="overlay">
-            <div class="big" id="overlay-big">¡Meta alcanzada!</div>
+            <div class="big" id="overlay-big">Â¡Meta alcanzada!</div>
             <div class="sub" id="overlay-sub">Cruzaste el hueco.</div>
             <button class="btn primary" id="overlay-btn">Volver a construir</button>
           </div>
@@ -1169,12 +1181,12 @@
             </div>
           </div>
           <div class="touchpad" id="touchpad">
-            <button data-k="left">←</button>
-            <button data-k="jump">↑</button>
-            <button data-k="right">→</button>
+            <button data-k="left">â†</button>
+            <button data-k="jump">â†‘</button>
+            <button data-k="right">â†’</button>
           </div>
-          <div class="controls-hint" id="controls-hint" style="display:none">Movete con <kbd>←</kbd> <kbd>→</kbd> y
-            saltá con <kbd>espacio</kbd> o <kbd>↑</kbd>. Caé sobre el enemigo para bajarle vida.</div>
+          <div class="controls-hint" id="controls-hint" style="display:none">Movete con <kbd>â†</kbd> <kbd>â†’</kbd> y
+            saltÃ¡ con <kbd>espacio</kbd> o <kbd>â†‘</kbd>. CaÃ© sobre el enemigo para bajarle vida.</div>
         </div>
       </div>
     </section>
@@ -1182,11 +1194,41 @@
 
   <script>
     /* ---------- avisar a la app (fuera del iframe) del primer clic/tecla ----------
-       La música de fondo retoma tras un F5 con el primer gesto en cualquier parte de
-       la página (ver musica.ts), pero ese listener vive en el documento del padre y
-       nunca ve los clics de acá adentro (iframe con sandbox, sin allow-same-origin).
+       La mÃºsica de fondo retoma tras un F5 con el primer gesto en cualquier parte de
+       la pÃ¡gina (ver musica.ts), pero ese listener vive en el documento del padre y
+       nunca ve los clics de acÃ¡ adentro (iframe con sandbox, sin allow-same-origin).
        Reenviamos el gesto por postMessage para que el padre pueda resumirla. */
     (function () {
+
+    window.addEventListener("message", (e) => {
+      if (e.source !== window.parent || !e.data || e.data.source !== "demo-parent") return;
+      if (e.data.type === "set-auth-state") {
+        const authControls = document.getElementById("auth-controls");
+        const btnLogin = document.getElementById("btn-login");
+        const btnAccount = document.getElementById("btn-account");
+        const btnLogout = document.getElementById("btn-logout");
+        if (e.data.payload.authenticated) {
+          btnLogin.style.display = "none";
+          btnAccount.style.display = "inline-flex";
+          btnLogout.style.display = "inline-flex";
+        } else {
+          btnLogin.style.display = "inline-flex";
+          btnAccount.style.display = "none";
+          btnLogout.style.display = "none";
+        }
+      } else if (e.data.type === "restore-state") {
+        if (e.data.payload && e.data.payload.state && Object.keys(e.data.payload.state).length > 0) {
+          level = Object.assign(defaultLevel(), e.data.payload.state);
+          ANCHO = level.ancho;
+          renderScene();
+          updateCodeArea();
+          bump("Nivel restaurado desde servidor");
+        }
+      } else if (e.data.type === "save-status") {
+         const span = document.getElementById("demo-save-status");
+         if(span) span.textContent = e.data.payload.text;
+      }
+    });
       let avisado = false;
       function avisar() {
         if (avisado) return; avisado = true;
@@ -1197,18 +1239,18 @@
     })();
 
     /* ============================================================
-       Modelo del nivel — coordenadas lógicas en un lienzo de alto 440
+       Modelo del nivel â€” coordenadas lÃ³gicas en un lienzo de alto 440
        y ancho variable (nivel.ancho). VISIBLE_W es la ventana que se
-       ve de una vez al jugar; si el nivel es más ancho, la cámara sigue
+       ve de una vez al jugar; si el nivel es mÃ¡s ancho, la cÃ¡mara sigue
        al jugador (scroll horizontal). Por defecto el nivel entra entero
-       sin zoom ni scroll — agrandalo con nivel.ancho en el código.
+       sin zoom ni scroll â€” agrandalo con nivel.ancho en el cÃ³digo.
        ============================================================ */
     const H = 440;
     const GROUND_TOP = 384;          // altura del suelo
     const PLAYER_W = 30, PLAYER_H = 32;
     const ENEMY_W = 34, ENEMY_H = 30;
     const VISIBLE_W = 800;
-    const DEFAULT_ANCHO = 800;       // simple por defecto — editable con nivel.ancho
+    const DEFAULT_ANCHO = 800;       // simple por defecto â€” editable con nivel.ancho
     let ANCHO = DEFAULT_ANCHO;
 
     function defaultLevel() {
@@ -1242,13 +1284,13 @@
     let metaFollowsEnd = true; // la meta se mantiene al final del nivel salvo que la arrastres vos mismo
 
     /* ============================================================
-       Código  <->  modelo
+       CÃ³digo  <->  modelo
        ============================================================ */
     function genCode(L) {
       const n = v => (Math.round(v * 100) / 100).toString();
       let s = "";
-      s += "// nivel.js — construí tu nivel\n";
-      s += "// mové los bloques o cambiá los números\n\n";
+      s += "// nivel.js â€” construÃ­ tu nivel\n";
+      s += "// movÃ© los bloques o cambiÃ¡ los nÃºmeros\n\n";
       s += `nivel.ancho = ${n(L.ancho)}\n\n`;
       s += `jugador.x = ${n(L.jugador.x)}\n`;
       s += `jugador.y = ${n(L.jugador.y)}\n\n`;
@@ -1272,7 +1314,7 @@
       L.monedas.forEach(c => {
         s += `moneda(x: ${n(c.x)}, y: ${n(c.y)})\n`;
       });
-      s += "\n// la bandera de meta — por defecto va al final del nivel\n";
+      s += "\n// la bandera de meta â€” por defecto va al final del nivel\n";
       s += `meta.x = ${n(L.meta.x)}\n`;
       s += `meta.y = ${n(L.meta.y)}\n`;
       return s;
@@ -1334,7 +1376,7 @@
     let mode = "build"; // "build" | "play"
     let scale = 1;
     let camX = 0;
-    let buildZoom = null; // null = ajustar al ancho; si no, número fijo de escala
+    let buildZoom = null; // null = ajustar al ancho; si no, nÃºmero fijo de escala
 
     function applyScale(s, camPx) {
       sceneWrap.style.width = (ANCHO * s) + "px";
@@ -1348,25 +1390,25 @@
       if (el) el.textContent = buildZoom == null ? "Ajustar" : Math.round(buildZoom * 100) + "%";
     }
     /* ---------- escala y recorte del fondo pixel art ---------------------------------
-       El .sky debe terminar EXACTAMENTE en la línea del suelo del juego.
+       El .sky debe terminar EXACTAMENTE en la lÃ­nea del suelo del juego.
     
        En modo auto-fit:   viewport.clientHeight = H*scale (440*scale)
-                           groundY = GROUND_TOP*scale → sky.bottom = (H-GROUND_TOP)*scale = 56*scale
+                           groundY = GROUND_TOP*scale â†’ sky.bottom = (H-GROUND_TOP)*scale = 56*scale
        En zoom manual (+/-): viewport.clientHeight = ZOOM_VIEWPORT_H (420px fijo)
                            groundY = GROUND_TOP*scale (puede ser 153px a buildZoom=0.4)
-                           sky.bottom = 420 - 153 = 267px  ← correcto, antes era ~53px (bug)
+                           sky.bottom = 420 - 153 = 267px  â† correcto, antes era ~53px (bug)
     
-       El cálculo del CSS bottom:calc(56/440*100%) era incorrecto en zoom manual porque
+       El cÃ¡lculo del CSS bottom:calc(56/440*100%) era incorrecto en zoom manual porque
        asumia viewport.height = 440*scale, lo que no se cumple con altura fija de 420px. */
     function updateBgScale() {
       const fondo = document.getElementById('fondoEscena');
       const sky = viewport.querySelector('.sky');
       if (!fondo || !sky) return;
 
-      // Posición visual del suelo real dentro del viewport (px desde arriba)
+      // PosiciÃ³n visual del suelo real dentro del viewport (px desde arriba)
       const groundY = 384 * scale;  // GROUND_TOP * scale
 
-      // Clip del .sky: termina en la línea del suelo (o en el borde del viewport)
+      // Clip del .sky: termina en la lÃ­nea del suelo (o en el borde del viewport)
       const skyBottom = viewport.clientHeight - groundY;
       sky.style.bottom = Math.max(0, skyBottom) + 'px';
 
@@ -1400,7 +1442,7 @@
       updateZoomLabel();
       updateBgScale();
     }
-    // jugar: ventana fija (VISIBLE_W); si el nivel es más ancho, la cámara sigue al jugador
+    // jugar: ventana fija (VISIBLE_W); si el nivel es mÃ¡s ancho, la cÃ¡mara sigue al jugador
     function fitPlay() {
       const cw = viewport.clientWidth;
       scale = cw / VISIBLE_W;
@@ -1437,7 +1479,7 @@
     }
     codearea.addEventListener("input", () => {
       paintCode(codearea.value);
-      // modelo desde código (con debounce ligero)
+      // modelo desde cÃ³digo (con debounce ligero)
       clearTimeout(codearea._t);
       codearea._t = setTimeout(() => {
         const prevAncho = ANCHO;
@@ -1445,15 +1487,15 @@
         ANCHO = level.ancho;
         if (metaFollowsEnd) { level.meta.x = ANCHO - 60; }
 
-        // Reemplazo quirúrgico: solo actualizar líneas que cambiaron por el clamp
-        // o por metaFollowsEnd — sin mover el cursor del usuario.
+        // Reemplazo quirÃºrgico: solo actualizar lÃ­neas que cambiaron por el clamp
+        // o por metaFollowsEnd â€” sin mover el cursor del usuario.
         let txt = codearea.value;
-        // Si el ancho fue clampeado al rango [800,2200] actualizar esa línea
+        // Si el ancho fue clampeado al rango [800,2200] actualizar esa lÃ­nea
         const typedAncho = +((txt.match(/nivel\.ancho\s*=\s*(-?\d+\.?\d*)/) || [])[1]);
         if (typedAncho !== ANCHO) {
           txt = txt.replace(/nivel\.ancho\s*=\s*-?\d+\.?\d*/, `nivel.ancho = ${ANCHO}`);
         }
-        // Si metaFollowsEnd, actualizar meta.x en el código
+        // Si metaFollowsEnd, actualizar meta.x en el cÃ³digo
         if (metaFollowsEnd && ANCHO !== prevAncho) {
           txt = txt.replace(/meta\.x\s*=\s*-?\d+\.?\d*/, `meta.x = ${level.meta.x}`);
         }
@@ -1467,7 +1509,7 @@
         applyBuildView();
         renderScene();
         updateStats();
-        bump("editaste el código");
+        bump("editaste el cÃ³digo");
       }, 120);
     });
     $("codewrap").addEventListener("scroll", e => {
@@ -1477,7 +1519,7 @@
     function setCode(text) { codearea.value = text; paintCode(text); }
 
     /* ============================================================
-       Escena — construcción (bloques arrastrables)
+       Escena â€” construcciÃ³n (bloques arrastrables)
        ============================================================ */
     function groundSegments() {
       const cuts = level.huecos
@@ -1527,7 +1569,7 @@
       el.style.width = h.ancho + "px"; el.style.height = (H - GROUND_TOP) + "px";
       el.dataset.kind = "hueco"; el.dataset.i = i;
       if (mode === "build") {
-        el.innerHTML = "<span class='del' data-del>×</span>";
+        el.innerHTML = "<span class='del' data-del>Ã—</span>";
         el.addEventListener("pointerdown", ev => {
           if (ev.target.hasAttribute("data-del")) return;
           ev.preventDefault();
@@ -1565,7 +1607,7 @@
       el.style.width = w.ancho + "px"; el.style.height = w.alto + "px";
       el.dataset.kind = "wall"; el.dataset.i = i;
       if (mode === "build") {
-        el.innerHTML = "<span class='del' data-del>×</span>";
+        el.innerHTML = "<span class='del' data-del>Ã—</span>";
         makeDraggable(el, w, () => { regenFromModel(); }, { w: w.ancho, h: w.alto });
       }
       scene.appendChild(el); return el;
@@ -1577,7 +1619,7 @@
       el.style.width = p.ancho + "px"; el.style.height = "20px";
       el.dataset.kind = "plat"; el.dataset.i = i;
       if (mode === "build") {
-        el.innerHTML = "<span class='del' data-del>×</span>";
+        el.innerHTML = "<span class='del' data-del>Ã—</span>";
         makeDraggable(el, p, () => { regenFromModel(); }, { w: p.ancho, h: 20 });
       }
       scene.appendChild(el); return el;
@@ -1589,7 +1631,7 @@
       el.style.left = c.x + "px"; el.style.top = c.y + "px";
       el.dataset.kind = "coin"; el.dataset.i = i;
       if (mode === "build") {
-        el.innerHTML = "<span class='del' data-del>×</span>";
+        el.innerHTML = "<span class='del' data-del>Ã—</span>";
         makeDraggable(el, c, () => { regenFromModel(); }, { w: 22, h: 22 });
       }
       scene.appendChild(el); return el;
@@ -1602,7 +1644,7 @@
       el.style.backgroundImage = "url('/nivel-demo/enemigo-" + ((i % ENEMY_SPRITES) + 1) + ".png')";
       el.dataset.kind = "enemy"; el.dataset.i = i;
       el.innerHTML = "<div class='vida'>vida " + e.vida + "</div>"
-        + (mode === "build" ? "<span class='del' data-del>×</span>" : "");
+        + (mode === "build" ? "<span class='del' data-del>Ã—</span>" : "");
       if (mode === "build") makeDraggable(el, e, () => { regenFromModel(); }, { w: ENEMY_W, h: ENEMY_H });
       scene.appendChild(el); return el;
     }
@@ -1626,7 +1668,7 @@
       scene.appendChild(el); return el;
     }
 
-    /* ---------- arrastre con sincronización en vivo ---------- */
+    /* ---------- arrastre con sincronizaciÃ³n en vivo ---------- */
     let selected = null;
     function makeDraggable(el, obj, onChange, dims) {
       el.addEventListener("pointerdown", ev => {
@@ -1672,19 +1714,20 @@
       updateStats();
     }
 
-    /* ---------- estadísticas en vivo (panel + consola) ---------- */
+    /* ---------- estadÃ­sticas en vivo (panel + consola) ---------- */
     function updateStats() {
       $("s-jx").textContent = Math.round(level.jugador.x);
       $("s-jy").textContent = Math.round(level.jugador.y);
       const e = level.enemigos[0];
-      $("s-ev").textContent = e ? e.vida : "—";
-      $("s-ex").textContent = e ? Math.round(e.x) : "—";
+      $("s-ev").textContent = e ? e.vida : "â€”";
+      $("s-ex").textContent = e ? Math.round(e.x) : "â€”";
       $("s-mo").textContent = "0/" + level.monedas.length;
     }
     function bump(msg) {
       changes++;
-      $("savemeta").textContent = "sincronizado · " + changes + " cambios";
-      consoleEl.innerHTML = "<b>ok</b> — " + msg + " · nivel redibujado";
+      try { window.parent.postMessage({ source: "nivel-demo", type: "state-changed", payload: { schema_version: 1, state: level, draft_code: document.getElementById("codearea") ? document.getElementById("codearea").value : "" } }, "*"); } catch(e) {}
+      $("savemeta").textContent = "sincronizado Â· " + changes + " cambios";
+      consoleEl.innerHTML = "<b>ok</b> â€” " + msg + " Â· nivel redibujado";
     }
 
     /* ============================================================
@@ -1694,7 +1737,7 @@
     const keys = { left: false, right: false, jump: false };
 
     /* ---------- parallax del fondo: posiciones acumuladas por capa ----------
-       Factores: capas lejanas se mueven más despacio que el jugador.
+       Factores: capas lejanas se mueven mÃ¡s despacio que el jugador.
        El signo es negativo: si el jugador avanza a la derecha, el fondo
        retrocede (scroll hacia la izquierda). */
     const BG_LAYERS = [
@@ -1729,11 +1772,11 @@
     }
 
     function buildPlayCode() {
-      // código de solo lectura con spans en vivo
+      // cÃ³digo de solo lectura con spans en vivo
       const n = v => (Math.round(v * 100) / 100);
       let html = "";
-      html += `<span class="c-com">// nivel.js — corriendo</span>\n`;
-      html += `<span class="c-com">// los valores cambian mientras jugás</span>\n\n`;
+      html += `<span class="c-com">// nivel.js â€” corriendo</span>\n`;
+      html += `<span class="c-com">// los valores cambian mientras jugÃ¡s</span>\n\n`;
       html += `<span class="c-obj">nivel</span>.<span class="c-prop">ancho</span> = <span class="c-num">${n(level.ancho)}</span>\n\n`;
       html += `<span class="c-obj">jugador</span>.<span class="c-prop">x</span> = <span class="c-num live" id="lv-jx">${n(level.jugador.x)}</span>\n`;
       html += `<span class="c-obj">jugador</span>.<span class="c-prop">y</span> = <span class="c-num live" id="lv-jy">${n(level.jugador.y)}</span>\n\n`;
@@ -1764,22 +1807,22 @@
       mode = "play";
       $("mode-build").classList.remove("active");
       $("mode-play").classList.add("active");
-      document.querySelector(".tabs .tab").textContent = "nivel.js — corriendo";
+      document.querySelector(".tabs .tab").textContent = "nivel.js â€” corriendo";
       codearea.style.display = "none";
       $("zoom-toolbar").style.display = "none";
       buildPlayCode();
-      $("btn-play").textContent = "◀ Volver a construir";
+      $("btn-play").textContent = "â—€ Volver a construir";
       $("btn-play").classList.remove("play");
       $("livepill").classList.add("on"); $("livelabel").textContent = "en vivo";
       $("livepanel-title").textContent = "Valores en vivo";
       $("livepanel-note").textContent = "cambian con el juego";
       $("controls-hint").style.display = "block";
-      consoleEl.innerHTML = "<b>▶ corriendo</b> — cruzá hasta la bandera";
+      consoleEl.innerHTML = "<b>â–¶ corriendo</b> â€” cruzÃ¡ hasta la bandera";
 
       // resetear posiciones del fondo para el nuevo run
       bgReset();
 
-      // estado físico
+      // estado fÃ­sico
       playState = {
         px: level.jugador.x, py: level.jugador.y, vx: 0, vy: 0, onGround: false,
         enemies: level.enemigos.map(e => ({ x: e.x, y: e.y, vida: e.vida, vel: e.velocidad, dir: 1, base: e.x })),
@@ -1800,13 +1843,13 @@
       codearea.style.display = "block";
       $("zoom-toolbar").style.display = "flex";
       setCode(genCode(level));
-      $("btn-play").textContent = "▶ Jugar nivel";
+      $("btn-play").textContent = "â–¶ Jugar nivel";
       $("btn-play").classList.add("play");
-      $("livepill").classList.remove("on"); $("livelabel").textContent = "en edición";
+      $("livepill").classList.remove("on"); $("livelabel").textContent = "en ediciÃ³n";
       $("livepanel-title").textContent = "Estado del nivel";
       $("livepanel-note").textContent = "se actualiza al mover un bloque";
       $("controls-hint").style.display = "none";
-      consoleEl.innerHTML = "consola vacía — el nivel se dibuja mientras editás";
+      consoleEl.innerHTML = "consola vacÃ­a â€” el nivel se dibuja mientras editÃ¡s";
       $("overlay").classList.remove("show");
       bgReset(); // devolver fondo a posicion inicial
       renderScene();
@@ -1814,7 +1857,7 @@
       applyBuildView();
     }
 
-    /* ---------- física simple ---------- */
+    /* ---------- fÃ­sica simple ---------- */
     const GRAV = 0.62, MOVE = 3.2, JUMP = 12.2;
     function solidTops() {
       const tops = [];
@@ -1831,7 +1874,7 @@
         const prevPx = s.px;
         s.px += s.vx;
         s.px = Math.max(0, Math.min(ANCHO - PLAYER_W, s.px));
-        // paredes: bloquean el paso salvo que el jugador esté parado arriba
+        // paredes: bloquean el paso salvo que el jugador estÃ© parado arriba
         level.paredes.forEach(w => {
           const topClear = s.py + PLAYER_H <= w.y + 4;
           const overlapY = s.py + PLAYER_H > w.y && s.py < w.y + w.alto;
@@ -1853,25 +1896,25 @@
             s.py = t.y - PLAYER_H; s.vy = 0; s.onGround = true;
           }
         });
-        // caída al hueco
-        if (s.py > H + 40) { respawn("Caíste al hueco"); }
+        // caÃ­da al hueco
+        if (s.py > H + 40) { respawn("CaÃ­ste al hueco"); }
         // enemigos
         s.enemies.forEach(e => {
           if (e.vida <= 0) return;
           e.x += e.vel * e.dir;
           if (e.x > e.base + 70 || e.x < e.base - 70) e.dir *= -1;
-          // colisión con jugador
+          // colisiÃ³n con jugador
           const hit = s.px < e.x + ENEMY_W && s.px + PLAYER_W > e.x &&
             s.py < e.y + ENEMY_H && s.py + PLAYER_H > e.y;
           if (hit) {
             if (s.vy > 0 && prevBottom <= e.y + 10) {
-              e.vida--; s.vy = -9;                         // pisotón
+              e.vida--; s.vy = -9;                         // pisotÃ³n
               flash("lv-ev" + s.enemies.indexOf(e));
               consoleEl.innerHTML = e.vida > 0
-                ? "<b>golpe</b> — enemigo.vida baja a " + e.vida
-                : "<b>derrotado</b> — enemigo.vida llegó a 0";
+                ? "<b>golpe</b> â€” enemigo.vida baja a " + e.vida
+                : "<b>derrotado</b> â€” enemigo.vida llegÃ³ a 0";
             } else {
-              respawn("Te tocó el enemigo de costado");
+              respawn("Te tocÃ³ el enemigo de costado");
             }
           }
         });
@@ -1883,7 +1926,7 @@
           if (hit) {
             c.tomada = true;
             const total = s.coins.length, juntadas = s.coins.filter(x => x.tomada).length;
-            consoleEl.innerHTML = "<b>+1 moneda</b> — llevás " + juntadas + "/" + total;
+            consoleEl.innerHTML = "<b>+1 moneda</b> â€” llevÃ¡s " + juntadas + "/" + total;
           }
         });
         // meta
@@ -1895,14 +1938,14 @@
     function respawn(msg) {
       const s = playState;
       s.px = level.jugador.x; s.py = level.jugador.y; s.vx = 0; s.vy = 0;
-      consoleEl.innerHTML = "<span class='warn'>" + msg + "</span> — volvés al inicio";
+      consoleEl.innerHTML = "<span class='warn'>" + msg + "</span> â€” volvÃ©s al inicio";
     }
     function win() {
       const s = playState; if (s.won) return; s.won = true;
-      $("overlay-big").textContent = "¡Meta alcanzada!";
-      $("overlay-sub").textContent = "Tu nivel se puede cruzar. Eso también es programar.";
+      $("overlay-big").textContent = "Â¡Meta alcanzada!";
+      $("overlay-sub").textContent = "Tu nivel se puede cruzar. Eso tambiÃ©n es programar.";
       $("overlay").classList.add("show");
-      consoleEl.innerHTML = "<b>¡ganaste!</b> — llegaste a la bandera";
+      consoleEl.innerHTML = "<b>Â¡ganaste!</b> â€” llegaste a la bandera";
     }
     function flash(id) {
       const el = $(id); if (!el) return;
@@ -1911,7 +1954,7 @@
     function drawPlay() {
       fitPlay();
       const s = playState;
-      // mover el fondo según la velocidad horizontal real del jugador
+      // mover el fondo segÃºn la velocidad horizontal real del jugador
       bgStep(s.vx);
       const pel = $("player-el");
       if (pel) { pel.style.left = s.px + "px"; pel.style.top = s.py + "px"; }
@@ -1927,7 +1970,7 @@
         if (el) el.classList.toggle("taken", c.tomada);
       });
       $("s-mo").textContent = s.coins.filter(x => x.tomada).length + "/" + s.coins.length;
-      // valores en vivo en el código
+      // valores en vivo en el cÃ³digo
       setLive("lv-jx", Math.round(s.px));
       setLive("lv-jy", Math.round(s.py));
       s.enemies.forEach((e, i) => {
@@ -1937,8 +1980,8 @@
       // panel
       $("s-jx").textContent = Math.round(s.px);
       $("s-jy").textContent = Math.round(s.py);
-      $("s-ev").textContent = s.enemies[0] ? Math.max(0, s.enemies[0].vida) : "—";
-      $("s-ex").textContent = s.enemies[0] ? Math.round(s.enemies[0].x) : "—";
+      $("s-ev").textContent = s.enemies[0] ? Math.max(0, s.enemies[0].vida) : "â€”";
+      $("s-ex").textContent = s.enemies[0] ? Math.round(s.enemies[0].x) : "â€”";
     }
     function setLive(id, val) { const el = $(id); if (el && el.textContent != String(val)) el.textContent = val; }
 
@@ -1968,7 +2011,7 @@
     $("mode-play").addEventListener("click", () => { if (mode === "build") startPlay(); });
     $("mode-build").addEventListener("click", () => { if (mode === "play") stopPlay(); });
     $("overlay-btn").addEventListener("click", stopPlay);
-    /* ---------- posición aleatoria para nuevos elementos ----------
+    /* ---------- posiciÃ³n aleatoria para nuevos elementos ----------
        rndX(margenDer): x aleatorio dentro del nivel, con margen izq=80 y margenDer.
        rndY(yMin, yMax): y aleatoria entre yMin y yMax. */
     function rndX(margenDer) { return Math.floor(80 + Math.random() * Math.max(0, ANCHO - 80 - margenDer)); }
@@ -1977,11 +2020,11 @@
     $("btn-reset").addEventListener("click", () => {
       level = defaultLevel(); ANCHO = level.ancho; changes = 0; metaFollowsEnd = true; buildZoom = null;
       setCode(genCode(level)); applyBuildView(); renderScene(); updateStats();
-      $("savemeta").textContent = "sincronizado · 0 cambios";
+      $("savemeta").textContent = "sincronizado Â· 0 cambios";
       consoleEl.innerHTML = "ejemplo reiniciado";
     });
     $("add-plat").addEventListener("click", () => {
-      // plataforma: posición aleatoria, cerca del suelo (entre y=120 y GROUND_TOP-80)
+      // plataforma: posiciÃ³n aleatoria, cerca del suelo (entre y=120 y GROUND_TOP-80)
       level.plataformas.push({ x: rndX(100), y: rndY(120, GROUND_TOP - 80), ancho: 90 });
       regenFromModel(); renderScene(); bump("agregaste una plataforma");
     });

@@ -38,6 +38,7 @@ async def auth_harness(tmp_path):
         Cohort,
         CohortMembership,
         CohortState,
+        DemoProgress,
         FeatureFlag,
         Progress,
         SessionCatalog,
@@ -63,6 +64,7 @@ async def auth_harness(tmp_path):
                 conn,
                 tables=[
                     User.__table__,
+                    DemoProgress.__table__,
                     AdminAllowlist.__table__,
                     Cohort.__table__,
                     CohortMembership.__table__,
@@ -86,7 +88,7 @@ async def auth_harness(tmp_path):
         async def verify(self, token):
             identity = identities.get(token)
             if identity is None:
-                raise ApiError(401, "INVALID_TOKEN", "La sesión no es válida.")
+                raise ApiError(401, "INVALID_TOKEN", "La sesiÃƒÂ³n no es vÃƒÂ¡lida.")
             if isinstance(identity, Exception):
                 raise identity
             return identity

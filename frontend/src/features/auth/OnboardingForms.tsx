@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useEffect, type FormEvent } from 'react'
 import { friendlyAuthError } from './session'
 import { useAuth } from './authContext'
 
@@ -9,6 +9,15 @@ export function ProfileForm() {
   const [displayName, setDisplayName] = useState(current?.display_name ?? '')
   const [description, setDescription] = useState(current?.description ?? '')
   const [websiteUrl, setWebsiteUrl] = useState(current?.website_url ?? '')
+  
+  useEffect(() => {
+    if (current) {
+      setFullName(current.full_name ?? '')
+      setDisplayName(current.display_name ?? '')
+      setDescription(current.description ?? '')
+      setWebsiteUrl(current.website_url ?? '')
+    }
+  }, [current])
   const [avatar, setAvatar] = useState<File | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -47,10 +56,10 @@ export function ProfileForm() {
     {error && <p className="auth-message" role="alert">{error}</p>}
     <div className="field"><label htmlFor="profile-name">Nombre completo</label><input id="profile-name" className="input" minLength={2} maxLength={120} required value={fullName} onChange={(event) => setFullName(event.target.value)} /></div>
     <div className="field"><label htmlFor="profile-display">Nombre para mostrar</label><input id="profile-display" className="input" minLength={2} maxLength={80} required value={displayName} onChange={(event) => setDisplayName(event.target.value)} /></div>
-    <div className="field"><label htmlFor="profile-description">Sobre mí</label><textarea id="profile-description" className="input" maxLength={1000} rows={4} value={description} onChange={(event) => setDescription(event.target.value)} /></div>
+    <div className="field"><label htmlFor="profile-description">Sobre mÃ­</label><textarea id="profile-description" className="input" maxLength={1000} rows={4} value={description} onChange={(event) => setDescription(event.target.value)} /></div>
     <div className="field"><label htmlFor="profile-site">Sitio web HTTPS (opcional)</label><input id="profile-site" className="input" type="url" inputMode="url" placeholder="https://" value={websiteUrl} onChange={(event) => setWebsiteUrl(event.target.value)} /></div>
     <div className="field"><label htmlFor="profile-avatar">Avatar JPEG, PNG o WebP (opcional)</label><input id="profile-avatar" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setAvatar(event.target.files?.[0] ?? null)} /></div>
-    <button className="btn btn-primary" disabled={pending}>{pending ? 'Guardando…' : 'Guardar y continuar'}</button>
+    <button className="btn btn-primary" disabled={pending}>{pending ? 'Guardandoâ€¦' : 'Guardar y continuar'}</button>
   </form>
 }
 
@@ -82,9 +91,9 @@ export function JoinClassForm() {
   if (successData) {
     return <div className="auth-form onboarding-form">
       <p className="auth-message" role="status" style={{ background: '#d4edda', color: '#155724', padding: '1rem', borderRadius: '4px' }}>
-        <strong>¡Te has unido a la clase!</strong><br />
+        <strong>Â¡Te has unido a la clase!</strong><br />
         Clase: {successData.cohort_name}<br />
-        Membresía: Activa
+        MembresÃ­a: Activa
       </p>
       <p>Redirigiendo a tu mapa...</p>
     </div>
@@ -92,7 +101,7 @@ export function JoinClassForm() {
 
   return <form className="auth-form onboarding-form" onSubmit={(event) => void submit(event)} aria-busy={pending}>
     {error && <p className="auth-message" role="alert">{error}</p>}
-    <div className="field"><label htmlFor="join-code">Código de clase</label><input id="join-code" className="input mono" minLength={8} maxLength={80} autoCapitalize="characters" autoComplete="off" required value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} /></div>
-    <button className="btn btn-primary" disabled={pending}>{pending ? 'Comprobando…' : 'Entrar a clase'}</button>
+    <div className="field"><label htmlFor="join-code">CÃ³digo de clase</label><input id="join-code" className="input mono" minLength={8} maxLength={80} autoCapitalize="characters" autoComplete="off" required value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} /></div>
+    <button className="btn btn-primary" disabled={pending}>{pending ? 'Comprobandoâ€¦' : 'Entrar a clase'}</button>
   </form>
 }
