@@ -13,8 +13,8 @@ export interface AuthContextValue {
   verificationError: string | null
   api: ApiClient | null
   signIn: (email: string, password: string) => Promise<void>
-  signUp: (email: string, password: string) => Promise<void>
-  signInGoogle: () => Promise<void>
+  signUp: (email: string, password: string) => Promise<{ isNewUser: boolean }>
+  signInGoogle: () => Promise<{ isNewUser: boolean }>
   signOut: () => Promise<void>
   linkGoogle: () => Promise<void>
   sendVerification: () => Promise<void>

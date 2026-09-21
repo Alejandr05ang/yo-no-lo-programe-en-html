@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import {
   createUserWithEmailAndPassword, GoogleAuthProvider, linkWithPopup, onIdTokenChanged,
   reload, sendEmailVerification, sendPasswordResetEmail, signInWithEmailAndPassword,
-  signInWithPopup, signOut as firebaseSignOut, type User,
+  signInWithPopup, signOut as firebaseSignOut, type User, getAdditionalUserInfo,
 } from 'firebase/auth'
 import { configureFirebaseAuth } from '../../lib/firebase'
 import { parseSession, type BackendSession } from '../../lib/backendTypes'
@@ -147,8 +147,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signUp: async (email, password) => {
       const result = await createUserWithEmailAndPassword(requireFirebase(), email.trim(), password)
       await sendVerification(result.user)
+      return { isNewUser: true }
     },
-    signInGoogle: async () => { await signInWithPopup(requireFirebase(), googleProvider()) },
+    signInGoogle: async () => { 
+      const result = await signInWithPopup(requireFirebase(), googleProvider())
+      const additional = getAdditionalUserInfo(result)
+      return { isNewUser: additional?.isNewUser ?? false }
+    },
     signOut: async () => {
       clearPrivateState()
       await firebaseSignOut(requireFirebase())

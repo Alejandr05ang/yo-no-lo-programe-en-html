@@ -62,6 +62,10 @@ export function LoadingPage() {
 
 export function SessionDestination() {
   const { user, session } = useAuth()
+  if (sessionStorage.getItem('goto_demo') === '1') {
+    sessionStorage.removeItem('goto_demo')
+    return <Navigate to="/demo" replace />
+  }
   if (user && !user.emailVerified) return <Navigate to="/verificar-email" replace />
   return <Navigate to={session ? onboardingPath(session.onboarding.state) : '/cuenta'} replace />
 }
@@ -79,7 +83,14 @@ export function AuthPage({ register = false }: { register?: boolean }) {
   const submit = (event: FormEvent) => {
     event.preventDefault()
     void action.run(async () => {
-      try { await (register ? auth.signUp(email, password) : auth.signIn(email, password)) }
+      try {
+        if (register) {
+          const res = await auth.signUp(email, password)
+          if (res.isNewUser) sessionStorage.setItem('goto_demo', '1')
+        } else {
+          await auth.signIn(email, password)
+        }
+      }
       finally { setPassword('') }
     })
   }
@@ -87,7 +98,10 @@ export function AuthPage({ register = false }: { register?: boolean }) {
     <AuthLayout title={register ? 'Crea tu cuenta' : 'Vuelve a tu proyecto'}>
       <p>{register ? 'Empieza por tu cuenta. Después completarás tu perfil y te unirás a tu clase.' : 'Entra con el método que usaste al crear tu cuenta.'}</p>
       <Feedback error={auth.configurationError ?? action.error ?? auth.sessionError} />
-      <button className="btn btn-secondary btn-block" disabled={disabled} onClick={() => void action.run(auth.signInGoogle)}>
+      <button className="btn btn-secondary btn-block" disabled={disabled} onClick={() => void action.run(async () => {
+        const res = await auth.signInGoogle()
+        if (res.isNewUser) sessionStorage.setItem('goto_demo', '1')
+      })}>
         {action.pending ? 'Un momento…' : 'Continuar con Google'}
       </button>
       <div className="auth-divider" aria-hidden="true"><span>o con tu correo</span></div>
