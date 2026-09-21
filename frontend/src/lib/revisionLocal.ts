@@ -256,7 +256,7 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
       verificar: (d, datos) => {
         const skills = comoObjeto(datos.skills)
         const totalEsperado = Object.values(skills).reduce(
-          (n, items) => n + comoLista(items).length,
+          (n: number, items) => n + comoLista(items).length,
           0,
         )
         return d.querySelectorAll('li').length === totalEsperado
