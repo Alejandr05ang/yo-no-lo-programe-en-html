@@ -1,0 +1,41 @@
+.demo-nivel {
+  position: fixed;
+  inset: 0;
+  background: #f3f2f2;
+}
+
+.demo-nivel__frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.demo-nivel__musica {
+  position: fixed;
+  top: 12px;
+  right: 225px;
+  z-index: 20;
+}
+
+/* Estilo reforzado para el botón de música en /demo —
+   flota sobre el iframe, así que necesita contraste propio
+   independiente de los CSS vars de la app principal. */
+.demo-nivel__musica .mus-nota {
+  width: 32px;
+  height: 32px;
+  background: #2a2218;
+  border: 1.5px solid #5c4a2a;
+  border-radius: 8px;
+  color: #cc9f63;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+  transition: background .15s, color .15s;
+}
+.demo-nivel__musica .mus-nota:hover {
+  background: #3a2f1c;
+  color: #e0b87a;
+}
+.demo-nivel__musica .mus-nota[data-sonando='true'] {
+  color: #e0b87a;
+  border-color: #cc9f63;
+}

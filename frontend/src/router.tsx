@@ -1,4 +1,5 @@
 import { createBrowserRouter, Navigate } from 'react-router-dom'
+import { DemoNivel } from './features/demo/DemoNivel'
 import { Entrada } from './features/entrada/Entrada'
 import { Inicio } from './features/entrada/Inicio'
 import { VistaEstudiante } from './features/estudiante/VistaEstudiante'
@@ -11,10 +12,13 @@ import { Mapa } from './features/mapa/Mapa'
 //
 // Flujo de entrada: / → /inicio (página de entrada, según estado lleva a /entrar o /portafolio).
 // /entrar (1f, diagnóstico) solo se ve una vez.
+// /demo es el constructor de niveles de arranque (Día 1): aislada del flujo evaluado,
+// no toca encargos ni portafolio.
 export const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/inicio" replace /> },
   { path: '/inicio', element: <Inicio /> },
   { path: '/entrar', element: <Entrada /> },
+  { path: '/demo', element: <DemoNivel /> },
   { path: '/portafolio', element: <VistaEstudiante /> },
   { path: '/mapa', element: <Mapa /> },
   { path: '/bitacora', element: <Bitacora /> },
