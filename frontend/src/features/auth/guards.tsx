@@ -2,12 +2,15 @@ import { Navigate, Outlet } from 'react-router-dom'
 import type { Role } from '../../lib/backendTypes'
 import { useAuth } from './authContext'
 import { AccountPage, ForbiddenPage, LoadingPage } from './AuthPages'
-import { onboardingPath } from './session'
+import { accessDecision, onboardingPath } from './session'
 
 export function RequireAuth() {
   const { initialized, user } = useAuth()
-  if (!initialized) return <LoadingPage />
-  return user ? <Outlet /> : <Navigate to="/login" replace />
+  switch (accessDecision(initialized, user)) {
+    case 'pending': return <LoadingPage />
+    case 'granted': return <Outlet />
+    default: return <Navigate to="/login" replace />
+  }
 }
 
 export function RequireRole({ roles }: { roles: Role[] }) {

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { parseSession } from '../src/lib/backendTypes.ts'
-import { onboardingPath, friendlyAuthError, SessionRequests } from '../src/features/auth/session.ts'
+import { accessDecision, onboardingPath, friendlyAuthError, SessionRequests } from '../src/features/auth/session.ts'
 
 const session = {
   user: { id: 'user-id', email: 'student@example.test', full_name: '', display_name: '', description: '', avatar_path: null, github_url: null, linkedin_url: null, website_url: null, role: 'student', email_verified: true, profile_completed_at: null, is_active: true },
@@ -43,4 +43,20 @@ test('provider collisions instruct authentication before explicit linking, with 
   assert.doesNotMatch(collision, /sensitive/)
   assert.doesNotMatch(friendlyAuthError({ code: 'auth/unknown', message: 'private token' }), /private token/)
   assert.equal(friendlyAuthError({ code: 'auth/user-not-found' }), friendlyAuthError({ code: 'auth/wrong-password' }))
+})
+
+test('a guard waits for Firebase instead of treating a restoring session as anonymous', () => {
+  // While the persisted store is still being read the user is not visible yet.
+  assert.equal(accessDecision(false, null), 'pending')
+  assert.equal(accessDecision(false, { uid: 'student-a' }), 'pending')
+  // Only once Firebase has resolved does the absence of a user mean anonymous.
+  assert.equal(accessDecision(true, { uid: 'student-a' }), 'granted')
+  assert.equal(accessDecision(true, null), 'anonymous')
+})
+
+test('signing out of a restored session ends it instead of leaving the route open', () => {
+  const restored = accessDecision(true, { uid: 'student-a' })
+  assert.equal(restored, 'granted')
+  // signOut clears the user without moving Firebase back to uninitialised.
+  assert.equal(accessDecision(true, null), 'anonymous')
 })
