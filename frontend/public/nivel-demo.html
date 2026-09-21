@@ -1136,7 +1136,7 @@
           { x: 490, y: GROUND_TOP - ENEMY_H, vida: 3, velocidad: 1.4 },
         ],
         paredes: [
-          { x: 560, y: GROUND_TOP - 105, ancho: 32, alto: 105 },
+          { x: 560, y: GROUND_TOP - 120, ancho: 32, alto: 120 },
         ],
         huecos: [
           { x: 322, ancho: 148 },
@@ -1726,7 +1726,7 @@
     }
 
     /* ---------- física simple ---------- */
-    const GRAV = 0.62, MOVE = 3.2, JUMP = 12.2;
+    const GRAV = 0.45, MOVE = 3.2, JUMP = 8.5;
     function solidTops() {
       const tops = [];
       groundSegments().forEach(seg => tops.push({ x1: seg.x1, x2: seg.x2, y: GROUND_TOP }));
@@ -1776,7 +1776,7 @@
             s.py < e.y + ENEMY_H && s.py + PLAYER_H > e.y;
           if (hit) {
             if (s.vy > 0 && prevBottom <= e.y + 10) {
-              e.vida--; s.vy = -9;                         // pisotón
+              e.vida--; s.vy = -6.5;                        // pisotón
               flash("lv-ev" + s.enemies.indexOf(e));
               consoleEl.innerHTML = e.vida > 0
                 ? "<b>golpe</b> — enemigo.vida baja a " + e.vida
@@ -1930,7 +1930,7 @@
     });
     $("add-wall").addEventListener("click", () => {
       // pared: x aleatorio, pegada al suelo
-      level.paredes.push({ x: rndX(52), y: GROUND_TOP - 105, ancho: 32, alto: 105 });
+      level.paredes.push({ x: rndX(52), y: GROUND_TOP - 120, ancho: 32, alto: 120 });
       regenFromModel(); renderScene(); bump("agregaste una pared");
     });
     $("add-hueco").addEventListener("click", () => {
