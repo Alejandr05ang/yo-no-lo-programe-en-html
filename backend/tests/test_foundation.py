@@ -214,3 +214,18 @@ async def test_transaction_rolls_back_on_handler_failure(auth_harness):
     assert response.status_code == 409
     async with h.sessions() as session:
         assert await session.scalar(select(func.count()).select_from(User)) == 0
+
+
+def test_interactive_docs_are_closed_in_production():
+    """La documentacion lista admin incluido; no hace falta publicarla."""
+    from app.core.config import Settings
+    from app.main import create_app
+
+    desarrollo = create_app(Settings(_env_file=None, app_env="development", database_url=None))
+    assert desarrollo.docs_url == "/docs"
+    assert desarrollo.openapi_url == "/openapi.json"
+
+    produccion = create_app(Settings(_env_file=None, app_env="production", database_url=None))
+    assert produccion.docs_url is None
+    assert produccion.redoc_url is None
+    assert produccion.openapi_url is None
