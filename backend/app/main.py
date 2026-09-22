@@ -35,7 +35,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if engine is not None:
             await engine.dispose()
 
-    app = FastAPI(title="TutorÃƒÂ­as de Verano", lifespan=lifespan)
+    app = FastAPI(title="Tutorías de Verano", lifespan=lifespan)
     app.state.settings = settings
     app.state.firebase_verifier = FirebaseVerifier(settings)
     app.state.join_attempt_limiter = JoinAttemptLimiter()
