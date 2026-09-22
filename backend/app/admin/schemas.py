@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
@@ -57,3 +57,34 @@ class FeatureFlagUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
     enabled: bool | None = None
     config: dict[str, Any] | None = None
+
+
+class SessionCatalogItem(BaseModel):
+    """Una sesion del catalogo, tal como la ve un administrador."""
+
+    id: UUID
+    code: str
+    day_number: int
+    order_index: int
+    title: str
+    teaser_summary: str
+    is_published: bool
+    challenges_count: int
+
+
+class WorkshopState(BaseModel):
+    """Estado del taller de una cohorte.
+
+    active_session_id None es un estado valido y corriente: significa que todavia
+    no se ha abierto ningun dia y los alumnos solo tienen la demo. El mapa lo
+    traduce a order_index 0, con lo que ninguna sesion queda desbloqueada.
+    """
+
+    cohort_id: UUID
+    cohort_name: str
+    active_session_id: UUID | None
+    active_session_code: str | None
+    active_session_title: str | None
+    active_order_index: int
+    students_count: int
+    updated_at: datetime | None

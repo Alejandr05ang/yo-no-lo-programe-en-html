@@ -1,0 +1,81 @@
+/* Panel de administración. Estructura únicamente: los colores, la tipografía y el
+   ritmo salen de design-system.css. */
+
+.adm-metricas {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+.adm-metrica {
+  text-align: center;
+}
+.adm-metrica-cifra {
+  font-family: var(--font-heading);
+  font-weight: var(--font-heading-weight);
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.adm-seccion {
+  margin-bottom: var(--space-6);
+}
+.adm-seccion-cabecera {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-3);
+}
+
+/* Las tablas anchas se desplazan dentro de su caja; la página nunca. */
+.adm-tabla-scroll {
+  overflow-x: auto;
+}
+.adm-tabla-scroll .table {
+  min-width: 520px;
+}
+
+.adm-fila-activa > td {
+  background: var(--color-accent-100);
+}
+
+.adm-acciones {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+.adm-codigo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  padding: var(--space-3);
+  margin-top: var(--space-3);
+  background: var(--color-accent-100);
+  border: 1px solid var(--color-accent-300);
+  border-radius: var(--radius-md);
+}
+.adm-codigo code {
+  font-size: 20px;
+  letter-spacing: 0.12em;
+  color: var(--color-accent-900);
+}
+
+.adm-form {
+  display: grid;
+  gap: var(--space-3);
+  max-width: 460px;
+}
+
+@media (max-width: 520px) {
+  .adm-seccion-cabecera {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .adm-metrica-cifra {
+    font-size: 28px;
+  }
+}

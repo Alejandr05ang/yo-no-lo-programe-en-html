@@ -16,6 +16,8 @@ from app.admin.schemas import (
     DashboardMetrics,
     FeatureFlagUpdate,
     RoleUpdateBody,
+    SessionCatalogItem,
+    WorkshopState,
 )
 from app.auth.dependencies import CurrentUser, require_role
 from app.cohorts.service import hash_join_code
@@ -23,10 +25,12 @@ from app.core.errors import ApiError
 from app.db.models import (
     AdminAllowlist,
     AuditLog,
+    Challenge,
     Cohort,
     CohortMembership,
     CohortState,
     FeatureFlag,
+    SessionCatalog,
     User,
 )
 from app.db.session import SessionDep
@@ -169,10 +173,23 @@ async def get_cohort_students(cohort_id: UUID, session: SessionDep):
     return students.all()
 
 
-@router.patch("/cohorts/{cohort_id}/active-session")
+@router.patch("/cohorts/{cohort_id}/active-session", response_model=WorkshopState)
 async def update_active_session(
     cohort_id: UUID, body: ActiveSessionUpdate, user: CurrentUser, session: SessionDep
 ):
+    """Abre una sesion para la cohorte, o la devuelve al estado inicial.
+
+    active_session_id null es deliberado: deja a los alumnos solo con la demo.
+    """
+    cohort = await session.get(Cohort, cohort_id)
+    if not cohort:
+        raise ApiError(404, "NOT_FOUND", "Cohorte no encontrada.")
+
+    if body.active_session_id is not None:
+        objetivo = await session.get(SessionCatalog, body.active_session_id)
+        if objetivo is None or not objetivo.is_published:
+            raise ApiError(404, "NOT_FOUND", "Esa sesion no existe o no esta publicada.")
+
     state = await session.scalar(select(CohortState).where(CohortState.cohort_id == cohort_id))
     if not state:
         state = CohortState(cohort_id=cohort_id)
@@ -189,8 +206,83 @@ async def update_active_session(
     await create_audit_log(
         session, user.id, "ADVANCE_SESSION", "cohort_state", str(cohort_id), before, after
     )
+    await session.flush()
+    resultado = await build_workshop_state(session, cohort)
     await session.commit()
-    return state
+    return resultado
+
+
+async def build_workshop_state(session: AsyncSession, cohort: Cohort) -> WorkshopState:
+    """Resuelve el estado del taller de una cohorte.
+
+    Sin sesion activa devuelve active_order_index 0, que es exactamente lo que
+    catalog.service usa para dejar todo bloqueado: el alumno solo tiene la demo.
+    """
+    state = await session.scalar(select(CohortState).where(CohortState.cohort_id == cohort.id))
+    activa = None
+    if state and state.active_session_id:
+        activa = await session.get(SessionCatalog, state.active_session_id)
+    students = await session.scalar(
+        select(func.count())
+        .select_from(CohortMembership)
+        .where(
+            CohortMembership.cohort_id == cohort.id,
+            CohortMembership.role == "student",
+            CohortMembership.status == "active",
+        )
+    )
+    return WorkshopState(
+        cohort_id=cohort.id,
+        cohort_name=cohort.name,
+        active_session_id=activa.id if activa else None,
+        active_session_code=activa.code if activa else None,
+        active_session_title=activa.title if activa else None,
+        active_order_index=activa.order_index if activa else 0,
+        students_count=students or 0,
+        updated_at=state.updated_at if state else None,
+    )
+
+
+@router.get("/sessions", response_model=list[SessionCatalogItem])
+async def list_sessions(session: SessionDep):
+    """Catalogo completo de sesiones para el panel de administracion.
+
+    Existe aparte de GET /api/map porque aquel exige membresia de cohorte y un
+    administrador no tiene por que estar matriculado en la clase que gobierna.
+    """
+    rows = (
+        await session.execute(
+            select(
+                SessionCatalog,
+                select(func.count())
+                .select_from(Challenge)
+                .where(Challenge.session_id == SessionCatalog.id, Challenge.status == "published")
+                .scalar_subquery()
+                .label("challenges_count"),
+            ).order_by(SessionCatalog.order_index)
+        )
+    ).all()
+    return [
+        SessionCatalogItem(
+            id=item.id,
+            code=item.code,
+            day_number=item.day_number,
+            order_index=item.order_index,
+            title=item.title,
+            teaser_summary=item.teaser_summary,
+            is_published=item.is_published,
+            challenges_count=count,
+        )
+        for item, count in rows
+    ]
+
+
+@router.get("/cohorts/{cohort_id}/state", response_model=WorkshopState)
+async def get_workshop_state(cohort_id: UUID, session: SessionDep):
+    cohort = await session.get(Cohort, cohort_id)
+    if not cohort:
+        raise ApiError(404, "NOT_FOUND", "Cohorte no encontrada.")
+    return await build_workshop_state(session, cohort)
 
 
 @router.get("/users")

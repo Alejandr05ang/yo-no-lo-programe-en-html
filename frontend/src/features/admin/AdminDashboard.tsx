@@ -1,251 +1,371 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { AccountFrame } from '../auth/AuthPages'
 import { useAuth } from '../auth/authContext'
 import { friendlyAuthError } from '../auth/session'
+import './admin.css'
 
-export function AdminDashboard() {
-  const { api } = useAuth()
-  const [metrics, setMetrics] = useState({ cohorts_count: 0, students_count: 0 })
-  const [cohorts, setCohorts] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [view, setView] = useState<'dashboard' | 'create' | 'detail'>('dashboard')
-  const [selectedCohort, setSelectedCohort] = useState<any>(null)
+interface Cohorte { id: string; name: string; slug: string; description: string; is_active: boolean }
+interface Sesion {
+  id: string; code: string; day_number: number; order_index: number
+  title: string; teaser_summary: string; is_published: boolean; challenges_count: number
+}
+interface EstadoTaller {
+  cohort_id: string; cohort_name: string
+  active_session_id: string | null
+  active_session_code: string | null
+  active_session_title: string | null
+  active_order_index: number
+  students_count: number
+  updated_at: string | null
+}
+interface Alumno { id: string; email: string; full_name: string; display_name: string }
 
-  const loadData = async () => {
-    if (!api) return
-    try {
-      setLoading(true)
-      const m = await api.request<any>('/admin/dashboard')
-      setMetrics(m)
-      const c = await api.request<any[]>('/admin/cohorts')
-      setCohorts(c)
-    } catch (err) {
-      setError(friendlyAuthError(err))
-    } finally {
-      setLoading(false)
-    }
-  }
+/** La demo no es una fila del catálogo: es el estado en el que no hay ningún día
+ *  abierto. Se representa con active_session_id = null, que es lo que el backend
+ *  ya traduce a "nada desbloqueado". */
+const DEMO = { id: null as string | null, etiqueta: 'Demo', titulo: 'Solo la demo, ningún día abierto' }
 
+function Aviso({ error, exito }: { error?: string | null; exito?: string | null }) {
+  return <>
+    {error && <p className="auth-message" role="alert">{error}</p>}
+    {exito && <p className="auth-message" role="status">{exito}</p>}
+  </>
+}
+
+function Dialogo({ titulo, children, onCancelar, onConfirmar, pendiente }: {
+  titulo: string; children: ReactNode; onCancelar: () => void; onConfirmar: () => void; pendiente: boolean
+}) {
   useEffect(() => {
-    void loadData()
-  }, [api])
-
-  if (loading) return <div className="account-shell"><p>Cargando panel...</p></div>
-
+    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancelar() }
+    document.addEventListener('keydown', esc)
+    return () => document.removeEventListener('keydown', esc)
+  }, [onCancelar])
   return (
-    <div className="account-shell" style={{ maxWidth: 1000, margin: '0 auto', padding: '1rem' }}>
-      <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <div>
-          <h1 style={{ margin: 0 }}>Panel de AdministraciÃ³n</h1>
-          <p style={{ margin: 0, color: '#666' }}>Gestiona cohortes, estudiantes y configuraciÃ³n.</p>
+    <div className="dialog-backdrop" onClick={onCancelar}>
+      <div className="dialog" role="dialog" aria-modal="true" aria-label={titulo} onClick={(e) => e.stopPropagation()}>
+        <h2 className="dialog-title">{titulo}</h2>
+        <div className="dialog-body">{children}</div>
+        <div className="dialog-actions">
+          <button type="button" className="btn btn-secondary" onClick={onCancelar} disabled={pendiente}>Cancelar</button>
+          <button type="button" className="btn btn-primary" onClick={onConfirmar} disabled={pendiente}>
+            {pendiente ? 'Aplicando…' : 'Activar'}
+          </button>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <Link to="/demo" className="btn btn-secondary">Ver demo</Link>
-          {view === 'dashboard' && <button className="btn btn-primary" onClick={() => setView('create')}>Nueva cohorte</button>}
-          {view !== 'dashboard' && <button className="btn btn-secondary" onClick={() => setView('dashboard')}>Volver al dashboard</button>}
-        </div>
-      </header>
-      
-      {error && <p className="auth-message" role="alert">{error}</p>}
-
-      {view === 'dashboard' && <DashboardView metrics={metrics} cohorts={cohorts} onSelect={(c) => { setSelectedCohort(c); setView('detail'); }} onCreate={() => setView('create')} />}
-      {view === 'create' && <CreateCohortView onCreated={() => { setView('dashboard'); void loadData(); }} />}
-      {view === 'detail' && <CohortDetailView cohort={selectedCohort} onRefresh={() => { void loadData(); }} />}
+      </div>
     </div>
   )
 }
 
-function DashboardView({ metrics, cohorts, onSelect, onCreate }: { metrics: any, cohorts: any[], onSelect: (c: any) => void, onCreate: () => void }) {
-  return <>
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
-      <div className="card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '2rem', margin: '0 0 0.5rem 0' }}>{metrics.cohorts_count}</h2>
-        <p style={{ margin: 0, color: '#666' }}>Cohortes activas</p>
+export function AdminDashboard() {
+  const { api } = useAuth()
+  const [cohortes, setCohortes] = useState<Cohorte[]>([])
+  const [sesiones, setSesiones] = useState<Sesion[]>([])
+  const [metricas, setMetricas] = useState({ cohorts_count: 0, students_count: 0 })
+  const [cohorteId, setCohorteId] = useState<string | null>(null)
+  const [estado, setEstado] = useState<EstadoTaller | null>(null)
+  const [alumnos, setAlumnos] = useState<Alumno[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [exito, setExito] = useState<string | null>(null)
+  const [pendiente, setPendiente] = useState(false)
+  const [porActivar, setPorActivar] = useState<{ id: string | null; etiqueta: string } | null>(null)
+  const [codigoNuevo, setCodigoNuevo] = useState<string | null>(null)
+  const [creando, setCreando] = useState(false)
+
+  const cargarBase = useCallback(async () => {
+    if (!api) return
+    setCargando(true)
+    setError(null)
+    try {
+      const [m, c, s] = await Promise.all([
+        api.request<typeof metricas>('/admin/dashboard'),
+        api.request<Cohorte[]>('/admin/cohorts'),
+        api.request<Sesion[]>('/admin/sessions'),
+      ])
+      setMetricas(m)
+      setCohortes(c)
+      setSesiones(s)
+      setCohorteId((previo) => previo ?? c.find((x) => x.is_active)?.id ?? c[0]?.id ?? null)
+    } catch (e) {
+      setError(friendlyAuthError(e))
+    } finally {
+      setCargando(false)
+    }
+  }, [api])
+
+  useEffect(() => { void cargarBase() }, [cargarBase])
+
+  const cargarCohorte = useCallback(async (id: string) => {
+    if (!api) return
+    try {
+      const [e, a] = await Promise.all([
+        api.request<EstadoTaller>(`/admin/cohorts/${id}/state`),
+        api.request<Alumno[]>(`/admin/cohorts/${id}/students`),
+      ])
+      setEstado(e)
+      setAlumnos(a)
+    } catch (err) {
+      setError(friendlyAuthError(err))
+    }
+  }, [api])
+
+  useEffect(() => { if (cohorteId) void cargarCohorte(cohorteId) }, [cohorteId, cargarCohorte])
+
+  const activar = async () => {
+    if (!api || !cohorteId || porActivar === null) return
+    setPendiente(true)
+    setError(null)
+    try {
+      const nuevo = await api.request<EstadoTaller>(`/admin/cohorts/${cohorteId}/active-session`, {
+        method: 'PATCH',
+        json: { active_session_id: porActivar.id },
+      })
+      setEstado(nuevo)
+      setExito(`Ahora tus alumnos ven: ${porActivar.etiqueta}.`)
+      setPorActivar(null)
+    } catch (e) {
+      setError(friendlyAuthError(e))
+    } finally {
+      setPendiente(false)
+    }
+  }
+
+  const regenerarCodigo = async () => {
+    if (!api || !cohorteId) return
+    setPendiente(true)
+    setError(null)
+    try {
+      const r = await api.request<{ join_code_plaintext: string }>(`/admin/cohorts/${cohorteId}/regenerate-code`, { method: 'POST' })
+      setCodigoNuevo(r.join_code_plaintext)
+      setExito('Código nuevo generado. El anterior ya no sirve.')
+    } catch (e) {
+      setError(friendlyAuthError(e))
+    } finally {
+      setPendiente(false)
+    }
+  }
+
+  if (cargando) return <AccountFrame><p role="status">Cargando el panel…</p></AccountFrame>
+
+  const cohorte = cohortes.find((c) => c.id === cohorteId) ?? null
+  const activaOrden = estado?.active_order_index ?? 0
+
+  return <AccountFrame>
+    <div className="kicker">Administración</div>
+    <h1>Estado del taller</h1>
+    <Aviso error={error} exito={exito} />
+
+    <div className="adm-metricas">
+      <div className="card adm-metrica">
+        <div className="adm-metrica-cifra">{metricas.cohorts_count}</div>
+        <p className="card-body">Clases</p>
       </div>
-      <div className="card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-        <h2 style={{ fontSize: '2rem', margin: '0 0 0.5rem 0' }}>{metrics.students_count}</h2>
-        <p style={{ margin: 0, color: '#666' }}>Estudiantes totales</p>
+      <div className="card adm-metrica">
+        <div className="adm-metrica-cifra">{metricas.students_count}</div>
+        <p className="card-body">Estudiantes</p>
+      </div>
+      <div className="card adm-metrica">
+        <div className="adm-metrica-cifra">{estado?.active_session_code ?? 'Demo'}</div>
+        <p className="card-body">{estado?.active_session_title ?? 'Ningún día abierto'}</p>
       </div>
     </div>
 
-    <section className="card">
-      <h2>Tus Cohortes</h2>
-      {cohorts.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-          <p>No hay cohortes creadas todavÃ­a.</p>
-          <button className="btn btn-primary" onClick={onCreate}>Crear primera cohorte</button>
+    {cohortes.length > 1 && (
+      <div className="field" style={{ maxWidth: 320 }}>
+        <label htmlFor="adm-cohorte">Clase</label>
+        <select id="adm-cohorte" className="input" value={cohorteId ?? ''} onChange={(e) => { setCohorteId(e.target.value); setCodigoNuevo(null) }}>
+          {cohortes.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </div>
+    )}
+
+    {cohortes.length === 0 && (
+      <section className="card adm-seccion">
+        <h2 className="card-title">Todavía no hay ninguna clase</h2>
+        <p className="card-body">Crea una para poder abrir días y repartir el código de acceso.</p>
+        <button className="btn btn-primary" onClick={() => setCreando(true)}>Crear clase</button>
+      </section>
+    )}
+
+    {cohorte && <>
+      <section className="adm-seccion">
+        <div className="adm-seccion-cabecera">
+          <div>
+            <h2>Qué pueden abrir tus alumnos</h2>
+            <p className="text-muted">
+              {estado?.active_session_code
+                ? `Ahora mismo: hasta ${estado.active_session_title}.`
+                : 'Ahora mismo: solo la demo. Ningún día está abierto.'}
+            </p>
+          </div>
+          <Link to="/demo" className="btn btn-secondary">Ver la demo</Link>
         </div>
-      ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: '0.75rem' }}>Nombre</th>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: '0.75rem' }}>Slug</th>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: '0.75rem' }}>Estado</th>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'right', padding: '0.75rem' }}>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cohorts.map(c => (
-              <tr key={c.id}>
-                <td style={{ borderBottom: '1px solid #eee', padding: '0.75rem' }}>{c.name}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '0.75rem' }}><code className="mono">{c.slug}</code></td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '0.75rem' }}>{c.is_active ? 'âœ… Activa' : 'âŒ Inactiva'}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '0.75rem', textAlign: 'right' }}>
-                  <button className="btn btn-secondary" style={{ padding: '0.25rem 0.5rem', fontSize: '0.85rem' }} onClick={() => onSelect(c)}>Ver cohorte</button>
+
+        <div className="adm-tabla-scroll">
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">Sesión</th>
+                <th scope="col">Título</th>
+                <th scope="col">Encargos</th>
+                <th scope="col">Estado</th>
+                <th scope="col"><span className="sr-only">Acción</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className={activaOrden === 0 ? 'adm-fila-activa' : undefined}>
+                <th scope="row" className="mono">{DEMO.etiqueta}</th>
+                <td>{DEMO.titulo}</td>
+                <td>—</td>
+                <td>{activaOrden === 0
+                  ? <span className="tag tag-accent">Activa</span>
+                  : <span className="tag tag-neutral">Abierta</span>}</td>
+                <td>
+                  {activaOrden !== 0 && (
+                    <button className="btn btn-secondary" onClick={() => setPorActivar({ id: null, etiqueta: 'solo la demo' })}>
+                      Volver a la demo
+                    </button>
+                  )}
                 </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </section>
-  </>
+              {sesiones.map((s) => {
+                const esActiva = s.id === estado?.active_session_id
+                const abierta = s.order_index <= activaOrden
+                return <tr key={s.id} className={esActiva ? 'adm-fila-activa' : undefined}>
+                  <th scope="row" className="mono">Día {s.day_number} · {s.code}</th>
+                  <td>{s.title}</td>
+                  <td>{s.challenges_count}</td>
+                  <td>
+                    {esActiva
+                      ? <span className="tag tag-accent">Activa</span>
+                      : abierta
+                        ? <span className="tag tag-neutral">Abierta</span>
+                        : <span className="tag tag-outline">Bloqueada</span>}
+                  </td>
+                  <td>
+                    {!esActiva && (
+                      <button className="btn btn-secondary" onClick={() => setPorActivar({ id: s.id, etiqueta: `Día ${s.day_number} · ${s.title}` })}>
+                        Activar
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section className="card adm-seccion">
+        <div className="adm-seccion-cabecera">
+          <h2 className="card-title">{cohorte.name}</h2>
+          <div className="adm-acciones">
+            <button className="btn btn-secondary" onClick={() => void regenerarCodigo()} disabled={pendiente}>
+              Generar código de acceso
+            </button>
+            <button className="btn btn-secondary" onClick={() => setCreando(true)}>Crear otra clase</button>
+          </div>
+        </div>
+        <p className="card-body">{alumnos.length} estudiante{alumnos.length === 1 ? '' : 's'} en esta clase.</p>
+
+        {codigoNuevo && <div className="adm-codigo" role="status">
+          <code className="mono">{codigoNuevo}</code>
+          <span className="text-muted">Cópialo ahora: no se vuelve a mostrar.</span>
+          <button className="btn btn-secondary" onClick={() => void navigator.clipboard?.writeText(codigoNuevo)}>Copiar</button>
+        </div>}
+
+        {alumnos.length === 0
+          ? <p className="text-muted">
+              Nadie se ha unido todavía. Genera el código y compártelo: tus alumnos lo escriben
+              al terminar de crear su cuenta.
+            </p>
+          : <div className="adm-tabla-scroll">
+              <table className="table">
+                <thead><tr><th scope="col">Nombre</th><th scope="col">Correo</th></tr></thead>
+                <tbody>
+                  {alumnos.map((a) => <tr key={a.id}>
+                    <td>{a.display_name || a.full_name || '—'}</td>
+                    <td className="mono">{a.email}</td>
+                  </tr>)}
+                </tbody>
+              </table>
+            </div>}
+      </section>
+    </>}
+
+    {creando && <CrearClase
+      onCerrar={() => setCreando(false)}
+      onCreada={(codigo) => { setCreando(false); setCodigoNuevo(codigo); void cargarBase() }}
+    />}
+
+    {porActivar && <Dialogo
+      titulo="Cambiar lo que ven tus alumnos"
+      pendiente={pendiente}
+      onCancelar={() => setPorActivar(null)}
+      onConfirmar={() => void activar()}
+    >
+      <p>
+        {porActivar.id === null
+          ? 'Tus alumnos volverán a tener solo la demo: ningún día quedará abierto.'
+          : `Tus alumnos podrán abrir todo hasta ${porActivar.etiqueta}. Lo anterior sigue disponible; lo posterior queda bloqueado.`}
+      </p>
+      <p className="text-muted">El trabajo que ya hayan guardado no se pierde.</p>
+    </Dialogo>}
+  </AccountFrame>
 }
 
-function CreateCohortView({ onCreated }: { onCreated: (c: any) => void }) {
+function CrearClase({ onCerrar, onCreada }: { onCerrar: () => void; onCreada: (codigo: string) => void }) {
   const { api } = useAuth()
-  const [pending, setPending] = useState(false)
+  const [nombre, setNombre] = useState('')
+  const [slug, setSlug] = useState('')
+  const [pendiente, setPendiente] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [joinCode, setJoinCode] = useState<string | null>(null)
-  const [formData, setFormData] = useState({ name: '', slug: '', description: '', is_active: true })
 
-  const submit = async (e: FormEvent) => {
+  const enviar = async (e: FormEvent) => {
     e.preventDefault()
-    if (!api || pending) return
-    setPending(true)
+    if (!api || pendiente) return
+    setPendiente(true)
     setError(null)
     try {
-      const res = await api.request<any>('/admin/cohorts', { method: 'POST', json: formData })
-      setJoinCode(res.join_code_plaintext)
+      // Solo los campos que el backend acepta: CohortCreateBody rechaza cualquier
+      // extra, e is_active hacía que el alta fallara siempre con 422.
+      const r = await api.request<{ join_code_plaintext: string }>('/admin/cohorts', {
+        method: 'POST',
+        json: { name: nombre, slug },
+      })
+      onCreada(r.join_code_plaintext)
     } catch (err) {
       setError(friendlyAuthError(err))
     } finally {
-      setPending(false)
+      setPendiente(false)
     }
   }
 
-  if (joinCode) {
-    return <div className="card">
-      <p className="auth-message" style={{ background: '#d4edda', color: '#155724', padding: '1rem', borderRadius: '4px' }}>
-        <strong>Â¡Cohorte creada exitosamente!</strong>
-      </p>
-      <div style={{ textAlign: 'center', padding: '2rem' }}>
-        <p>CÃ³digo de acceso generado (solo se muestra una vez):</p>
-        <h2 className="mono" style={{ fontSize: '2rem', letterSpacing: '0.1em' }}>{joinCode}</h2>
-        <button className="btn btn-secondary" onClick={() => navigator.clipboard.writeText(joinCode)}>Copiar cÃ³digo</button>
+  return (
+    <div className="dialog-backdrop" onClick={onCerrar}>
+      <div className="dialog" role="dialog" aria-modal="true" aria-label="Crear clase" onClick={(e) => e.stopPropagation()}>
+        <h2 className="dialog-title">Crear clase</h2>
+        <form className="adm-form" onSubmit={enviar}>
+          {error && <p className="auth-message" role="alert">{error}</p>}
+          <div className="field">
+            <label htmlFor="adm-nombre">Nombre</label>
+            <input id="adm-nombre" className="input" required minLength={2} value={nombre}
+              onChange={(e) => setNombre(e.target.value)} disabled={pendiente} />
+          </div>
+          <div className="field">
+            <label htmlFor="adm-slug">Identificador</label>
+            <input id="adm-slug" className="input" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+              aria-describedby="adm-slug-ayuda" value={slug}
+              onChange={(e) => setSlug(e.target.value)} disabled={pendiente} />
+            <p id="adm-slug-ayuda" className="auth-help">Minúsculas y guiones, por ejemplo <code className="mono">taller-2026</code>.</p>
+          </div>
+          <div className="dialog-actions">
+            <button type="button" className="btn btn-secondary" onClick={onCerrar} disabled={pendiente}>Cancelar</button>
+            <button type="submit" className="btn btn-primary" disabled={pendiente}>{pendiente ? 'Creando…' : 'Crear'}</button>
+          </div>
+        </form>
       </div>
-      <button className="btn btn-primary" onClick={() => onCreated(null)}>Continuar</button>
     </div>
-  }
-
-  return <section className="card">
-    <h2>Nueva cohorte</h2>
-    <form className="auth-form" onSubmit={(e) => void submit(e)} aria-busy={pending}>
-      {error && <p className="auth-message" role="alert">{error}</p>}
-      <div className="field">
-        <label htmlFor="c-name">Nombre</label>
-        <input id="c-name" className="input" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} />
-      </div>
-      <div className="field">
-        <label htmlFor="c-slug">Slug (solo minÃºsculas y guiones)</label>
-        <input id="c-slug" className="input mono" required pattern="^[a-z0-9]+(?:-[a-z0-9]+)*$" value={formData.slug} onChange={e => setFormData({ ...formData, slug: e.target.value })} />
-      </div>
-      <div className="field">
-        <label htmlFor="c-desc">DescripciÃ³n</label>
-        <textarea id="c-desc" className="input" value={formData.description} onChange={e => setFormData({ ...formData, description: e.target.value })} />
-      </div>
-      <div className="field" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-        <input type="checkbox" id="c-active" checked={formData.is_active} onChange={e => setFormData({ ...formData, is_active: e.target.checked })} />
-        <label htmlFor="c-active" style={{ margin: 0 }}>Cohorte activa</label>
-      </div>
-      <button className="btn btn-primary" disabled={pending}>{pending ? 'Guardando...' : 'Crear cohorte'}</button>
-    </form>
-  </section>
-}
-
-function CohortDetailView({ cohort, onRefresh }: { cohort: any, onRefresh: () => void }) {
-  const { api } = useAuth()
-  const [students, setStudents] = useState<any[]>([])
-  const [pending, setPending] = useState(false)
-  const [newCode, setNewCode] = useState<string | null>(null)
-  
-  useEffect(() => {
-    if (!api) return
-    void api.request<any[]>(`/admin/cohorts/${cohort.id}/students`).then(setStudents)
-  }, [api, cohort.id])
-
-  const regenerateCode = async () => {
-    if (!confirm('Â¿EstÃ¡s seguro de invalidar el cÃ³digo anterior y generar uno nuevo?')) return
-    if (!api || pending) return
-    setPending(true)
-    try {
-      const res = await api.request<any>(`/admin/cohorts/${cohort.id}/regenerate-code`, { method: 'POST' })
-      setNewCode(res.join_code_plaintext)
-    } catch (err) {
-      alert(friendlyAuthError(err))
-    } finally {
-      setPending(false)
-    }
-  }
-
-  const advanceSession = async () => {
-    const sessionId = prompt('Introduce el ID (UUID) de la sesiÃ³n a habilitar. DÃ©jalo en blanco para limpiar la sesiÃ³n activa.')
-    if (sessionId === null) return
-    if (!api || pending) return
-    if (sessionId !== '' && !confirm(`Vas a habilitar la sesiÃ³n [${sessionId}] para esta cohorte. Â¿Continuar?`)) return
-    setPending(true)
-    try {
-      await api.request<any>(`/admin/cohorts/${cohort.id}/active-session`, { method: 'PATCH', json: { active_session_id: sessionId || null } })
-      alert('SesiÃ³n actualizada correctamente.')
-      onRefresh()
-    } catch (err) {
-      alert(friendlyAuthError(err))
-    } finally {
-      setPending(false)
-    }
-  }
-
-  return <div>
-    <div className="card" style={{ marginBottom: '2rem' }}>
-      <h2>{cohort.name} <span style={{ fontSize: '1rem', fontWeight: 'normal', color: '#666' }}>({cohort.slug})</span></h2>
-      <p><strong>Estado:</strong> {cohort.is_active ? 'Activa' : 'Inactiva'}</p>
-      <p><strong>Estudiantes matriculados:</strong> {students.length}</p>
-      
-      <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
-        <button className="btn btn-secondary" onClick={() => void regenerateCode()} disabled={pending}>Regenerar cÃ³digo</button>
-        <button className="btn btn-secondary" onClick={() => void advanceSession()} disabled={pending}>Cambiar sesiÃ³n</button>
-      </div>
-
-      {newCode && (
-        <div style={{ marginTop: '1rem', padding: '1rem', background: '#fff3cd', color: '#856404', borderRadius: '4px' }}>
-          <strong>Nuevo cÃ³digo de acceso generado:</strong> <code className="mono" style={{ fontSize: '1.25rem' }}>{newCode}</code>
-          <p style={{ margin: '0.5rem 0 0 0', fontSize: '0.85rem' }}>CÃ³pialo ahora, no se volverÃ¡ a mostrar.</p>
-        </div>
-      )}
-    </div>
-
-    <div className="card">
-      <h3>Estudiantes</h3>
-      {students.length === 0 ? <p>No hay estudiantes en esta cohorte.</p> : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: '0.5rem' }}>Nombre</th>
-              <th style={{ borderBottom: '1px solid #ccc', textAlign: 'left', padding: '0.5rem' }}>Email</th>
-            </tr>
-          </thead>
-          <tbody>
-            {students.map(s => (
-              <tr key={s.id}>
-                <td style={{ borderBottom: '1px solid #eee', padding: '0.5rem' }}>{s.full_name || s.display_name || '(Sin nombre)'}</td>
-                <td style={{ borderBottom: '1px solid #eee', padding: '0.5rem' }}>{s.email}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  </div>
+  )
 }
