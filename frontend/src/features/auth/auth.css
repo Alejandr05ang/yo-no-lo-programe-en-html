@@ -1,7 +1,7 @@
 .auth-shell { min-height: 100vh; display: grid; grid-template-columns: 1fr 1fr; }
 .auth-intro { display: flex; flex-direction: column; gap: var(--space-8); padding: clamp(28px, 5vw, 80px); border-right: 1px solid var(--color-divider); background: var(--color-surface); }
 .auth-brand { color: var(--color-text); text-decoration: none; font-family: var(--font-heading); font-size: 25px; }
-.auth-brand span { color: var(--color-accent); }
+.auth-brand span { color: var(--color-accent-700); }
 .auth-promise { margin-block: auto; padding-block: var(--space-8); }
 .auth-promise h1 { font-weight: 400; font-size: clamp(44px, 5.5vw, 76px); margin-block: var(--space-4); }
 .auth-promise p:not(.kicker) { text-align: justify; line-height: 1.85; max-width: 42ch; }

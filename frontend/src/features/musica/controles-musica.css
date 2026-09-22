@@ -82,7 +82,7 @@
 }
 .mus-pbtn:hover {
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--color-accent-700);
 }
 .mus-pbtn[data-activo='true'] {
   color: var(--color-accent-700);
