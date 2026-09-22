@@ -35,7 +35,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if engine is not None:
             await engine.dispose()
 
-    app = FastAPI(title="Tutorías de Verano", lifespan=lifespan)
+    # La documentacion interactiva describe los 34 endpoints, admin incluido. Util
+    # mientras se desarrolla, innecesaria de publicar en produccion.
+    publica = settings.app_env != "production"
+    app = FastAPI(
+        title="Tutorías de Verano",
+        lifespan=lifespan,
+        docs_url="/docs" if publica else None,
+        redoc_url="/redoc" if publica else None,
+        openapi_url="/openapi.json" if publica else None,
+    )
     app.state.settings = settings
     app.state.firebase_verifier = FirebaseVerifier(settings)
     app.state.join_attempt_limiter = JoinAttemptLimiter()

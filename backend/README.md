@@ -95,3 +95,42 @@ Persistencia usa SQLite **sólo en tests**, cuatro tablas de auth y schema_trans
 Valida servicios, constraints de identidad y contratos HTTP; no equivale a validar
 TLS, roles, RLS o concurrencia real PostgreSQL. Firebase sustituye únicamente la
 frontera externa de red. La integración real está pendiente de credenciales.
+
+## Despliegue
+
+El orden importa: una migración aditiva es segura con el backend viejo corriendo,
+pero el backend nuevo puede mapear columnas que todavía no existen. Siempre en este
+orden.
+
+### 1. Migraciones
+
+No se aplican solas. Cloud Run levanta varias instancias a la vez y todas correrían
+la migración en paralelo, así que el paso es explícito y se hace una vez:
+
+```bash
+cd backend
+.venv/Scripts/python.exe scripts/migrate.py --estado   # qué revisión hay aplicada
+.venv/Scripts/python.exe scripts/migrate.py            # aplica hasta head
+```
+
+La conexión sale de `backend/.env` a través de `alembic/env.py`, igual que la
+aplicación. El script no imprime credenciales.
+
+### 2. Backend
+
+```bash
+gcloud run deploy tutorias-api --source backend --region us-east1 --project tutorias-de-verano
+```
+
+Conserva las variables y secretos ya configurados en el servicio.
+
+### 3. Frontend
+
+```bash
+cd frontend && npm run build
+firebase deploy --only hosting --project tutorias-de-verano
+```
+
+`VITE_API_URL=/api`: el frontend habla con el backend por el mismo origen, y
+`firebase.json` reescribe `/api/**` al servicio de Cloud Run. Nunca debe apuntar a
+`localhost` en producción.
