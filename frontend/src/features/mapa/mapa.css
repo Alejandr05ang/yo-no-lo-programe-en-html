@@ -81,7 +81,7 @@ button.mapa-celda:hover {
 
 .mapa-celda-cod {
   font-size: 11px;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
 }
 .mapa-celda[data-estado='hoy'] .mapa-celda-cod {
   color: var(--color-accent-800);
@@ -159,7 +159,7 @@ button.mapa-celda:hover {
 .mapa-espiral-num {
   font-size: 11px;
   width: 16px;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
 }
 .mapa-espiral-fila[data-activa='true'] .mapa-espiral-num {
   color: var(--color-accent-800);
@@ -225,3 +225,25 @@ button.mapa-celda:hover {
 .mapa-reset:hover {
   border-color: var(--color-accent);
 }
+
+/* Retos dentro del mapa real. Los abiertos son enlaces al encargo; los bloqueados
+   quedan inertes pero legibles, y el motivo se dice con texto, no solo con color. */
+.mapa-real .mapa-reto {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin-top: var(--space-2);
+  padding: var(--space-2);
+  font-size: 12px;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+}
+.mapa-real .mapa-reto strong { grid-column: 1; }
+.mapa-real .mapa-reto small { grid-column: 1; color: color-mix(in srgb, var(--color-text) 60%, transparent); }
+.mapa-real .mapa-reto .tag { grid-column: 2; grid-row: 1 / span 2; }
+.mapa-real .mapa-reto--abierto:hover { border-color: var(--color-accent); }
+.mapa-real .mapa-reto--abierto:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.mapa-real .mapa-reto[aria-disabled='true'] { color: var(--color-neutral-600); }

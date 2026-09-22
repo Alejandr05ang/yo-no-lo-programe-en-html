@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Navigate, useSearchParams } from 'react-router-dom'
-import { accedioHoy, diagnosticoHecho } from '../../lib/acceso'
+import { useSearchParams } from 'react-router-dom'
 import { Nav } from '../../components/Nav'
 import { api } from '../../lib/api'
 import { useAuth } from '../auth/authContext'
@@ -22,11 +21,11 @@ import { VistaConsultaMovil } from './VistaConsultaMovil'
 import './vista-estudiante.css'
 
 const CLAVE_ENCARGO = 've:encargo-abierto'
-// Estado efÃƒÂ­mero por pestaÃƒÂ±a (sessionStorage): sobrevive recargas, se pierde al cerrar la
-// pestaÃƒÂ±a. Igual criterio que el estado dinÃƒÂ¡mico del portafolio (brief Ã‚Â§2.6). En producciÃƒÂ³n
+// Estado efímero por pestaña (sessionStorage): sobrevive recargas, se pierde al cerrar la
+// pestaña. Igual criterio que el estado dinámico del portafolio (brief §2.6). En producción
 // esto lo guarda el backend por estudiante.
-const CLAVE_SOLUCIONES = 've:soluciones' // cÃƒÂ³digo aceptado por encargo (para heredar)
-const CLAVE_BORRADORES = 've:borradores' // cÃƒÂ³digo en curso por encargo (para no perder trabajo al navegar)
+const CLAVE_SOLUCIONES = 've:soluciones' // código aceptado por encargo (para heredar)
+const CLAVE_BORRADORES = 've:borradores' // código en curso por encargo (para no perder trabajo al navegar)
 
 const MIN_ENCARGO = NUMEROS_DE_ENCARGO[0]
 const MAX_ENCARGO = NUMEROS_DE_ENCARGO[NUMEROS_DE_ENCARGO.length - 1]
@@ -60,10 +59,6 @@ function clamp(n: number, lo: number, hi: number) {
 }
 
 export function VistaEstudiante() {
-  // Flujo de entrada (se decide antes de cualquier hook y es estable durante el montaje).
-  // Sin diagnÃƒÂ³stico o sin haber entrado hoy Ã¢â€ â€™ /inicio (decide el resto). Recargar Ã¢â€ â€™ nada.
-  if (!diagnosticoHecho() || !accedioHoy()) return <Navigate to="/inicio" replace />
-
   return <VistaEstudianteInterna />
 }
 
@@ -82,9 +77,9 @@ function VistaEstudianteInterna() {
   const [misDatosAbierto, setMisDatosAbierto] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
 
-  // Se evalÃƒÂºa una sola vez al montar (lib/dispositivo.ts): por capacidad del equipo, no por
-  // ancho de ventana Ã¢â‚¬â€ una pantalla dividida angosta en una computadora real no debe caer acÃƒÂ¡.
-  const { user } = useAuth()
+  // Se evalúa una sola vez al montar (lib/dispositivo.ts): por capacidad del equipo, no por
+  // ancho de ventana — una pantalla dividida angosta en una computadora real no debe caer acá.
+  const { user, api: clienteApi } = useAuth()
   const [vistaConsulta, setVistaConsulta] = useState(esVistaDeConsulta)
 
   const [perfil, setPerfil] = useState(leerPerfil)
@@ -130,7 +125,7 @@ function VistaEstudianteInterna() {
       borradoresRef.current[anterior] = contenidoRef.current
       persistir(CLAVE_BORRADORES, borradoresRef.current)
       if (user && contenidoRef.current) {
-         void api.autoguardar(anterior, contenidoRef.current)
+         void api.autoguardar(clienteApi, anterior, contenidoRef.current)
       }
     }
     numeroAnteriorRef.current = numero
@@ -156,7 +151,7 @@ function VistaEstudianteInterna() {
     }
 
     if (user) {
-      api.getProgress(numero).then(res => {
+      api.getProgress(clienteApi, numero).then(res => {
          if (res.draft_code) {
              setInitialCode(res.draft_code)
          } else {
@@ -179,13 +174,13 @@ function VistaEstudianteInterna() {
       setSalida({
         lineas: r.logs.length
           ? r.logs.map((texto) => ({ prefijo: 'consola', texto }))
-          : [{ prefijo: 'consola', texto: 'ejecuciÃƒÂ³n sin errores' }],
+          : [{ prefijo: 'consola', texto: 'ejecución sin errores' }],
       })
     } else {
       const mensaje = r.error?.mensaje ?? 'error desconocido'
       const linea = r.error?.linea
       setSalida({
-        lineas: [{ prefijo: 'consola', texto: linea ? `${mensaje} (lÃƒÂ­nea ${linea})` : mensaje }],
+        lineas: [{ prefijo: 'consola', texto: linea ? `${mensaje} (línea ${linea})` : mensaje }],
         linea,
       })
     }
@@ -193,7 +188,7 @@ function VistaEstudianteInterna() {
 
   const entregar = useCallback(async () => {
     setEntregando(true)
-    const r = await api.entregarARevision(numero, contenido, datos)
+    const r = await api.entregarARevision(clienteApi, numero, contenido, datos)
     setRevision(r)
     setEntregando(false)
   }, [contenido, datos, numero])
@@ -209,8 +204,8 @@ function VistaEstudianteInterna() {
     if (!contenido) return
     const t = setTimeout(() => {
       if (user) {
-        void api.autoguardar(numero, contenido)
-        localStorage.setItem(		`tutorias:draft:` + user.uid + ':' + challengeKeyFromNumero(numero), contenido)
+        void api.autoguardar(clienteApi, numero, contenido)
+        localStorage.setItem(`tutorias:draft:${user.uid}:${challengeKeyFromNumero(numero)}`, contenido)
       }
       borradoresRef.current[numero] = contenido
       persistir(CLAVE_BORRADORES, borradoresRef.current)
@@ -221,8 +216,8 @@ function VistaEstudianteInterna() {
   const aceptado = !!revision && revision.casosPasados === revision.casosTotales
   const esUltimo = numero >= MAX_ENCARGO
 
-  // Al aceptar: guardar la soluciÃƒÂ³n (para heredarla) y pasar SOLO al siguiente encargo,
-  // siempre, sin botÃƒÂ³n ni aviso (docs/encargos.md Ã‚Â§5.2). Un instante de sello y salta.
+  // Al aceptar: guardar la solución (para heredarla) y pasar SOLO al siguiente encargo,
+  // siempre, sin botón ni aviso (docs/encargos.md §5.2). Un instante de sello y salta.
   useEffect(() => {
     if (!aceptado) return
     solucionesRef.current[numero] = contenidoRef.current
@@ -237,7 +232,7 @@ function VistaEstudianteInterna() {
   }, [aceptado, numero])
 
   const mensajeAceptado =
-    aceptado && esUltimo ? 'Terminaste el ÃƒÂºltimo encargo. Tu portafolio estÃƒÂ¡ completo.' : ''
+    aceptado && esUltimo ? 'Terminaste el último encargo. Tu portafolio está completo.' : ''
 
   if (vistaConsulta) {
     return (
@@ -267,7 +262,7 @@ function VistaEstudianteInterna() {
       >
         {!encargo ? (
           <section className="ve-col-encargo">
-            <p className="text-muted">Cargando encargoÃ¢â‚¬Â¦</p>
+            <p className="text-muted">Cargando encargo…</p>
           </section>
         ) : (
           <PanelEncargo

@@ -1,5 +1,5 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom'
-import { AccountPage, AuthPage, RecoveryPage, RouteErrorPage, VerificationPage } from './features/auth/AuthPages'
+import { AccountPage, AuthPage, NoEncontrada, RecoveryPage, RouteErrorPage, VerificationPage } from './features/auth/AuthPages'
 import { RequireAuth, RequireOnboarding, RequireRole } from './features/auth/guards'
 import { FixtureLayout } from './features/auth/FixtureLayout'
 import { MapaReal } from './features/mapa/MapaReal'
@@ -29,7 +29,7 @@ const applicationRoutes: RouteObject[] = [
       { path: '/portafolio', lazy: async () => ({ Component: (await import('./features/estudiante/VistaEstudiante')).VistaEstudiante }) },
     ] },
   ] },
-  { path: '*', element: <Navigate to="/login" replace /> },
+  { path: '*', element: <NoEncontrada /> },
 ]
 
 // Vite removes this branch and its dynamic imports from production builds.

@@ -249,6 +249,18 @@ export function ForbiddenPage() {
   return <AccountFrame><h1>Esta sección no está disponible para tu cuenta</h1><p>Puedes continuar desde tu cuenta.</p><Link to="/cuenta">Ir a mi cuenta</Link></AccountFrame>
 }
 
+// Comodín de rutas: una dirección inexistente ya no expulsa al alumno a /login,
+// que borraba el contexto de lo que intentaba abrir.
+export function NoEncontrada() {
+  const { session } = useAuth()
+  return (
+    <AuthLayout title="No encontramos esa página">
+      <p>La dirección que abriste no existe o dejó de estar disponible. Revisa que el enlace esté completo; si llegaste desde un marcador antiguo, puede que esa página haya cambiado de sitio.</p>
+      <Link className="btn btn-primary" to={session ? '/cuenta' : '/login'}>{session ? 'Volver a mi cuenta' : 'Ir al inicio de sesión'}</Link>
+    </AuthLayout>
+  )
+}
+
 export function RouteErrorPage() {
   return <AuthLayout title="No se pudo abrir la página"><p>Recarga la página para volver a intentarlo.</p><a className="btn btn-primary" href="/">Volver al inicio</a></AuthLayout>
 }

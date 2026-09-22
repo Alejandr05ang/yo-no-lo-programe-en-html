@@ -2,66 +2,63 @@ import type { ResultadoRevision } from './tipos'
 import { ENCARGOS, type EncargoMock } from './encargos'
 import { revisarLocalmente } from './revisionLocal'
 import { challengeKeyFromNumero } from './challengeIdentity'
+import { ApiError, type ApiClient } from './http'
 
-const BASE = import.meta.env.VITE_API_URL ?? '/api'
-
-async function pedir<T>(ruta: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${BASE}${ruta}`, {
-    headers: { 'content-type': 'application/json' },
-    ...init,
-  })
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`)
-  return res.json() as Promise<T>
+/**
+ * Las llamadas que tocan el backend reciben el cliente autenticado que expone
+ * AuthProvider (auth.api). No se construye uno aquí: sería un segundo camino
+ * para el token de Firebase, y el que había antes no lo adjuntaba, así que todo
+ * el progreso del alumno respondía 401 y se perdía en silencio.
+ */
+function exigirCliente(cliente: ApiClient | null): ApiClient {
+  if (!cliente) throw new ApiError('AUTH_REQUIRED', 401)
+  return cliente
 }
 
 export const api = {
-  // El progreso de /demo no vive aquí: este cliente no adjunta el token de
-  // Firebase, así que cualquier ruta autenticada responde 401. DemoNivel usa
-  // auth.api (lib/http.ts), que sí lo hace.
-
-  async getProgress(numero: number): Promise<{ draft_code: string, status: string }> {
-    const key = challengeKeyFromNumero(numero)
-    try {
-      return await pedir(`/challenges/${key}/progress`)
-    } catch (e) {
-      return { draft_code: '', status: 'not_started' }
-    }
-  },
-
+  /** El encargo por número. Vive en el bundle, no necesita red. */
   async encargo(numero: number): Promise<EncargoMock> {
     await espera(120)
     return ENCARGOS[numero] ?? ENCARGOS[1]
   },
 
-  async autoguardar(numero: number, draft_code: string): Promise<{ guardadoHaceSegundos: number }> {
+  async getProgress(cliente: ApiClient | null, numero: number): Promise<{ draft_code: string, status: string }> {
     const key = challengeKeyFromNumero(numero)
-    await pedir(`/challenges/${key}/progress`, {
+    try {
+      return await exigirCliente(cliente).request(`/challenges/${key}/progress`)
+    } catch {
+      // Sin sesión, sin red o con el reto todavía bloqueado: se empieza en blanco
+      // y el respaldo local de quien llama decide si hay algo que restaurar.
+      return { draft_code: '', status: 'not_started' }
+    }
+  },
+
+  async autoguardar(cliente: ApiClient | null, numero: number, draft_code: string): Promise<void> {
+    const key = challengeKeyFromNumero(numero)
+    await exigirCliente(cliente).request(`/challenges/${key}/progress`, {
       method: 'PUT',
-      body: JSON.stringify({ draft_code, status: 'in_progress' })
+      json: { draft_code, status: 'in_progress' },
     })
-    return { guardadoHaceSegundos: 0 }
   },
 
   async entregarARevision(
+    cliente: ApiClient | null,
     numero: number,
     contenido: string,
     datos: unknown,
   ): Promise<ResultadoRevision> {
     const key = challengeKeyFromNumero(numero)
-    // 1. Submit to backend
-    await pedir(`/challenges/${key}/submit`, {
+    await exigirCliente(cliente).request(`/challenges/${key}/submit`, {
       method: 'POST',
-      body: JSON.stringify({ code_submitted: contenido })
+      json: { code_submitted: contenido },
     })
-    // 2. Client side grader for now, until Deno grader is ready (Phase 10)
+    // La corrección automática todavía corre en el navegador; el servidor guarda
+    // la entrega para que exista el registro aunque el corrector cambie después.
     await espera(400)
-    const result = revisarLocalmente(numero, contenido, datos)
-    // 3. Optional: update auto_result in backend via another endpoint, but for now MVP is just saving it.
-    return result
+    return revisarLocalmente(numero, contenido, datos)
   },
 }
 
 function espera(ms: number) {
   return new Promise((r) => setTimeout(r, ms))
 }
-

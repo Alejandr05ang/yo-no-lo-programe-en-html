@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { AccountFrame } from '../auth/AuthPages'
 import { useAuth } from '../auth/authContext'
 import { friendlyAuthError } from '../auth/session'
+import { numeroFromChallengeKey } from '../../lib/challengeIdentity'
 import './mapa.css'
 
 interface ChallengeTeaser { id: string; key: string; title: string; teaser_summary: string; kind: 'core' | 'platinum' | 'manual'; unlocked: boolean }
@@ -11,6 +13,36 @@ interface MapView { cohort_id: string; cohort_name: string; sessions: SessionTea
 function isMap(value: unknown): value is MapView {
   if (!value || typeof value !== 'object' || !('sessions' in value) || !Array.isArray(value.sessions)) return false
   return value.sessions.every((session) => session && typeof session === 'object' && 'code' in session && 'state' in session && 'challenges' in session && Array.isArray(session.challenges))
+}
+
+const ETIQUETA: Record<SessionTeaser['state'], string> = {
+  done: 'completado',
+  active: 'hoy',
+  future: 'próximo',
+}
+
+/**
+ * Una tarjeta de reto. Si está abierto es un enlace al encargo; si no, texto
+ * inerte que dice por qué. Antes todas eran texto plano, así que /portafolio no
+ * tenía ninguna entrada desde la aplicación.
+ */
+function Reto({ reto }: { reto: ChallengeTeaser }) {
+  const numero = numeroFromChallengeKey(reto.key)
+  const cuerpo = <>
+    <strong>{reto.title}</strong>
+    <small>{reto.teaser_summary}</small>
+  </>
+
+  if (reto.unlocked && numero !== null) {
+    return <Link className="mapa-reto mapa-reto--abierto" to={`/portafolio?e=${numero}`}>
+      {cuerpo}
+      <span className="tag tag-outline mono">abrir</span>
+    </Link>
+  }
+  return <div className="mapa-reto" aria-disabled="true">
+    {cuerpo}
+    <span className="tag tag-neutral mono">{reto.unlocked ? 'sin encargo' : 'bloqueado'}</span>
+  </div>
 }
 
 export function MapaReal() {
@@ -32,18 +64,31 @@ export function MapaReal() {
     return () => controller.abort()
   }, [api])
 
+  const hoy = map?.sessions.find((s) => s.state === 'active')
+
   return <AccountFrame>
     <div className="kicker">Mapa del taller</div>
     <h1>{map?.cohort_name ?? 'Tu recorrido'}</h1>
     {error && <p className="auth-message" role="alert">{error}</p>}
     {!map && !error && <p role="status">Cargando el mapa…</p>}
+    {map && !hoy && <p className="text-muted">
+      Tu docente todavía no ha abierto ningún día. Mientras tanto puedes practicar en <Link to="/demo">la demo</Link>.
+    </p>}
     {map && <div className="mapa-calendario mapa-real">
-      {map.sessions.map((session) => <section className="mapa-celda" data-estado={session.state === 'active' ? 'hoy' : session.state === 'done' ? 'hecho' : 'cerrado'} key={session.id}>
+      {map.sessions.map((session) => <section
+        className="mapa-celda"
+        data-estado={session.state === 'active' ? 'hoy' : session.state === 'done' ? 'hecho' : 'cerrado'}
+        key={session.id}
+        aria-current={session.state === 'active' ? 'step' : undefined}
+      >
         <div className="mapa-celda-cod mono">Día {session.day_number} · {session.code}</div>
         <div className="mapa-celda-tema">{session.title}</div>
         <p className="mapa-celda-pieza">{session.teaser_summary}</p>
-        <div className="mapa-celda-tag"><span className={session.state === 'active' ? 'tag tag-accent mono' : 'tag tag-outline mono'}>{session.state === 'active' ? 'hoy' : session.state === 'done' ? 'hecho' : 'próximo'}</span></div>
-        {session.challenges.map((challenge) => <div className="mapa-reto-txt" key={challenge.id}><strong>{challenge.title}</strong><small>{challenge.teaser_summary}</small><span className="mono">{challenge.unlocked ? ' abierto' : ' teaser'}</span></div>)}
+        <div className="mapa-celda-tag">
+          {/* El estado se dice con palabras, no solo con el color de la celda. */}
+          <span className={session.state === 'active' ? 'tag tag-accent mono' : 'tag tag-outline mono'}>{ETIQUETA[session.state]}</span>
+        </div>
+        {session.challenges.map((challenge) => <Reto key={challenge.id} reto={challenge} />)}
       </section>)}
     </div>}
   </AccountFrame>
