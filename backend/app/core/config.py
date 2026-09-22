@@ -24,19 +24,27 @@ class Settings(BaseSettings):
     @field_validator("app_origin")
     @classmethod
     def exact_origin(cls, value: str) -> str:
-        parsed = urlsplit(value)
-        if (
-            parsed.scheme not in {"http", "https"}
-            or not parsed.hostname
-            or parsed.username
-            or parsed.password
-            or parsed.path
-            or parsed.query
-            or parsed.fragment
-            or any(character in value for character in ("*", ",", " ", "\\"))
-        ):
-            raise ValueError("APP_ORIGIN must be one exact HTTP(S) origin without a path")
-        return value
+        origins = [origin.strip() for origin in value.split(",")]
+        for origin in origins:
+            parsed = urlsplit(origin)
+            if (
+                parsed.scheme not in {"http", "https"}
+                or not parsed.hostname
+                or parsed.username
+                or parsed.password
+                or parsed.path
+                or parsed.query
+                or parsed.fragment
+                or any(character in origin for character in ("*", " ", "\\"))
+            ):
+                raise ValueError(
+                    "APP_ORIGIN must be a comma-separated list of exact HTTP(S) origins without a path"
+                )
+        return ",".join(origins)
+
+    @property
+    def app_origins(self) -> list[str]:
+        return [origin.strip() for origin in self.app_origin.split(",")]
 
     @field_validator(
         "database_url",

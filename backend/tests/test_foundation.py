@@ -39,6 +39,24 @@ def test_unsafe_cors_configuration_is_rejected(origin):
         Settings(_env_file=None, app_origin=origin)
 
 
+async def test_cors_accepts_multiple_exact_origins():
+    app = create_app(
+        Settings(
+            _env_file=None,
+            app_origin="http://localhost:5173, https://example.netlify.app",
+        )
+    )
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app=app), base_url="http://test"
+    ) as c:
+        firebase = await c.get("/health", headers={"Origin": "http://localhost:5173"})
+        netlify = await c.get("/health", headers={"Origin": "https://example.netlify.app"})
+        denied = await c.get("/health", headers={"Origin": "https://evil.invalid"})
+    assert firebase.headers["access-control-allow-origin"] == "http://localhost:5173"
+    assert netlify.headers["access-control-allow-origin"] == "https://example.netlify.app"
+    assert "access-control-allow-origin" not in denied.headers
+
+
 async def test_body_limits_apply_without_content_length():
     app = create_app(Settings(_env_file=None, max_request_bytes=32))
 
