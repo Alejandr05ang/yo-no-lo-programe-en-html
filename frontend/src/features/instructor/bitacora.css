@@ -19,7 +19,7 @@
 }
 .bit-nav a:hover,
 .bit-nav a[aria-current='page'] {
-  color: var(--color-accent);
+  color: var(--color-accent-700);
 }
 
 .bit-grid {
