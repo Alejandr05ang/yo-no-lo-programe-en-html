@@ -37,6 +37,13 @@ class ChallengeDetail(ChallengeTeaser):
 class SessionDetail(BaseModel):
     id: UUID
     code: str
+    day_number: int
+    order_index: int
     title: str
     description: str
+    teaser_summary: str
+    # Una sesion abierta sin encargos sigue siendo una sesion que se puede abrir;
+    # la lista vacia es un estado legitimo, no un error.
     challenges: list[ChallengeDetail]
+    # El admin la abre para revisarla sin que cuente como progreso de nadie.
+    preview: bool = False
