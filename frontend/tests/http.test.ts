@@ -102,3 +102,15 @@ test('fails closed on anonymous calls and network failures', async () => {
   const offline = createApiClient({ ...options, fetcher: async () => { throw new TypeError('private backend details') } })
   await assert.rejects(offline.request('/me'), (error: unknown) => error instanceof ApiError && error.code === 'NETWORK_ERROR' && !error.message.includes('private'))
 })
+
+test('a locked day says it is not open yet, not that the account lacks access', () => {
+  // responseError descarta cualquier codigo que no este en MESSAGES y cae a
+  // FORBIDDEN, asi que un dia sin abrir se leia como un problema de permisos de
+  // la cuenta del alumno.
+  const codigos = ['SESSION_LOCKED', 'CHALLENGE_LOCKED', 'NOT_COHORT_MEMBER']
+  for (const code of codigos) {
+    const error = new ApiError(code, 403)
+    assert.notEqual(error.message, new ApiError('FORBIDDEN', 403).message, `${code} reutiliza el texto generico`)
+    assert.ok(error.message.length > 0)
+  }
+})
