@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import { AccountFrame } from '../auth/AuthPages'
 import { useAuth } from '../auth/authContext'
 import { friendlyAuthError } from '../auth/session'
+import { JoinClassForm } from '../auth/OnboardingForms'
+import { ApiError } from '../../lib/http'
 import { numeroFromChallengeKey } from '../../lib/challengeIdentity'
 import './mapa.css'
 
@@ -49,6 +51,11 @@ export function MapaReal() {
   const { api } = useAuth()
   const [map, setMap] = useState<MapView | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Sin clase no hay mapa que enseñar, pero tampoco es un error del alumno: es el
+  // paso que le falta. Se distingue para poder ofrecerle unirse aquí mismo.
+  const [faltaClase, setFaltaClase] = useState(false)
+  const [intento, setIntento] = useState(0)
+
   useEffect(() => {
     const controller = new AbortController()
     void (async () => {
@@ -57,14 +64,37 @@ export function MapaReal() {
         const response = await api.request<unknown>('/map', { signal: controller.signal })
         if (!isMap(response)) throw new Error('invalid map')
         setMap(response)
+        setFaltaClase(false)
+        setError(null)
       } catch (failure) {
-        if (!controller.signal.aborted) setError(friendlyAuthError(failure))
+        if (controller.signal.aborted) return
+        if (failure instanceof ApiError && failure.code === 'NOT_COHORT_MEMBER') {
+          setFaltaClase(true)
+          setError(null)
+          return
+        }
+        setError(friendlyAuthError(failure))
       }
     })()
     return () => controller.abort()
-  }, [api])
+  }, [api, intento])
 
   const hoy = map?.sessions.find((s) => s.state === 'active')
+
+  if (faltaClase) {
+    return <AccountFrame>
+      <div className="kicker">Tu clase</div>
+      <h1>Únete a tu clase</h1>
+      <p>
+        Escribe el código que te dio tu docente. Al hacerlo verás el mapa del taller y
+        los encargos que ya estén abiertos.
+      </p>
+      <JoinClassForm onUnido={() => { setFaltaClase(false); setIntento((n) => n + 1) }} />
+      <p className="text-muted">
+        ¿Todavía no tienes código? Puedes practicar mientras tanto en <Link to="/demo">la demo</Link>.
+      </p>
+    </AccountFrame>
+  }
 
   return <AccountFrame>
     <div className="kicker">Mapa del taller</div>

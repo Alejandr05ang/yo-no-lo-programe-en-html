@@ -19,7 +19,7 @@ interface EstadoTaller {
   students_count: number
   updated_at: string | null
 }
-interface Alumno { id: string; email: string; full_name: string; display_name: string }
+interface Alumno { id: string; email: string; full_name: string; display_name: string; joined_at: string }
 
 /** La demo no es una fila del catálogo: es el estado en el que no hay ningún día
  *  abierto. Se representa con active_session_id = null, que es lo que el backend
@@ -282,11 +282,12 @@ export function AdminDashboard() {
             </p>
           : <div className="adm-tabla-scroll">
               <table className="table">
-                <thead><tr><th scope="col">Nombre</th><th scope="col">Correo</th></tr></thead>
+                <thead><tr><th scope="col">Nombre</th><th scope="col">Correo</th><th scope="col">Se unió</th></tr></thead>
                 <tbody>
                   {alumnos.map((a) => <tr key={a.id}>
                     <td>{a.display_name || a.full_name || '—'}</td>
                     <td className="mono">{a.email}</td>
+                    <td>{new Date(a.joined_at).toLocaleDateString('es')}</td>
                   </tr>)}
                 </tbody>
               </table>
