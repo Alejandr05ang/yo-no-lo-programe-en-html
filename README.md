@@ -8,11 +8,31 @@ descubre por **necesidad real** dentro del proyecto, no por instrucción directa
 
 ## Estado del proyecto
 
-**Fase: base de API y autenticación implementada; integración real y MVP completo pendientes.**
+**STATUS: READY FOR CLASSROOM USE.**
 
-La arquitectura vigente es **Firebase Auth → FastAPI → Supabase PostgreSQL**, con acceso a datos
-exclusivamente desde el backend. Firebase solo maneja identidad. El plan, verificaciones y límites
-de esta entrega están en [docs/IMPLEMENTACION-MVP.md](docs/IMPLEMENTACION-MVP.md).
+> **Para retomar el desarrollo, lee primero [AI_HANDOFF.md](AI_HANDOFF.md).** Contiene el detalle
+> operativo: arquitectura que no debe romperse, flujos de alumno y administrador, orden de
+> despliegue, QA y decisiones pendientes. Este README solo da la vista general.
+
+Arquitectura vigente: **Firebase Auth → FastAPI → Supabase PostgreSQL**, con acceso a datos
+exclusivamente desde el backend. Firebase solo maneja identidad.
+
+En producción: <https://tutorias-de-verano.web.app>
+
+| Área | Estado |
+|---|---|
+| Autenticación y sesión persistente | PASS |
+| Panel de administración | PASS |
+| Unión a clase por código | PASS |
+| Gating de sesiones (servidor) | PASS |
+| Persistencia de perfil | PASS |
+| Persistencia de la demo | PASS |
+| E2E en producción con alumno real | PASS |
+
+Verificado contra producción: un administrador abre un día, el alumno lo ve y entra, los días
+posteriores siguen bloqueados también en el backend, y el progreso y el perfil quedan en
+PostgreSQL. El plan y los límites de la entrega original están en
+[docs/IMPLEMENTACION-MVP.md](docs/IMPLEMENTACION-MVP.md).
 
 - Firebase dedicado: `tutorias-de-verano` (creado para este proyecto).
 - Supabase existente: `Tutorias-de-Verano`, ref `ttgjesbqmewenryjrxsm`, schema `app`, bucket `avatars` privado.
@@ -21,7 +41,9 @@ de esta entrega están en [docs/IMPLEMENTACION-MVP.md](docs/IMPLEMENTACION-MVP.m
 - El frontend anterior y FASE A se conservan como ejercicios locales de desarrollo explícito.
   Sus fixtures no sirven como autenticación, progreso ni evaluación de producción.
 
-Los puntos de estado históricos siguientes describen el trabajo pedagógico previo. Las propuestas
+### Historial
+
+Los puntos siguientes describen el trabajo previo y se conservan como registro. Las propuestas
 antiguas de SQLite y login propio quedan sustituidas por [la arquitectura vigente](docs/ARQUITECTURA-BACKEND.md).
 
 - ✅ Brief de producto y diseño de alta fidelidad (7 pantallas) — en `docs/` y `design/`.
