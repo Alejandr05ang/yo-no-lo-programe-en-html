@@ -88,7 +88,7 @@ async def auth_harness(tmp_path):
         async def verify(self, token):
             identity = identities.get(token)
             if identity is None:
-                raise ApiError(401, "INVALID_TOKEN", "La sesiÃƒÂ³n no es vÃƒÂ¡lida.")
+                raise ApiError(401, "INVALID_TOKEN", "La sesión no es válida.")
             if isinstance(identity, Exception):
                 raise identity
             return identity
