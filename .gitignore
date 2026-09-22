@@ -31,3 +31,6 @@ Thumbs.db
 
 # Deno
 .deno/
+
+# Instrucciones locales de asistente de IA (no exponer en el repo)
+CLAUDE.md
