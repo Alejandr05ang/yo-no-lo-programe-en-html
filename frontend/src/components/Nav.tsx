@@ -1,8 +1,9 @@
 import { NavLink } from 'react-router-dom'
+import { useAuth } from '../features/auth/authContext'
 import { ControlesMusica } from '../features/musica/ControlesMusica'
 import { BetaTag } from './Beta'
 
-type Seccion = 'portafolio' | 'mapa' | 'retos' | 'bitacora'
+type Seccion = 'portafolio' | 'mapa'
 
 interface Props {
   /** Sufijo de la marca: "Portafolio", "Mapa"… */
@@ -18,6 +19,11 @@ interface Props {
 // Barra superior (handoff §1a / §1e). Marca "Taller · <sección>" con el · en acento;
 // tag outline del día; enlaces; avatar.
 export function Nav({ seccion, dia, iniciales, activo }: Props) {
+  // El rol llega de la sesión que verifica el backend, nunca de una preferencia del
+  // cliente: la bitácora vive tras RequireRole(['instructor','admin']), así que al
+  // alumno solo le mostraría una pantalla de acceso denegado.
+  const { session } = useAuth()
+  const esAlumno = session?.user.role === 'student'
   return (
     <nav className="nav ve-nav">
       <span className="nav-brand">
@@ -33,12 +39,7 @@ export function Nav({ seccion, dia, iniciales, activo }: Props) {
       <NavLink to="/mapa" aria-current={activo === 'mapa' ? 'page' : undefined}>
         Mapa
       </NavLink>
-      <NavLink to="/retos" aria-current={activo === 'retos' ? 'page' : undefined}>
-        Retos platino
-      </NavLink>
-      <NavLink to="/bitacora" aria-current={activo === 'bitacora' ? 'page' : undefined}>
-        Bitácora
-      </NavLink>
+      {!esAlumno && <NavLink to="/bitacora">Bitácora</NavLink>}
       <ControlesMusica />
       <div className="ve-avatar" aria-hidden>
         {iniciales}

@@ -55,11 +55,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setVerificationError(null)
   }, [queryClient])
 
-  const bootstrap = useCallback(async (current: User) => {
+  /**
+   * `silencioso` para las reemisiones de onIdTokenChanged del MISMO usuario: Firebase
+   * renueva el token por su cuenta cada hora, y vaciar la sesion en ese momento
+   * desmontaba la pantalla que el alumno tenia abierta para mostrarle el cargando.
+   * Solo se limpia cuando la cuenta cambia de verdad, que es cuando los permisos
+   * anteriores dejan de ser validos.
+   */
+  const bootstrap = useCallback(async (current: User, { silencioso = false } = {}) => {
     const ticket = requests.current.begin(current.uid)
     inFlight.current = true
-    setLoading(true)
-    setSession(null)
+    if (!silencioso) {
+      setLoading(true)
+      setSession(null)
+    }
     setSessionError(null)
     try {
       if (!connection.api) throw new ApiError('INVALID_API_URL')
@@ -93,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // A forced refresh inside a 401 retry also emits this event. Do not restart
       // the same bootstrap and create a retry loop while that request is running.
       if (!changed && (inFlight.current || refreshing.current)) return
-      void bootstrap(current)
+      void bootstrap(current, { silencioso: !changed })
     }, () => {
       clearPrivateState()
       setUser(null)
