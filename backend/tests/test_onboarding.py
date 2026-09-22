@@ -119,13 +119,86 @@ async def test_map_has_teasers_but_future_detail_is_forbidden(auth_harness):
                 ),
             ]
         )
-        future_id = future.id
     response = await auth_harness.client.get("/api/map", headers={"Authorization": "Bearer token"})
     assert response.status_code == 200
     body = response.json()
     assert "INSTRUCCION_PROTEGIDA" not in str(body)
     assert body["sessions"][1]["state"] == "future"
+
+    # Las sesiones se piden por su codigo publico, no por UUID.
+    abierta = await auth_harness.client.get(
+        "/api/map/sessions/Ma1", headers={"Authorization": "Bearer token"}
+    )
+    assert abierta.status_code == 200
+    assert abierta.json()["code"] == "Ma1"
+    assert abierta.json()["day_number"] == 2
+
     locked = await auth_harness.client.get(
-        f"/api/map/sessions/{future_id}", headers={"Authorization": "Bearer token"}
+        "/api/map/sessions/Mi1", headers={"Authorization": "Bearer token"}
     )
     assert locked.status_code == 403
+    assert locked.json()["error"]["code"] == "SESSION_LOCKED"
+
+
+@pytest.mark.asyncio
+async def test_active_session_opens_even_without_challenges(auth_harness):
+    """Una sesion sin encargos sigue siendo una sesion que el alumno puede abrir.
+
+    Es el caso de L1 en el taller real: dia de diagnostico, cero encargos. Antes el
+    mapa no ofrecia forma de entrar y la sesion quedaba muerta.
+    """
+    auth_harness.identities["token"] = identity()
+    await auth_harness.client.post("/api/auth/bootstrap", headers={"Authorization": "Bearer token"})
+    async with auth_harness.sessions() as session, session.begin():
+        user = await session.scalar(__import__("sqlalchemy").select(User))
+        user.profile_completed_at = datetime.now(UTC)
+        cohort = Cohort(name="Cohorte", slug="cohorte-l1", join_code_hash="sha256:l1")
+        vacia = SessionCatalog(
+            code="L1", day_number=1, order_index=1, title="Diagnostico", is_published=True
+        )
+        session.add_all([cohort, vacia])
+        await session.flush()
+        session.add_all(
+            [
+                CohortMembership(cohort_id=cohort.id, user_id=user.id),
+                CohortState(cohort_id=cohort.id, active_session_id=vacia.id),
+            ]
+        )
+
+    res = await auth_harness.client.get(
+        "/api/map/sessions/L1", headers={"Authorization": "Bearer token"}
+    )
+    assert res.status_code == 200
+    assert res.json()["code"] == "L1"
+    assert res.json()["challenges"] == []
+    assert res.json()["preview"] is False
+
+
+@pytest.mark.asyncio
+async def test_admin_previews_any_session_without_membership(auth_harness):
+    """El admin revisa el material antes de abrirlo, sin estar matriculado."""
+    from app.db.models import AdminAllowlist
+
+    auth_harness.identities["admin"] = identity(uid="adm", email="jefe@example.com")
+    async with auth_harness.sessions() as session, session.begin():
+        session.add(AdminAllowlist(email="jefe@example.com", active=True))
+    await auth_harness.client.post("/api/auth/bootstrap", headers={"Authorization": "Bearer admin"})
+    async with auth_harness.sessions() as session, session.begin():
+        session.add(
+            SessionCatalog(
+                code="V2", day_number=10, order_index=10, title="Cierre", is_published=True
+            )
+        )
+
+    res = await auth_harness.client.get(
+        "/api/map/sessions/V2", headers={"Authorization": "Bearer admin"}
+    )
+    assert res.status_code == 200
+    assert res.json()["preview"] is True
+
+    # Y una que no existe sigue siendo 404, no un 200 vacio.
+    assert (
+        await auth_harness.client.get(
+            "/api/map/sessions/NOEXISTE", headers={"Authorization": "Bearer admin"}
+        )
+    ).status_code == 404

@@ -1,4 +1,3 @@
-from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -155,16 +154,59 @@ async def require_challenge_access(
     return cohort, challenge
 
 
-async def session_detail(session: AsyncSession, user: User, session_id: UUID) -> SessionDetail:
+async def session_detail(session: AsyncSession, user: User, code: str) -> SessionDetail:
+    """Una sesion del taller, identificada por su codigo publico (L1, Ma1...).
+
+    Se busca por codigo y no por UUID porque es lo que el alumno ve y lo que va en
+    la direccion. El admin la abre siempre, para poder revisar el material antes de
+    abrirlo a la clase; el alumno solo hasta la sesion activa de su cohorte.
+    """
+    item = await session.scalar(
+        select(SessionCatalog).where(
+            SessionCatalog.code == code, SessionCatalog.is_published.is_(True)
+        )
+    )
+    if item is None:
+        raise ApiError(404, "NOT_FOUND", "Sesión no encontrada.")
+
+    if user.role == "admin":
+        require_verified(user)
+        vistas = (
+            await session.scalars(
+                select(Challenge)
+                .where(Challenge.session_id == item.id, Challenge.status == "published")
+                .order_by(Challenge.sort_order)
+            )
+        ).all()
+        return SessionDetail(
+            id=item.id,
+            code=item.code,
+            day_number=item.day_number,
+            order_index=item.order_index,
+            title=item.title,
+            description=item.description,
+            teaser_summary=item.teaser_summary,
+            challenges=[
+                ChallengeDetail(
+                    id=c.id,
+                    key=c.key,
+                    title=c.title,
+                    teaser_summary=c.teaser_summary,
+                    kind=c.kind,
+                    unlocked=True,
+                    instructions=c.instructions,
+                )
+                for c in vistas
+            ],
+            preview=True,
+        )
+
     cohort, state = await user_cohort(session, user)
-    item = await session.get(SessionCatalog, session_id)
     active = (
         await session.get(SessionCatalog, state.active_session_id)
         if state and state.active_session_id
         else None
     )
-    if item is None or not item.is_published:
-        raise ApiError(404, "NOT_FOUND", "Sesión no encontrada.")
     if active is None or item.order_index > active.order_index:
         raise ApiError(403, "SESSION_LOCKED", "Esta sesión todavía no está disponible.")
     rows = (
@@ -197,7 +239,10 @@ async def session_detail(session: AsyncSession, user: User, session_id: UUID) ->
     return SessionDetail(
         id=item.id,
         code=item.code,
+        day_number=item.day_number,
+        order_index=item.order_index,
         title=item.title,
         description=item.description,
+        teaser_summary=item.teaser_summary,
         challenges=details,
     )

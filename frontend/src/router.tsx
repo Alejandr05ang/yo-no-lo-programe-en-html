@@ -26,6 +26,7 @@ const applicationRoutes: RouteObject[] = [
     ] },
     { element: <RequireOnboarding />, children: [
       { path: '/mapa', element: <MapaReal /> },
+      { path: '/sesiones/:codigo', lazy: async () => ({ Component: (await import('./features/mapa/SesionPage')).SesionPage }) },
       { path: '/portafolio', lazy: async () => ({ Component: (await import('./features/estudiante/VistaEstudiante')).VistaEstudiante }) },
     ] },
   ] },

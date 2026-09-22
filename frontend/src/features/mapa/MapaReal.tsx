@@ -118,6 +118,13 @@ export function MapaReal() {
           {/* El estado se dice con palabras, no solo con el color de la celda. */}
           <span className={session.state === 'active' ? 'tag tag-accent mono' : 'tag tag-outline mono'}>{ETIQUETA[session.state]}</span>
         </div>
+        {/* Entrar en la sesión no depende de que tenga encargos: el día de
+            diagnóstico no tiene ninguno y aun así hay que poder abrirlo. */}
+        {session.state === 'future'
+          ? <span className="mapa-entrar mapa-entrar--bloqueado">Se abrirá más adelante</span>
+          : <Link className="btn btn-primary mapa-entrar" to={`/sesiones/${encodeURIComponent(session.code)}`}>
+              Entrar<span className="sr-only"> a Día {session.day_number} · {session.title}</span>
+            </Link>}
         {session.challenges.map((challenge) => <Reto key={challenge.id} reto={challenge} />)}
       </section>)}
     </div>}

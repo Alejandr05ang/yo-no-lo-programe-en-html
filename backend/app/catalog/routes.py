@@ -1,5 +1,3 @@
-from uuid import UUID
-
 from fastapi import APIRouter
 
 from app.auth.dependencies import CurrentUser
@@ -15,6 +13,7 @@ async def get_map(user: CurrentUser, session: SessionDep):
     return await map_view(session, user)
 
 
-@router.get("/sessions/{session_id}", response_model=SessionDetail)
-async def get_session(session_id: UUID, user: CurrentUser, session: SessionDep):
-    return await session_detail(session, user, session_id)
+@router.get("/sessions/{code}", response_model=SessionDetail)
+async def get_session(code: str, user: CurrentUser, session: SessionDep):
+    """Una sesion por su codigo publico (L1, Ma1...), no por UUID."""
+    return await session_detail(session, user, code)
