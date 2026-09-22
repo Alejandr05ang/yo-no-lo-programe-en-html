@@ -6,6 +6,23 @@
 
 [build.environment]
   NODE_VERSION = "24"
+  # Configuración web de Firebase: son valores públicos del navegador, los mismos
+  # que ya viajan en el bundle servido desde Firebase Hosting.
+  VITE_FIREBASE_API_KEY = "AIzaSyBuL-DQRaE6F9TXXSSuFDm2igP0nUFxD2U"
+  VITE_FIREBASE_AUTH_DOMAIN = "tutorias-de-verano.firebaseapp.com"
+  VITE_FIREBASE_PROJECT_ID = "tutorias-de-verano"
+  VITE_FIREBASE_STORAGE_BUCKET = "tutorias-de-verano.firebasestorage.app"
+  VITE_FIREBASE_MESSAGING_SENDER_ID = "1093002100842"
+  VITE_FIREBASE_APP_ID = "1:1093002100842:web:17c42f5f5ae9b62a8e0a13"
+
+# Equivalente al rewrite de firebase.json: /api/** lo atiende Cloud Run. Al ser un
+# proxy del lado del servidor, el navegador ve mismo origen y no interviene CORS.
+# Debe ir antes del catch-all del SPA: las reglas se evalúan en orden.
+[[redirects]]
+  from   = "/api/*"
+  to     = "https://tutorias-api-1093002100842.us-east1.run.app/api/:splat"
+  status = 200
+  force  = true
 
 # SPA: React Router maneja las rutas en el cliente. Toda URL cae en index.html.
 [[redirects]]
