@@ -122,7 +122,7 @@
   font: 600 10px/1 ui-monospace, Menlo, monospace;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   white-space: nowrap;
 }
 .enc-toggle {
@@ -141,7 +141,7 @@
   cursor: pointer;
 }
 .enc-toggle:hover {
-  color: var(--color-accent);
+  color: var(--color-accent-700);
   border-color: var(--color-accent);
 }
 .enc-cab {

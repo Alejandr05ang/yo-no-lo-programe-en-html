@@ -1,13 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Navigate, useSearchParams } from 'react-router-dom'
-import { accedioHoy, diagnosticoHecho } from '../../lib/acceso'
+import { useSearchParams } from 'react-router-dom'
 import { Nav } from '../../components/Nav'
 import { api } from '../../lib/api'
+import { useAuth } from '../auth/authContext'
+import { challengeKeyFromNumero } from '../../lib/challengeIdentity'
 import { esVistaDeConsulta, habilitarEdicionForzada } from '../../lib/dispositivo'
 import { componerAndamiaje, diaDeEncargo, NUMEROS_DE_ENCARGO } from '../../lib/encargos'
 import { datosComoTexto, guardadoEjemplo, portafolioEjemplo } from '../../lib/mockEncargo'
-import { guardarPerfil, leerPerfil, perfilComoDatos } from '../../lib/perfil'
+import { leerPerfilLegado, olvidarPerfilLegado, perfilComoDatos, perfilDesdeBackend, perfilDelServidorEstaVacio, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
 import { ejecutarPreview } from '../../lib/sandbox'
 import type { ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
 import { PanelEncargo } from '../encargo/PanelEncargo'
@@ -58,10 +59,6 @@ function clamp(n: number, lo: number, hi: number) {
 }
 
 export function VistaEstudiante() {
-  // Flujo de entrada (se decide antes de cualquier hook y es estable durante el montaje).
-  // Sin diagnóstico o sin haber entrado hoy → /inicio (decide el resto). Recargar → nada.
-  if (!diagnosticoHecho() || !accedioHoy()) return <Navigate to="/inicio" replace />
-
   return <VistaEstudianteInterna />
 }
 
@@ -82,11 +79,42 @@ function VistaEstudianteInterna() {
 
   // Se evalúa una sola vez al montar (lib/dispositivo.ts): por capacidad del equipo, no por
   // ancho de ventana — una pantalla dividida angosta en una computadora real no debe caer acá.
+  const { user, api: clienteApi, session, refresh } = useAuth()
   const [vistaConsulta, setVistaConsulta] = useState(esVistaDeConsulta)
 
-  const [perfil, setPerfil] = useState(leerPerfil)
+  // El perfil sale de Postgres, no del navegador: así es el mismo en cualquier
+  // equipo y sobrevive a vaciar el almacenamiento local.
+  const perfil: Perfil = useMemo(
+    () => (session ? perfilDesdeBackend(session.user) : PERFIL_DEFECTO),
+    [session],
+  )
   const perfilRef = useRef(perfil)
   perfilRef.current = perfil
+
+  // Migración de una sola vez para quien guardó su perfil cuando vivía en el
+  // navegador: se sube, y solo cuando el servidor confirma se borra la copia local.
+  const migradoRef = useRef(false)
+  useEffect(() => {
+    if (migradoRef.current || !session || !clienteApi) return
+    const legado = leerPerfilLegado()
+    if (!legado) return
+    migradoRef.current = true
+    if (!perfilDelServidorEstaVacio(session.user)) {
+      // El servidor ya tiene perfil propio: manda él y lo heredado se descarta.
+      olvidarPerfilLegado()
+      return
+    }
+    void (async () => {
+      try {
+        await clienteApi.request('/profile', { method: 'PUT', json: perfilParaBackend(legado, session.user) })
+        olvidarPerfilLegado()
+        await refresh()
+      } catch (e) {
+        console.error('No se pudo migrar el perfil guardado en este navegador', e)
+        migradoRef.current = false
+      }
+    })()
+  }, [session, clienteApi, refresh])
 
   const solucionesRef = useRef<Record<number, string>>(leerMapa(CLAVE_SOLUCIONES))
   const borradoresRef = useRef<Record<number, string>>(leerMapa(CLAVE_BORRADORES))
@@ -126,24 +154,46 @@ function VistaEstudianteInterna() {
     if (anterior != null && anterior !== numero) {
       borradoresRef.current[anterior] = contenidoRef.current
       persistir(CLAVE_BORRADORES, borradoresRef.current)
+      if (user && contenidoRef.current) {
+         void api.autoguardar(clienteApi, anterior, contenidoRef.current)
+      }
     }
     numeroAnteriorRef.current = numero
 
-    const nuevo = borradoresRef.current[numero] ?? componerAndamiaje(numero, solucionesRef.current)
-    setContenido(nuevo)
-    setSalida(null)
-    setRevision(null)
-
-    // No se limpia la vista previa: si el encargo hereda código que ya funciona, se corre
-    // para mostrar el portafolio acumulado desde el primer instante (sensación de avance).
-    if (encargo.heredaDe != null) {
-      const d = { ...perfilComoDatos(perfilRef.current), ...encargo.datosOverride }
-      void ejecutarPreview(nuevo, d).then((r) => {
-        if (r.ok) setPreviewHtml(r.html)
-      })
+    let fallbackLocal = borradoresRef.current[numero]
+    if (user) {
+      const fallbackExt = localStorage.getItem(`tutorias:draft:${user.uid}:${challengeKeyFromNumero(numero)}`)
+      if (fallbackExt) fallbackLocal = fallbackExt
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [encargo, numero])
+
+    const setInitialCode = (code: string) => {
+      setContenido(code)
+      setSalida(null)
+      setRevision(null)
+      if (encargo.heredaDe != null) {
+        const d = { ...perfilComoDatos(perfilRef.current), ...encargo.datosOverride }
+        void ejecutarPreview(code, d).then((r) => {
+          if (r.ok) setPreviewHtml(r.html)
+        })
+      } else {
+        setPreviewHtml('')
+      }
+    }
+
+    if (user) {
+      api.getProgress(clienteApi, numero).then(res => {
+         if (res.draft_code) {
+             setInitialCode(res.draft_code)
+         } else {
+             setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
+         }
+      }).catch(() => {
+         setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
+      })
+    } else {
+      setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
+    }
+  }, [numero, encargo, user, clienteApi])
 
   const ejecutar = useCallback(async () => {
     setEjecutando(true)
@@ -168,10 +218,10 @@ function VistaEstudianteInterna() {
 
   const entregar = useCallback(async () => {
     setEntregando(true)
-    const r = await api.entregarARevision(numero, contenido, datos)
+    const r = await api.entregarARevision(clienteApi, numero, contenido, datos)
     setRevision(r)
     setEntregando(false)
-  }, [contenido, datos, numero])
+  }, [contenido, datos, numero, clienteApi])
 
   // Al guardar "Mis datos": refrescar la preview para que se vea el cambio de una.
   useEffect(() => {
@@ -183,12 +233,15 @@ function VistaEstudianteInterna() {
   useEffect(() => {
     if (!contenido) return
     const t = setTimeout(() => {
-      void api.autoguardar(contenido)
+      if (user) {
+        void api.autoguardar(clienteApi, numero, contenido)
+        localStorage.setItem(`tutorias:draft:${user.uid}:${challengeKeyFromNumero(numero)}`, contenido)
+      }
       borradoresRef.current[numero] = contenido
       persistir(CLAVE_BORRADORES, borradoresRef.current)
     }, 800)
     return () => clearTimeout(t)
-  }, [contenido, numero])
+  }, [contenido, numero, user, clienteApi])
 
   const aceptado = !!revision && revision.casosPasados === revision.casosTotales
   const esUltimo = numero >= MAX_ENCARGO
@@ -290,8 +343,15 @@ function VistaEstudianteInterna() {
         <MisDatos
           perfil={perfil}
           onGuardar={(p) => {
-            setPerfil(p)
-            guardarPerfil(p)
+            if (!clienteApi || !session) return
+            void (async () => {
+              try {
+                await clienteApi.request('/profile', { method: 'PUT', json: perfilParaBackend(p, session.user) })
+                await refresh()
+              } catch (e) {
+                console.error('No se pudo guardar el perfil', e)
+              }
+            })()
           }}
           onCerrar={() => setMisDatosAbierto(false)}
         />

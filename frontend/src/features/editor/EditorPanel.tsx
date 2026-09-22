@@ -47,12 +47,32 @@ declare function crearItem(texto: string): HTMLElement
 declare function crearEnlace(texto: string, url: string): HTMLElement
 /** ${doc('crearImagen()')} */
 declare function crearImagen(url: string, descripcion: string): HTMLElement
+/** ${doc('crearCarrusel()')} */
+declare function crearCarrusel(): HTMLElement
 /** ${doc('mostrar()')} */
 declare function mostrar(elemento: HTMLElement): HTMLElement
 /** ${doc('agregarA()')} */
 declare function agregarA(contenedor: HTMLElement, elemento: HTMLElement): HTMLElement
+/** ${doc('vaciar()')} */
+declare function vaciar(contenedor: HTMLElement): HTMLElement
+/** ${doc('proyectosDestacados()')} */
+declare function proyectosDestacados(proyectos: Proyecto[]): Proyecto[]
 /** ${doc('cadaSegundo()')} */
 declare function cadaSegundo(hacer: () => void): void
+declare function cadaSegundo(
+  carrusel: HTMLElement,
+  elementos: Proyecto[],
+  crearElemento: (proyecto: Proyecto) => HTMLElement,
+): void
+
+interface Proyecto {
+  nombre: string
+  imagenUrl?: string
+  destacado?: boolean
+  terminado?: boolean
+  tipo?: string
+  url?: string
+}
 
 /** Los datos de este encargo — los prepara el evaluador, no hace falta crearlos.
  *  Forma provisional (docs/decisiones.md D5/EN2-EN4): "any" no autocompleta miembros como
@@ -60,10 +80,10 @@ declare function cadaSegundo(hacer: () => void): void
 declare const datos: {
   nombre: string
   sobreMi: string
-  redes: Record<string, string>
+  redes: Array<{ nombre: string; url: string }>
   hobbies: string[]
-  proyectos: Record<string, unknown>[]
-  skills: Record<string, string[]>
+  proyectos: Proyecto[]
+  skills: Array<{ categoria: string; items: string[] }>
 }
 `
 

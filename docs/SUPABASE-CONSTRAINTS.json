@@ -1,0 +1,338 @@
+[
+  {
+    "conname": "admin_allowlist_added_by_fkey",
+    "contype": "f",
+    "table_name": "app.admin_allowlist",
+    "definition": "FOREIGN KEY (added_by) REFERENCES app.users(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "admin_allowlist_pkey",
+    "contype": "p",
+    "table_name": "app.admin_allowlist",
+    "definition": "PRIMARY KEY (email)"
+  },
+  {
+    "conname": "audit_log_actor_user_id_fkey",
+    "contype": "f",
+    "table_name": "app.audit_log",
+    "definition": "FOREIGN KEY (actor_user_id) REFERENCES app.users(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "audit_log_pkey",
+    "contype": "p",
+    "table_name": "app.audit_log",
+    "definition": "PRIMARY KEY (id)"
+  },
+  {
+    "conname": "challenge_overrides_challenge_id_fkey",
+    "contype": "f",
+    "table_name": "app.challenge_overrides",
+    "definition": "FOREIGN KEY (challenge_id) REFERENCES app.challenges(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "challenge_overrides_cohort_id_fkey",
+    "contype": "f",
+    "table_name": "app.challenge_overrides",
+    "definition": "FOREIGN KEY (cohort_id) REFERENCES app.cohorts(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "challenge_overrides_pkey",
+    "contype": "p",
+    "table_name": "app.challenge_overrides",
+    "definition": "PRIMARY KEY (cohort_id, challenge_id)"
+  },
+  {
+    "conname": "challenge_overrides_updated_by_fkey",
+    "contype": "f",
+    "table_name": "app.challenge_overrides",
+    "definition": "FOREIGN KEY (updated_by) REFERENCES app.users(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "challenges_created_by_fkey",
+    "contype": "f",
+    "table_name": "app.challenges",
+    "definition": "FOREIGN KEY (created_by) REFERENCES app.users(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "challenges_key_key",
+    "contype": "u",
+    "table_name": "app.challenges",
+    "definition": "UNIQUE (key)"
+  },
+  {
+    "conname": "challenges_pkey",
+    "contype": "p",
+    "table_name": "app.challenges",
+    "definition": "PRIMARY KEY (id)"
+  },
+  {
+    "conname": "challenges_session_id_fkey",
+    "contype": "f",
+    "table_name": "app.challenges",
+    "definition": "FOREIGN KEY (session_id) REFERENCES app.sessions_catalog(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "cohort_memberships_cohort_id_fkey",
+    "contype": "f",
+    "table_name": "app.cohort_memberships",
+    "definition": "FOREIGN KEY (cohort_id) REFERENCES app.cohorts(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "cohort_memberships_pkey",
+    "contype": "p",
+    "table_name": "app.cohort_memberships",
+    "definition": "PRIMARY KEY (cohort_id, user_id)"
+  },
+  {
+    "conname": "cohort_memberships_user_id_fkey",
+    "contype": "f",
+    "table_name": "app.cohort_memberships",
+    "definition": "FOREIGN KEY (user_id) REFERENCES app.users(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "cohort_state_active_session_id_fkey",
+    "contype": "f",
+    "table_name": "app.cohort_state",
+    "definition": "FOREIGN KEY (active_session_id) REFERENCES app.sessions_catalog(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "cohort_state_cohort_id_fkey",
+    "contype": "f",
+    "table_name": "app.cohort_state",
+    "definition": "FOREIGN KEY (cohort_id) REFERENCES app.cohorts(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "cohort_state_pkey",
+    "contype": "p",
+    "table_name": "app.cohort_state",
+    "definition": "PRIMARY KEY (cohort_id)"
+  },
+  {
+    "conname": "cohort_state_updated_by_fkey",
+    "contype": "f",
+    "table_name": "app.cohort_state",
+    "definition": "FOREIGN KEY (updated_by) REFERENCES app.users(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "cohorts_created_by_fkey",
+    "contype": "f",
+    "table_name": "app.cohorts",
+    "definition": "FOREIGN KEY (created_by) REFERENCES app.users(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "cohorts_pkey",
+    "contype": "p",
+    "table_name": "app.cohorts",
+    "definition": "PRIMARY KEY (id)"
+  },
+  {
+    "conname": "cohorts_slug_format",
+    "contype": "c",
+    "table_name": "app.cohorts",
+    "definition": "CHECK ((slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$'::text))"
+  },
+  {
+    "conname": "cohorts_slug_key",
+    "contype": "u",
+    "table_name": "app.cohorts",
+    "definition": "UNIQUE (slug)"
+  },
+  {
+    "conname": "diagnostic_responses_phase_check",
+    "contype": "c",
+    "table_name": "app.diagnostic_responses",
+    "definition": "CHECK ((phase = ANY (ARRAY['initial'::text, 'final'::text])))"
+  },
+  {
+    "conname": "diagnostic_responses_pkey",
+    "contype": "p",
+    "table_name": "app.diagnostic_responses",
+    "definition": "PRIMARY KEY (id)"
+  },
+  {
+    "conname": "diagnostic_responses_user_id_fkey",
+    "contype": "f",
+    "table_name": "app.diagnostic_responses",
+    "definition": "FOREIGN KEY (user_id) REFERENCES app.users(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "diagnostic_responses_user_id_phase_question_key_key",
+    "contype": "u",
+    "table_name": "app.diagnostic_responses",
+    "definition": "UNIQUE (user_id, phase, question_key)"
+  },
+  {
+    "conname": "feature_flags_cohort_id_fkey",
+    "contype": "f",
+    "table_name": "app.feature_flags",
+    "definition": "FOREIGN KEY (cohort_id) REFERENCES app.cohorts(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "feature_flags_pkey",
+    "contype": "p",
+    "table_name": "app.feature_flags",
+    "definition": "PRIMARY KEY (id)"
+  },
+  {
+    "conname": "feature_flags_updated_by_fkey",
+    "contype": "f",
+    "table_name": "app.feature_flags",
+    "definition": "FOREIGN KEY (updated_by) REFERENCES app.users(id) ON DELETE SET NULL"
+  },
+  {
+    "conname": "progress_attempts_count_check",
+    "contype": "c",
+    "table_name": "app.progress",
+    "definition": "CHECK ((attempts_count >= 0))"
+  },
+  {
+    "conname": "progress_cases_passed_check",
+    "contype": "c",
+    "table_name": "app.progress",
+    "definition": "CHECK ((cases_passed >= 0))"
+  },
+  {
+    "conname": "progress_cases_total_check",
+    "contype": "c",
+    "table_name": "app.progress",
+    "definition": "CHECK ((cases_total >= 0))"
+  },
+  {
+    "conname": "progress_challenge_id_fkey",
+    "contype": "f",
+    "table_name": "app.progress",
+    "definition": "FOREIGN KEY (challenge_id) REFERENCES app.challenges(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "progress_cohort_id_fkey",
+    "contype": "f",
+    "table_name": "app.progress",
+    "definition": "FOREIGN KEY (cohort_id) REFERENCES app.cohorts(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "progress_pkey",
+    "contype": "p",
+    "table_name": "app.progress",
+    "definition": "PRIMARY KEY (user_id, cohort_id, challenge_id)"
+  },
+  {
+    "conname": "progress_user_id_fkey",
+    "contype": "f",
+    "table_name": "app.progress",
+    "definition": "FOREIGN KEY (user_id) REFERENCES app.users(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "sessions_catalog_code_key",
+    "contype": "u",
+    "table_name": "app.sessions_catalog",
+    "definition": "UNIQUE (code)"
+  },
+  {
+    "conname": "sessions_catalog_day_number_check",
+    "contype": "c",
+    "table_name": "app.sessions_catalog",
+    "definition": "CHECK ((day_number >= 1))"
+  },
+  {
+    "conname": "sessions_catalog_order_index_check",
+    "contype": "c",
+    "table_name": "app.sessions_catalog",
+    "definition": "CHECK ((order_index >= 1))"
+  },
+  {
+    "conname": "sessions_catalog_order_index_key",
+    "contype": "u",
+    "table_name": "app.sessions_catalog",
+    "definition": "UNIQUE (order_index)"
+  },
+  {
+    "conname": "sessions_catalog_pkey",
+    "contype": "p",
+    "table_name": "app.sessions_catalog",
+    "definition": "PRIMARY KEY (id)"
+  },
+  {
+    "conname": "submission_reviews_pkey",
+    "contype": "p",
+    "table_name": "app.submission_reviews",
+    "definition": "PRIMARY KEY (id)"
+  },
+  {
+    "conname": "submission_reviews_reviewer_id_fkey",
+    "contype": "f",
+    "table_name": "app.submission_reviews",
+    "definition": "FOREIGN KEY (reviewer_id) REFERENCES app.users(id) ON DELETE RESTRICT"
+  },
+  {
+    "conname": "submission_reviews_submission_id_fkey",
+    "contype": "f",
+    "table_name": "app.submission_reviews",
+    "definition": "FOREIGN KEY (submission_id) REFERENCES app.submissions(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "submissions_attempt_number_check",
+    "contype": "c",
+    "table_name": "app.submissions",
+    "definition": "CHECK ((attempt_number >= 1))"
+  },
+  {
+    "conname": "submissions_challenge_id_fkey",
+    "contype": "f",
+    "table_name": "app.submissions",
+    "definition": "FOREIGN KEY (challenge_id) REFERENCES app.challenges(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "submissions_cohort_id_fkey",
+    "contype": "f",
+    "table_name": "app.submissions",
+    "definition": "FOREIGN KEY (cohort_id) REFERENCES app.cohorts(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "submissions_grader_duration_ms_check",
+    "contype": "c",
+    "table_name": "app.submissions",
+    "definition": "CHECK (((grader_duration_ms IS NULL) OR (grader_duration_ms >= 0)))"
+  },
+  {
+    "conname": "submissions_pkey",
+    "contype": "p",
+    "table_name": "app.submissions",
+    "definition": "PRIMARY KEY (id)"
+  },
+  {
+    "conname": "submissions_user_id_cohort_id_challenge_id_attempt_number_key",
+    "contype": "u",
+    "table_name": "app.submissions",
+    "definition": "UNIQUE (user_id, cohort_id, challenge_id, attempt_number)"
+  },
+  {
+    "conname": "submissions_user_id_fkey",
+    "contype": "f",
+    "table_name": "app.submissions",
+    "definition": "FOREIGN KEY (user_id) REFERENCES app.users(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "user_links_pkey",
+    "contype": "p",
+    "table_name": "app.user_links",
+    "definition": "PRIMARY KEY (id)"
+  },
+  {
+    "conname": "user_links_user_id_fkey",
+    "contype": "f",
+    "table_name": "app.user_links",
+    "definition": "FOREIGN KEY (user_id) REFERENCES app.users(id) ON DELETE CASCADE"
+  },
+  {
+    "conname": "users_firebase_uid_key",
+    "contype": "u",
+    "table_name": "app.users",
+    "definition": "UNIQUE (firebase_uid)"
+  },
+  {
+    "conname": "users_pkey",
+    "contype": "p",
+    "table_name": "app.users",
+    "definition": "PRIMARY KEY (id)"
+  }
+]

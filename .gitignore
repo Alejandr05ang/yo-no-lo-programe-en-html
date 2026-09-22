@@ -2,6 +2,7 @@
 node_modules/
 frontend/dist/
 frontend/.vite/
+.firebase/
 *.local
 
 # Python / backend
@@ -12,6 +13,10 @@ venv/
 .env
 .env.*
 !.env.example
+*firebase-adminsdk*.json
+*service-account*.json
+credentials/
+secrets/
 
 # SQLite
 *.db
@@ -26,4 +31,3 @@ Thumbs.db
 
 # Deno
 .deno/
-

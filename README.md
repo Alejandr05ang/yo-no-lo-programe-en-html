@@ -8,7 +8,43 @@ descubre por **necesidad real** dentro del proyecto, no por instrucción directa
 
 ## Estado del proyecto
 
-**Fase: frontend arrancado, backend pendiente.**
+**STATUS: READY FOR CLASSROOM USE.**
+
+> **Para retomar el desarrollo, lee primero [AI_HANDOFF.md](AI_HANDOFF.md).** Contiene el detalle
+> operativo: arquitectura que no debe romperse, flujos de alumno y administrador, orden de
+> despliegue, QA y decisiones pendientes. Este README solo da la vista general.
+
+Arquitectura vigente: **Firebase Auth → FastAPI → Supabase PostgreSQL**, con acceso a datos
+exclusivamente desde el backend. Firebase solo maneja identidad.
+
+En producción: <https://tutorias-de-verano.web.app>
+
+| Área | Estado |
+|---|---|
+| Autenticación y sesión persistente | PASS |
+| Panel de administración | PASS |
+| Unión a clase por código | PASS |
+| Gating de sesiones (servidor) | PASS |
+| Persistencia de perfil | PASS |
+| Persistencia de la demo | PASS |
+| E2E en producción con alumno real | PASS |
+
+Verificado contra producción: un administrador abre un día, el alumno lo ve y entra, los días
+posteriores siguen bloqueados también en el backend, y el progreso y el perfil quedan en
+PostgreSQL. El plan y los límites de la entrega original están en
+[docs/IMPLEMENTACION-MVP.md](docs/IMPLEMENTACION-MVP.md).
+
+- Firebase dedicado: `tutorias-de-verano` (creado para este proyecto).
+- Supabase existente: `Tutorias-de-Verano`, ref `ttgjesbqmewenryjrxsm`, schema `app`, bucket `avatars` privado.
+- Configuración y credenciales pendientes: [Firebase](docs/FIREBASE-SETUP.md) y
+  [desarrollo local](docs/LOCAL-DEVELOPMENT.md). Nunca colocar secretos servidor en `VITE_*`.
+- El frontend anterior y FASE A se conservan como ejercicios locales de desarrollo explícito.
+  Sus fixtures no sirven como autenticación, progreso ni evaluación de producción.
+
+### Historial
+
+Los puntos siguientes describen el trabajo previo y se conservan como registro. Las propuestas
+antiguas de SQLite y login propio quedan sustituidas por [la arquitectura vigente](docs/ARQUITECTURA-BACKEND.md).
 
 - ✅ Brief de producto y diseño de alta fidelidad (7 pantallas) — en `docs/` y `design/`.
 - ✅ Stack y arquitectura decididos — ver `docs/arquitectura.md`.
@@ -16,15 +52,36 @@ descubre por **necesidad real** dentro del proyecto, no por instrucción directa
   (instructor `/bitacora`, sin rol todavía), **1f** (`/entrar`, diagnóstico), **1g** (vista de
   consulta para equipos sin teclado/mouse real — no por ancho de ventana, ver
   `docs/design-handoff.md` §1g) y **bienvenida diaria** (`/bienvenida`), con datos de ejemplo
-  (`cd frontend && npm i && npm run dev`).
+  (solo desarrollo con `VITE_ENABLE_LOCAL_EXERCISES=true`).
 - ✅ Progresión de 11 encargos, herencia de código entre encargos, andamiaje narrativo real para
   los 11 (antes placeholder genérico en 4-11), "Mis datos", fichas de ayuda, avance automático
   al aceptar. Flujo de entrada: `/inicio` (primera vez de todas) → `/entrar` (diagnóstico) →
   portafolio; `/bienvenida` la primera vez de cada día; recargar no interrumpe.
 - ⬜ Pantallas 1b/1c (variantes del reto).
 - 🟡 Bugs menores conocidos (solo dev / no bloquean) — ver `docs/decisiones.md` §"Bugs conocidos".
-- ⬜ Andamiaje de `backend/` (FastAPI) y el autograder (Deno).
-- ⬜ Cablear frontend ↔ backend.
+- ✅ Base FastAPI y cliente de autenticación; pruebas aisladas. Falta validación con credenciales reales.
+- ⬜ Perfil, avatar, cohortes, mapa, administración, progreso, entregas y autograder Deno.
+
+## Desarrollo local actual
+
+Configura `backend/.env` a partir de su ejemplo sin sobrescribir archivos existentes. Necesita
+`DATABASE_URL` del Supabase autorizado, `FIREBASE_PROJECT_ID=tutorias-de-verano` y una credencial
+Admin/ADC externa al repositorio. `frontend/.env.local` contiene únicamente configuración pública
+Firebase y `VITE_API_URL`; en otra computadora usa `frontend/.env.example`.
+
+```powershell
+# Terminal 1, desde backend/
+uv sync --locked
+uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000 --no-access-log
+
+# Terminal 2, desde frontend/
+npm ci
+npm run dev
+```
+
+Proveedores Firebase y pasos exactos: [FIREBASE-SETUP](docs/FIREBASE-SETUP.md).
+Alternativa local de uv, TLS y pruebas: [LOCAL-DEVELOPMENT](docs/LOCAL-DEVELOPMENT.md).
+Sin credenciales, `/health` informa `database: not_configured`; no implica conexión real.
 
 ## Por dónde empezar
 
@@ -53,15 +110,15 @@ design/
   support.js                  Runtime de la herramienta de diseño — NO llevar al proyecto
   design-system/              Guía del sistema Classical
   canvas-preview.webp         Miniatura del lienzo
-backend/            FastAPI + SQLite (esqueleto)
+backend/            FastAPI + SQLAlchemy async + PostgreSQL; Firebase Admin
 frontend/           React + Vite + TS (esqueleto)
 ```
 
 ## Stack (resumen — detalle en `docs/arquitectura.md`)
 
-- **Backend:** FastAPI + SQLite (SQLAlchemy), Python.
+- **Backend:** FastAPI + PostgreSQL gestionado por Supabase, SQLAlchemy async/asyncpg, Python.
 - **Frontend:** React + Vite + TypeScript, editor Monaco, TanStack Query.
 - **Autograder:** endpoint FastAPI que ejecuta el código del estudiante en un subproceso **Deno** aislado.
 - **Vista previa y portafolios publicados:** `iframe` con `sandbox` + `postMessage`, sin servidor.
-- **Auth:** correo + código de cohorte.
+- **Auth:** Firebase Email/Password y Google; código de cohorte como paso posterior de autorización.
 - **Deploy:** backend en Fly.io/Railway (Docker con Python + Deno), frontend estático.

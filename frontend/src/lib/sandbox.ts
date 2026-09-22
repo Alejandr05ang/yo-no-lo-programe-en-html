@@ -47,6 +47,12 @@ const RUNTIME = String.raw`
   const crearLista   = () => __crear('ul');
   const crearItem    = (texto) => __crear('li', texto);
   const crearBoton   = (texto) => __crear('button', texto);
+  function crearCarrusel() {
+    const carrusel = __crear('section');
+    carrusel.setAttribute('data-carrusel', 'true');
+    carrusel.setAttribute('aria-live', 'polite');
+    return carrusel;
+  }
   function crearEnlace(texto, url) {
     const a = __crear('a', texto);
     a.setAttribute('href', String(url ?? '#'));
@@ -61,10 +67,35 @@ const RUNTIME = String.raw`
 
   function mostrar(elemento) { pagina.appendChild(elemento); return elemento; }
   function agregarA(contenedor, elemento) { contenedor.appendChild(elemento); return elemento; }
+  function vaciar(contenedor) { contenedor.replaceChildren(); return contenedor; }
+
+  function proyectosDestacados(proyectos) {
+    return Array.isArray(proyectos) ? proyectos.filter((proyecto) => proyecto && proyecto.destacado === true) : [];
+  }
 
   // En la vista previa el iframe es efímero: corremos la acción una vez para ver el
-  // resultado y dejamos un intervalo que morirá con el iframe.
-  function cadaSegundo(hacer) { hacer(); setInterval(hacer, 1000); }
+  // resultado y dejamos un intervalo que morirá con el iframe. El segundo formato
+  // mantiene un carrusel: reemplaza su único contenido y recorre la lista en ciclo.
+  function cadaSegundo(destino, elementos, crearElemento) {
+    if (Array.isArray(elementos) && typeof crearElemento === 'function') {
+      if (elementos.length === 0) {
+        destino.replaceChildren(__crear('p', 'Todavía no hay proyectos destacados.'));
+        return;
+      }
+      let indice = 0;
+      const avanzar = () => {
+        destino.replaceChildren(crearElemento(elementos[indice]));
+        indice = (indice + 1) % elementos.length;
+      };
+      avanzar();
+      setInterval(avanzar, 1000);
+      return;
+    }
+    if (typeof destino === 'function') {
+      destino();
+      setInterval(destino, 1000);
+    }
+  }
 `
 
 // El código del estudiante se corre con eval() (en vez de quedar embebido como texto
@@ -108,7 +139,7 @@ try {
     '*',
   );
 }
-<\/script></body></html>`
+</script></body></html>`
 }
 
 /** Corre el código en un iframe efímero y resuelve con el HTML resultante. */

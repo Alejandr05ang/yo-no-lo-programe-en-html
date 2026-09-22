@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { diagnosticoHecho, marcarAcceso } from '../../lib/acceso'
 import { diaDeEncargo } from '../../lib/encargos'
-import { leerPerfil } from '../../lib/perfil'
+import { PERFIL_DEFECTO } from '../../lib/perfil'
 import { iniciar as iniciarMusica } from '../../lib/musica'
 import { encargoFrontera, encargosAceptados } from '../../lib/progreso'
 import { PortadaLayout } from './PortadaLayout'
@@ -36,7 +36,7 @@ export function Inicio() {
     )
   }
 
-  const nombre = leerPerfil().nombre.split(' ')[0]
+  const nombre = PERFIL_DEFECTO.nombre.split(' ')[0]
   const hechos = encargosAceptados().length
   const frontera = encargoFrontera()
   const dia = diaDeEncargo(frontera)
