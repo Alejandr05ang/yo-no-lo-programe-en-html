@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { BetaTag } from '../../components/Beta'
 import { diagnosticoHecho, marcarAcceso, marcarDiagnostico } from '../../lib/acceso'
 import { iniciar as iniciarMusica } from '../../lib/musica'
-import { guardarPerfil, leerPerfil } from '../../lib/perfil'
+import { PERFIL_DEFECTO } from '../../lib/perfil'
 import { PortadaLayout } from './PortadaLayout'
 
 const EXPERIENCIA = [
@@ -30,12 +30,11 @@ export function Entrada() {
 }
 
 function FormularioDiagnostico({ navigate }: { navigate: ReturnType<typeof useNavigate> }) {
-  const [nombre, setNombre] = useState(() => leerPerfil().nombre)
+  const [nombre, setNombre] = useState(PERFIL_DEFECTO.nombre)
   const [experiencia, setExperiencia] = useState<number | null>(null)
   const [lectura, setLectura] = useState('')
 
   const continuar = () => {
-    guardarPerfil({ ...leerPerfil(), nombre: nombre.trim() || 'Estudiante' })
     try {
       localStorage.setItem(
         've:diagnostico-respuestas',

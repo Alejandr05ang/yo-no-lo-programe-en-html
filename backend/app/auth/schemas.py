@@ -17,6 +17,7 @@ class UserView(BaseModel):
     full_name: str
     display_name: str
     description: str
+    hobbies: list[str]
     avatar_path: str | None
     github_url: str | None
     linkedin_url: str | None

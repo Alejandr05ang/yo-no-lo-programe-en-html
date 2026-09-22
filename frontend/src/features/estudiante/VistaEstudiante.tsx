@@ -8,7 +8,7 @@ import { challengeKeyFromNumero } from '../../lib/challengeIdentity'
 import { esVistaDeConsulta, habilitarEdicionForzada } from '../../lib/dispositivo'
 import { componerAndamiaje, diaDeEncargo, NUMEROS_DE_ENCARGO } from '../../lib/encargos'
 import { datosComoTexto, guardadoEjemplo, portafolioEjemplo } from '../../lib/mockEncargo'
-import { guardarPerfil, leerPerfil, perfilComoDatos } from '../../lib/perfil'
+import { leerPerfilLegado, olvidarPerfilLegado, perfilComoDatos, perfilDesdeBackend, perfilDelServidorEstaVacio, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
 import { ejecutarPreview } from '../../lib/sandbox'
 import type { ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
 import { PanelEncargo } from '../encargo/PanelEncargo'
@@ -79,12 +79,42 @@ function VistaEstudianteInterna() {
 
   // Se evalúa una sola vez al montar (lib/dispositivo.ts): por capacidad del equipo, no por
   // ancho de ventana — una pantalla dividida angosta en una computadora real no debe caer acá.
-  const { user, api: clienteApi } = useAuth()
+  const { user, api: clienteApi, session, refresh } = useAuth()
   const [vistaConsulta, setVistaConsulta] = useState(esVistaDeConsulta)
 
-  const [perfil, setPerfil] = useState(leerPerfil)
+  // El perfil sale de Postgres, no del navegador: así es el mismo en cualquier
+  // equipo y sobrevive a vaciar el almacenamiento local.
+  const perfil: Perfil = useMemo(
+    () => (session ? perfilDesdeBackend(session.user) : PERFIL_DEFECTO),
+    [session],
+  )
   const perfilRef = useRef(perfil)
   perfilRef.current = perfil
+
+  // Migración de una sola vez para quien guardó su perfil cuando vivía en el
+  // navegador: se sube, y solo cuando el servidor confirma se borra la copia local.
+  const migradoRef = useRef(false)
+  useEffect(() => {
+    if (migradoRef.current || !session || !clienteApi) return
+    const legado = leerPerfilLegado()
+    if (!legado) return
+    migradoRef.current = true
+    if (!perfilDelServidorEstaVacio(session.user)) {
+      // El servidor ya tiene perfil propio: manda él y lo heredado se descarta.
+      olvidarPerfilLegado()
+      return
+    }
+    void (async () => {
+      try {
+        await clienteApi.request('/profile', { method: 'PUT', json: perfilParaBackend(legado, session.user) })
+        olvidarPerfilLegado()
+        await refresh()
+      } catch (e) {
+        console.error('No se pudo migrar el perfil guardado en este navegador', e)
+        migradoRef.current = false
+      }
+    })()
+  }, [session, clienteApi, refresh])
 
   const solucionesRef = useRef<Record<number, string>>(leerMapa(CLAVE_SOLUCIONES))
   const borradoresRef = useRef<Record<number, string>>(leerMapa(CLAVE_BORRADORES))
@@ -163,7 +193,7 @@ function VistaEstudianteInterna() {
     } else {
       setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
     }
-  }, [numero, encargo, user])
+  }, [numero, encargo, user, clienteApi])
 
   const ejecutar = useCallback(async () => {
     setEjecutando(true)
@@ -191,7 +221,7 @@ function VistaEstudianteInterna() {
     const r = await api.entregarARevision(clienteApi, numero, contenido, datos)
     setRevision(r)
     setEntregando(false)
-  }, [contenido, datos, numero])
+  }, [contenido, datos, numero, clienteApi])
 
   // Al guardar "Mis datos": refrescar la preview para que se vea el cambio de una.
   useEffect(() => {
@@ -211,7 +241,7 @@ function VistaEstudianteInterna() {
       persistir(CLAVE_BORRADORES, borradoresRef.current)
     }, 800)
     return () => clearTimeout(t)
-  }, [contenido, numero, user])
+  }, [contenido, numero, user, clienteApi])
 
   const aceptado = !!revision && revision.casosPasados === revision.casosTotales
   const esUltimo = numero >= MAX_ENCARGO
@@ -313,8 +343,15 @@ function VistaEstudianteInterna() {
         <MisDatos
           perfil={perfil}
           onGuardar={(p) => {
-            setPerfil(p)
-            guardarPerfil(p)
+            if (!clienteApi || !session) return
+            void (async () => {
+              try {
+                await clienteApi.request('/profile', { method: 'PUT', json: perfilParaBackend(p, session.user) })
+                await refresh()
+              } catch (e) {
+                console.error('No se pudo guardar el perfil', e)
+              }
+            })()
           }}
           onCerrar={() => setMisDatosAbierto(false)}
         />
