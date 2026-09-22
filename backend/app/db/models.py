@@ -46,6 +46,9 @@ class User(Base):
     full_name: Mapped[str] = mapped_column(Text, server_default=text("''"))
     display_name: Mapped[str] = mapped_column(Text, server_default=text("''"))
     description: Mapped[str] = mapped_column(Text, server_default=text("''"))
+    # Lista de aficiones del portafolio. Vivia en localStorage y se perdia al
+    # cambiar de navegador; ahora es parte del perfil como el resto.
+    hobbies: Mapped[Any] = mapped_column(JSONB, nullable=False, server_default=text("'[]'"))
     avatar_path: Mapped[str | None] = mapped_column(Text)
     github_url: Mapped[str | None] = mapped_column(Text)
     linkedin_url: Mapped[str | None] = mapped_column(Text)

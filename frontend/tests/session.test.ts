@@ -4,7 +4,7 @@ import { parseSession } from '../src/lib/backendTypes.ts'
 import { accessDecision, onboardingPath, friendlyAuthError, SessionRequests } from '../src/features/auth/session.ts'
 
 const session = {
-  user: { id: 'user-id', email: 'student@example.test', full_name: '', display_name: '', description: '', avatar_path: null, github_url: null, linkedin_url: null, website_url: null, role: 'student', email_verified: true, profile_completed_at: null, is_active: true },
+  user: { id: 'user-id', email: 'student@example.test', full_name: '', display_name: '', description: '', hobbies: [], avatar_path: null, github_url: null, linkedin_url: null, website_url: null, role: 'student', email_verified: true, profile_completed_at: null, is_active: true },
   onboarding: { state: 'PROFILE_REQUIRED' },
 }
 
@@ -14,6 +14,15 @@ test('rejects malformed backend roles and states instead of opening a protected 
   assert.throws(() => parseSession({ ...session, onboarding: { state: 'COMPLETE' } }))
   assert.throws(() => parseSession({ ...session, user: { ...session.user, email_verified: 'true' } }))
   assert.throws(() => parseSession({ ...session, user: { ...session.user, is_active: false } }))
+})
+
+test('the profile the student sees comes from the backend, hobbies included', () => {
+  // hobbies dejo de vivir en localStorage: si el backend no lo manda, la sesion
+  // no es utilizable y es mejor saberlo aqui que pintar un portafolio vacio.
+  assert.deepEqual(parseSession({ ...session, user: { ...session.user, hobbies: ['Ajedrez'] } }).user.hobbies, ['Ajedrez'])
+  assert.throws(() => parseSession({ ...session, user: { ...session.user, hobbies: undefined } }))
+  assert.throws(() => parseSession({ ...session, user: { ...session.user, hobbies: 'Ajedrez' } }))
+  assert.throws(() => parseSession({ ...session, user: { ...session.user, hobbies: [1, 2] } }))
 })
 
 test('routes incomplete accounts to the backend-selected step', () => {

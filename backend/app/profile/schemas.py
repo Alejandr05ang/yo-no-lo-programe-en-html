@@ -3,6 +3,7 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 ShortName = Annotated[str, Field(min_length=2, max_length=120)]
+Aficion = Annotated[str, Field(min_length=1, max_length=80)]
 
 
 class ProfileUpdate(BaseModel):
@@ -14,6 +15,7 @@ class ProfileUpdate(BaseModel):
     github_url: Annotated[str | None, Field(max_length=2048)] = None
     linkedin_url: Annotated[str | None, Field(max_length=2048)] = None
     website_url: Annotated[str | None, Field(max_length=2048)] = None
+    hobbies: Annotated[list[Aficion], Field(max_length=20)] = []
 
     @field_validator("github_url", "linkedin_url", "website_url")
     @classmethod
