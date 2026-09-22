@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy import select
 
-from app.db.models import AdminAllowlist, AuditLog, Cohort, User
+from app.db.models import AdminAllowlist, AuditLog, Cohort, SessionCatalog, User
 from tests.test_auth import bearer, identity
 
 
@@ -78,18 +78,51 @@ async def test_admin_change_active_session(auth_harness):
     )
     cohort_id = res.json()["id"]
 
-    # Change active session (will fail if session doesn't exist, but let's see)
-    from uuid import uuid4
+    # Sin sesion activa el taller esta en su estado inicial: solo la demo.
+    res = await h.client.get(f"/api/admin/cohorts/{cohort_id}/state", headers=bearer("admin1"))
+    assert res.status_code == 200
+    assert res.json()["active_session_id"] is None
+    assert res.json()["active_order_index"] == 0
 
-    fake_session = str(uuid4())
-    # The endpoint doesn't strictly validate session id exists in catalog for MVP, but let's check
+    async with h.sessions.begin() as session:
+        session.add(
+            SessionCatalog(
+                code="L1", day_number=1, order_index=1, title="Dia 1", is_published=True
+            )
+        )
+    async with h.sessions.begin() as session:
+        dia1 = await session.scalar(select(SessionCatalog).where(SessionCatalog.code == "L1"))
+        dia1_id = str(dia1.id)
+
     res = await h.client.patch(
         f"/api/admin/cohorts/{cohort_id}/active-session",
-        json={"active_session_id": fake_session},
+        json={"active_session_id": dia1_id},
         headers=bearer("admin1"),
     )
     assert res.status_code == 200
-    assert res.json()["active_session_id"] == fake_session
+    assert res.json()["active_session_id"] == dia1_id
+    assert res.json()["active_session_code"] == "L1"
+    assert res.json()["active_order_index"] == 1
+
+    # Una sesion inventada ya no se acepta: antes se guardaba un id inexistente.
+    from uuid import uuid4
+
+    res = await h.client.patch(
+        f"/api/admin/cohorts/{cohort_id}/active-session",
+        json={"active_session_id": str(uuid4())},
+        headers=bearer("admin1"),
+    )
+    assert res.status_code == 404
+
+    # Volver al estado inicial es valido y deja a los alumnos solo con la demo.
+    res = await h.client.patch(
+        f"/api/admin/cohorts/{cohort_id}/active-session",
+        json={"active_session_id": None},
+        headers=bearer("admin1"),
+    )
+    assert res.status_code == 200
+    assert res.json()["active_session_id"] is None
+    assert res.json()["active_order_index"] == 0
 
 
 @pytest.mark.asyncio
@@ -108,3 +141,32 @@ async def test_admin_add_admin(auth_harness):
         )
         assert a is not None
         assert a.active is True
+
+
+@pytest.mark.asyncio
+async def test_admin_lists_session_catalog_in_order(auth_harness):
+    h = auth_harness
+    await setup_admin_data(h)
+
+    async with h.sessions.begin() as session:
+        session.add(
+            SessionCatalog(code="Ma1", day_number=2, order_index=2, title="Dia 2", is_published=True)
+        )
+        session.add(
+            SessionCatalog(code="L1", day_number=1, order_index=1, title="Dia 1", is_published=True)
+        )
+
+    res = await h.client.get("/api/admin/sessions", headers=bearer("admin1"))
+    assert res.status_code == 200
+    codigos = [s["code"] for s in res.json()]
+    assert codigos == ["L1", "Ma1"]
+    assert all("challenges_count" in s for s in res.json())
+
+
+@pytest.mark.asyncio
+async def test_session_catalog_is_admin_only(auth_harness):
+    h = auth_harness
+    await setup_admin_data(h)
+
+    assert (await h.client.get("/api/admin/sessions", headers=bearer("student1"))).status_code == 403
+    assert (await h.client.get("/api/admin/sessions")).status_code == 401
