@@ -1,4 +1,5 @@
 import { useState, useEffect, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { friendlyAuthError } from './session'
 import { useAuth } from './authContext'
 
@@ -63,8 +64,9 @@ export function ProfileForm() {
   </form>
 }
 
-export function JoinClassForm() {
+export function JoinClassForm({ onUnido }: { onUnido?: () => void } = {}) {
   const auth = useAuth()
+  const navigate = useNavigate()
   const [code, setCode] = useState('')
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -78,10 +80,10 @@ export function JoinClassForm() {
     try {
       const response = await auth.api.request<{ cohort_name: string, joined: boolean }>('/cohorts/join', { method: 'POST', json: { code } })
       setSuccessData(response)
+      // Refrescar primero: el mapa exige la membresía que acaba de crearse.
       await auth.refresh()
-      setTimeout(() => {
-        window.location.assign('/mapa')
-      }, 2000)
+      if (onUnido) onUnido()
+      else navigate('/mapa', { replace: true })
     } catch (failure) {
       setError(friendlyAuthError(failure))
       setPending(false)
@@ -90,18 +92,23 @@ export function JoinClassForm() {
 
   if (successData) {
     return <div className="auth-form onboarding-form">
-      <p className="auth-message" role="status" style={{ background: '#d4edda', color: '#155724', padding: '1rem', borderRadius: '4px' }}>
-        <strong>¡Te has unido a la clase!</strong><br />
-        Clase: {successData.cohort_name}<br />
-        Membresía: Activa
+      <p className="auth-message" role="status">
+        <strong>{successData.joined ? '¡Ya estás dentro!' : 'Ya pertenecías a esta clase.'}</strong><br />
+        Clase: {successData.cohort_name}
       </p>
-      <p>Redirigiendo a tu mapa...</p>
+      <p>Abriendo tu mapa…</p>
     </div>
   }
 
   return <form className="auth-form onboarding-form" onSubmit={(event) => void submit(event)} aria-busy={pending}>
     {error && <p className="auth-message" role="alert">{error}</p>}
-    <div className="field"><label htmlFor="join-code">Código de clase</label><input id="join-code" className="input mono" minLength={8} maxLength={80} autoCapitalize="characters" autoComplete="off" required value={code} onChange={(event) => setCode(event.target.value.toUpperCase())} /></div>
-    <button className="btn btn-primary" disabled={pending}>{pending ? 'Comprobando…' : 'Entrar a clase'}</button>
+    <div className="field">
+      <label htmlFor="join-code">Código de acceso</label>
+      <input id="join-code" className="input mono" minLength={8} maxLength={80} autoCapitalize="characters"
+        autoComplete="off" required aria-describedby="join-ayuda" value={code}
+        onChange={(event) => setCode(event.target.value.toUpperCase())} disabled={pending} />
+      <p id="join-ayuda" className="auth-help">Te lo da tu docente al empezar el taller.</p>
+    </div>
+    <button className="btn btn-primary" disabled={pending}>{pending ? 'Comprobando…' : 'Unirme a la clase'}</button>
   </form>
 }

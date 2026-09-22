@@ -12,6 +12,7 @@ from app.admin.schemas import (
     AdminAllowlistBody,
     CohortCreateBody,
     CohortCreateResponse,
+    CohortStudent,
     CohortUpdateBody,
     DashboardMetrics,
     FeatureFlagUpdate,
@@ -163,14 +164,30 @@ async def regenerate_cohort_code(cohort_id: UUID, user: CurrentUser, session: Se
     return {"join_code_plaintext": join_code}
 
 
-@router.get("/cohorts/{cohort_id}/students")
+@router.get("/cohorts/{cohort_id}/students", response_model=list[CohortStudent])
 async def get_cohort_students(cohort_id: UUID, session: SessionDep):
-    students = await session.scalars(
-        select(User)
-        .join(CohortMembership, User.id == CohortMembership.user_id)
-        .where(CohortMembership.cohort_id == cohort_id, CohortMembership.role == "student")
-    )
-    return students.all()
+    rows = (
+        await session.execute(
+            select(User, CohortMembership.joined_at)
+            .join(CohortMembership, User.id == CohortMembership.user_id)
+            .where(
+                CohortMembership.cohort_id == cohort_id,
+                CohortMembership.role == "student",
+                CohortMembership.status == "active",
+            )
+            .order_by(CohortMembership.joined_at)
+        )
+    ).all()
+    return [
+        CohortStudent(
+            id=user.id,
+            display_name=user.display_name,
+            full_name=user.full_name,
+            email=user.email,
+            joined_at=joined_at,
+        )
+        for user, joined_at in rows
+    ]
 
 
 @router.patch("/cohorts/{cohort_id}/active-session", response_model=WorkshopState)

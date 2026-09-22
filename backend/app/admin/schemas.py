@@ -72,6 +72,20 @@ class SessionCatalogItem(BaseModel):
     challenges_count: int
 
 
+class CohortStudent(BaseModel):
+    """Un alumno matriculado, con lo justo para la lista del panel.
+
+    Sin response_model este endpoint devolvia la fila entera de users, con
+    firebase_uid incluido.
+    """
+
+    id: UUID
+    display_name: str
+    full_name: str
+    email: str
+    joined_at: datetime
+
+
 class WorkshopState(BaseModel):
     """Estado del taller de una cohorte.
 
