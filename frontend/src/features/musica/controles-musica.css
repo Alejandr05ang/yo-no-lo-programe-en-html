@@ -92,3 +92,19 @@
   border-color: var(--color-neutral-500);
   color: var(--color-neutral-700);
 }
+
+.mus-pop-vol {
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: 4px;
+}
+.mus-pop-vol input[type='range'] {
+  flex: 1;
+}
+.mus-vol-pct {
+  font-size: 11px;
+  color: var(--color-neutral-600);
+  min-width: 2.5em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}

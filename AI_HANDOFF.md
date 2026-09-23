@@ -13,11 +13,11 @@ alumnos y datos reales.
 
 | | |
 |---|---|
-| Frontend | https://tutorias-de-verano.web.app (Firebase Hosting) |
+| Frontend | https://tutoriasdeverano.netlify.app/ (Netlify) |
 | Backend | Cloud Run `tutorias-api`, región `us-east1`, proyecto `tutorias-de-verano` |
 | Base de datos | Supabase PostgreSQL, esquema `app` |
 | Autenticación | Firebase Auth |
-| Rama funcional | `release/mvp-production` |
+| Rama funcional | `master` |
 | Estado E2E | READY FOR CLASSROOM USE, verificado contra producción con alumno real |
 
 ---
@@ -136,60 +136,79 @@ No volver a usar localStorage como perfil principal.
 
 ---
 
-## Migraciones
+## Workshop Experience v1.1
 
-**No corren solas.** Cloud Run levanta varias instancias y todas migrarían a la vez.
-
-Orden de despliegue, y el orden importa: una migración aditiva es segura con el
-backend viejo corriendo, pero el backend nuevo puede mapear una columna que todavía
-no existe.
-
-```bash
-# 1. migraciones
-cd backend
-.venv/Scripts/python.exe scripts/migrate.py --estado   # qué revisión hay aplicada
-.venv/Scripts/python.exe scripts/migrate.py            # aplica hasta head
-
-# 2. backend
-cd ..
-gcloud run deploy tutorias-api --source backend --region us-east1 --project tutorias-de-verano
-
-# 3. frontend
-cd frontend && npm run build && cd ..
-firebase deploy --only hosting --project tutorias-de-verano
-```
+- cumulative access to past/current days
+- future day backend lock
+- admin/instructor pause/reopen
+- activating paused session reopens it
+- manual Previous/Next
+- no cross-day autoadvance
+- serialized autosave
+- draft persistence
+- accepted persistence after F5
+- map progress
+- read-only pedagogical pseudocode/JavaScript panel
+- responsive verification
+- real production E2E completed
 
 ---
 
-## QA obligatoria
+## Música de fondo (frontend/src/lib/musica.ts)
 
+- one persistent HTMLAudioElement
+- shuffle playlist
+- pause/resume
+- next track
+- mute
+- stop
+- volume slider
+- volume persisted in ve:musica
+- F5 restores position/volume state subject to browser autoplay rules
+
+---
+
+## Despliegue (Deployment)
+
+DATABASE MIGRATION:
+solo cuando haya migration nueva.
+
+BACKEND:
 ```bash
-# backend  (uv NO está en el PATH de esta máquina; se usa el venv directamente)
-cd backend
-.venv/Scripts/python.exe -m pytest -q
-.venv/Scripts/python.exe -m ruff check .
-
-# frontend
-cd frontend
-npm test
-npm run build
-npm run lint
-
-# repositorio
-git diff --check
+gcloud run deploy tutorias-api --source backend --region us-east1 --project tutorias-de-verano
 ```
 
-Referencia de la última QA verde: backend **92 passed, 1 skipped**; frontend
-**33 passed**; ruff limpio; build correcto; lint **0 errores, 5 avisos conocidos**.
+FRONTEND:
+NO comando manual de Firebase. El flujo normal es:
+```bash
+git push origin master
+```
+Netlify observa master y despliega automáticamente.
 
-No declares PASS solo porque compila.
+netlify.toml:
+/api/* → Cloud Run
+
+SPA fallback:
+/* → /index.html
+
+---
+
+## QA Base Line (Estado actual)
+
+- **Backend:** 124 passed / 1 skipped
+- **Ruff:** PASS
+- **Frontend:** all tests passed (60 passed)
+- **Playthrough:** PASS e1-e11 (incluyendo E6 empty)
+- **Build:** PASS
+- **Lint:** 0 errors / 7 warnings
+- **Production E2E:** PASS
 
 ---
 
 ## Producción
 
 `VITE_API_URL=/api`. El frontend habla con el backend **por el mismo origen**, y
-`firebase.json` reescribe `/api/**` al servicio de Cloud Run. Nunca publiques una
+`netlify.toml` reescribe `/api/**` al servicio de Cloud Run. Nunca publiques una
 URL con `localhost`.
 
 Comprobación rápida de que el proxy funciona: `/api/demo/progress` sin token debe
@@ -199,6 +218,7 @@ devolver **401** (respuesta real de Cloud Run), no el `index.html` del SPA.
 
 ## Seguridad
 
+- PostgreSQL password rotation: DEFERRED BY USER AFTER TODAY'S SESSION.
 - Los endpoints `/api/admin/**` exigen rol admin verificado contra la base.
 - Un alumno no puede activar sesiones ni leer datos de otro: toda consulta se acota
   al `user.id` resuelto del token.
@@ -250,7 +270,7 @@ de una clase en marcha. Si se toma, va en un commit independiente.
 
 ## Deuda técnica conocida
 
-- **5 avisos de lint** del tipo `set-state-in-effect`, en efectos de carga de datos
+- **7 avisos de lint** del tipo `set-state-in-effect`, en efectos de carga de datos
   de Admin, Instructor y Onboarding. No son errores. No hagas refactor solo para
   bajar el número si no mejora el comportamiento.
 - La pantalla de acceso apila sus columnas en anchos intermedios y el formulario
