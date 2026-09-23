@@ -50,6 +50,7 @@ const BASE_MUSICA =
 interface Guardado {
   activa: boolean
   muteada: boolean
+  volumen: number
   cola: number[]
   pos: number
   t: number
@@ -61,7 +62,7 @@ let pos = 0
 let pausadoPorRecarga = false
 let quitarGesto = () => {}
 const escuchas = new Set<() => void>()
-let snap = { activa: false, sonando: false, muteada: false, pausadoPorRecarga: false, titulo: '' }
+let snap = { activa: false, sonando: false, muteada: false, pausadoPorRecarga: false, titulo: '', volumen: 0.32 }
 
 function notificar() {
   const n = {
@@ -70,13 +71,15 @@ function notificar() {
     muteada: !!audio && audio.muted,
     pausadoPorRecarga,
     titulo: audio ? PISTAS[cola[pos]]?.titulo ?? '' : '',
+    volumen: audio ? audio.volume : 0.32,
   }
   if (
     n.activa !== snap.activa ||
     n.sonando !== snap.sonando ||
     n.muteada !== snap.muteada ||
     n.pausadoPorRecarga !== snap.pausadoPorRecarga ||
-    n.titulo !== snap.titulo
+    n.titulo !== snap.titulo ||
+    n.volumen !== snap.volumen
   ) {
     snap = n
   }
@@ -106,6 +109,7 @@ function guardar() {
   const g: Guardado = {
     activa: true,
     muteada: audio.muted,
+    volumen: audio.volume,
     cola,
     pos,
     t: audio.currentTime || 0,
@@ -146,10 +150,10 @@ function destruirAudio() {
   }
 }
 
-function crearAudio(muteada: boolean) {
+function crearAudio(muteada: boolean, volumen: number = 0.32) {
   destruirAudio() // nunca dos <audio> a la vez
   audio = new Audio()
-  audio.volume = 0.32
+  audio.volume = volumen
   audio.muted = muteada
   audio.addEventListener('ended', siguiente)
   audio.addEventListener('play', notificar)
@@ -188,7 +192,8 @@ export function iniciar() {
     notificar()
     return
   }
-  crearAudio(leerGuardado()?.muteada ?? false)
+  const g = leerGuardado()
+  crearAudio(g?.muteada ?? false, g?.volumen ?? 0.32)
   cola = mezclar()
   pos = 0
   cargarPista()
@@ -226,6 +231,13 @@ export function alternarMute() {
   notificar()
 }
 
+export function cambiarVolumen(v: number) {
+  if (!audio) return
+  audio.volume = Math.max(0, Math.min(1, v))
+  guardar()
+  notificar()
+}
+
 export function detener() {
   destruirAudio()
   quitarGesto()
@@ -245,7 +257,7 @@ function reanudar() {
   if (audio) return
   const g = leerGuardado()
   if (!g?.activa) return
-  crearAudio(g.muteada)
+  crearAudio(g.muteada, g.volumen ?? 0.32)
   cola = g.cola?.length === PISTAS.length ? g.cola : mezclar()
   pos = Number.isInteger(g.pos) && g.pos < cola.length ? g.pos : 0
   cargarPista(g.t)
