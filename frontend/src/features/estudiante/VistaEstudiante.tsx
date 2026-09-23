@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Nav } from '../../components/Nav'
 import { api } from '../../lib/api'
 import { useAuth } from '../auth/authContext'
 import { challengeKeyFromNumero } from '../../lib/challengeIdentity'
 import { esVistaDeConsulta, habilitarEdicionForzada } from '../../lib/dispositivo'
-import { componerAndamiaje, diaDeEncargo, NUMEROS_DE_ENCARGO } from '../../lib/encargos'
+import { componerAndamiaje, diaDeEncargo, NUMEROS_DE_ENCARGO, ENCARGOS } from '../../lib/encargos'
+import { posicionEnDia, rutaDia, type ActividadDelDia } from '../../lib/navegacionActividades'
 import { datosComoTexto, guardadoEjemplo, portafolioEjemplo } from '../../lib/mockEncargo'
 import { leerPerfilLegado, olvidarPerfilLegado, perfilComoDatos, perfilDesdeBackend, perfilDelServidorEstaVacio, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
 import { ejecutarPreview } from '../../lib/sandbox'
@@ -81,6 +82,34 @@ function VistaEstudianteInterna() {
   // ancho de ventana — una pantalla dividida angosta en una computadora real no debe caer acá.
   const { user, api: clienteApi, session, refresh } = useAuth()
   const [vistaConsulta, setVistaConsulta] = useState(esVistaDeConsulta)
+
+  // Fallback para calcular la posición sin pegarle a la API (o si falla)
+  const actividadesDelDia = useMemo(() => {
+    const sesionActual = diaDeEncargo(numero)
+    return NUMEROS_DE_ENCARGO
+      .filter((n) => diaDeEncargo(n) === sesionActual)
+      .map((n) => ({
+        key: challengeKeyFromNumero(n),
+        title: ENCARGOS[n]?.meta.titulo || `Encargo ${n}`,
+        unlocked: true,
+      }))
+  }, [numero])
+
+  // Obtener la sesión real si hay clienteApi
+  const { data: sesionActiva } = useQuery({
+    queryKey: ['session', diaDeEncargo(numero)],
+    queryFn: async () => {
+      if (!clienteApi) throw new Error('No api')
+      return clienteApi.request<{ challenges: ActividadDelDia[] }>(`/map/sessions/${encodeURIComponent(diaDeEncargo(numero))}`)
+    },
+    enabled: !!clienteApi,
+  })
+
+  const posicion = useMemo(() => {
+    const key = challengeKeyFromNumero(numero)
+    const retos = sesionActiva?.challenges ?? actividadesDelDia
+    return posicionEnDia(retos, key)
+  }, [sesionActiva, actividadesDelDia, numero])
 
   // El perfil sale de Postgres, no del navegador: así es el mismo en cualquier
   // equipo y sobrevive a vaciar el almacenamiento local.
@@ -246,19 +275,13 @@ function VistaEstudianteInterna() {
   const aceptado = !!revision && revision.casosPasados === revision.casosTotales
   const esUltimo = numero >= MAX_ENCARGO
 
-  // Al aceptar: guardar la solución (para heredarla) y pasar SOLO al siguiente encargo,
-  // siempre, sin botón ni aviso (docs/encargos.md §5.2). Un instante de sello y salta.
+  // Al aceptar: guardar la solución (para heredarla)
   useEffect(() => {
     if (!aceptado) return
     solucionesRef.current[numero] = contenidoRef.current
     borradoresRef.current[numero] = contenidoRef.current
     persistir(CLAVE_SOLUCIONES, solucionesRef.current)
     persistir(CLAVE_BORRADORES, borradoresRef.current)
-
-    if (esUltimo) return
-    const id = window.setTimeout(() => irAEncargo(numero + 1), 1000)
-    return () => window.clearTimeout(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aceptado, numero])
 
   const mensajeAceptado =
@@ -336,6 +359,24 @@ function VistaEstudianteInterna() {
             onToggleExpandir={() => setPreviewExpandido((v) => !v)}
           />
           <PanelRevision resultado={revision} aceptado={aceptado} mensajeAceptado={mensajeAceptado} />
+          {posicion && (
+            <div className="ve-navegacion">
+              {posicion.anterior ? (
+                <button className="btn btn-outline" onClick={() => irAEncargo(posicion.anterior!.numero)}>
+                  ← Anterior
+                </button>
+              ) : <div></div>}
+              {posicion.siguiente ? (
+                <button className="btn btn-outline" onClick={() => irAEncargo(posicion.siguiente!.numero)}>
+                  Siguiente →
+                </button>
+              ) : (
+                <Link className="btn btn-outline" to={rutaDia(diaDeEncargo(numero))}>
+                  Ver actividades del día
+                </Link>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
