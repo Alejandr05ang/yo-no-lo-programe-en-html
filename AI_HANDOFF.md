@@ -288,3 +288,4 @@ progreso guardado y perfiles escritos por ellos.
 **No** limpies la base, resetees progreso, borres membresías, regeneres seeds ni
 cambies `active_session` "para probar" sin entender el efecto. Si necesitas tocar un
 dato de producción para verificar algo, déjalo como estaba y dilo.
+
