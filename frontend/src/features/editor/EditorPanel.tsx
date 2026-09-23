@@ -3,8 +3,10 @@ import type { editor } from 'monaco-editor'
 import { useEffect, useRef, useState } from 'react'
 import { API_DOCS } from '../../lib/apiDocs'
 import type { ArchivoEditor, EstadoGuardado, SalidaEjecucion } from '../../lib/tipos'
+import { PanelPedagogico } from './PanelPedagogico'
 
 interface Props {
+  numero?: number
   archivos: ArchivoEditor[] // [portafolio.js, datos.js, …]
   contenido: string // contenido actual del archivo editable
   onCambio: (valor: string) => void
@@ -125,7 +127,10 @@ const definirTema: BeforeMount = (monaco) => {
   })
 }
 
+
+
 export function EditorPanel({
+  numero,
   archivos,
   contenido,
   onCambio,
@@ -204,6 +209,7 @@ export function EditorPanel({
 
   return (
     <div className="ve-col-editor">
+      {numero !== undefined && <PanelPedagogico numero={numero} />}
       <div className="ed-tabs">
         <div className="ed-tabs-scroll" role="tablist">
           {archivos.map((a, i) => (
@@ -314,7 +320,12 @@ export function EditorPanel({
           {entregando ? 'Revisando…' : 'Entregar a revisión'}
         </button>
         <span className="mono ed-sello">
-          guardado hace {guardado.guardadoHaceSegundos} s · {guardado.intentos} intentos
+          {guardado.estado === 'dirty' && 'modificado sin guardar'}
+          {guardado.estado === 'saving' && 'guardando...'}
+          {guardado.estado === 'saved' && 'guardado localmente'}
+          {guardado.estado === 'error' && 'error al guardar'}
+          {' · '}
+          {guardado.intentos} intentos
         </span>
       </div>
     </div>

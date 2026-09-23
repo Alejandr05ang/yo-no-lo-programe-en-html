@@ -189,6 +189,7 @@ export function AccountFrame({ children }: { children: ReactNode }) {
   return <div className="account-shell">
     <nav className="nav account-nav" aria-label="Navegación de tu cuenta">
       <Link className="nav-brand" to="/cuenta">Taller · Portafolio</Link>
+      {session?.user.role === 'student' && <NavLink to="/mapa">Mapa</NavLink>}
       <NavLink to="/cuenta">Mi cuenta</NavLink>
       {session?.user.role === 'instructor' && <NavLink to="/instructor">Mis clases</NavLink>}
       {session?.user.role === 'admin' && <NavLink to="/admin">Administración</NavLink>}

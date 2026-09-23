@@ -6,12 +6,14 @@ interface Props {
   aceptado: boolean
   /** Texto bajo el sello de aceptado (solo el último encargo lo usa). */
   mensajeAceptado: string
+  /** true cuando el PUT al backend falló */
+  syncError?: boolean
 }
 
 // Columna derecha, abajo: revisión automática. Muestra pasa/falla por caso y el
 // conteo agregado. Entregar a revisión es lo que hace avanzar al siguiente encargo
 // (docs/encargos.md §5.2): al pasar todos los casos, la plataforma salta sola.
-export function PanelRevision({ resultado, aceptado, mensajeAceptado }: Props) {
+export function PanelRevision({ resultado, aceptado, mensajeAceptado, syncError }: Props) {
   if (!resultado) {
     return (
       <div className="rev">
@@ -20,7 +22,7 @@ export function PanelRevision({ resultado, aceptado, mensajeAceptado }: Props) {
         </div>
         <p className="rev-nota">
           Cuando creas que está listo, pulsá <strong>Entregar a revisión</strong>. Si pasan todos
-          los casos, el encargo queda aceptado y pasás al siguiente.
+          los casos, la actividad queda completada. Puedes revisarla o continuar con la siguiente cuando quieras.
         </p>
       </div>
     )
@@ -54,6 +56,7 @@ export function PanelRevision({ resultado, aceptado, mensajeAceptado }: Props) {
       {aceptado ? (
         <div className="rev-aceptado">
           <span className="tag tag-accent mono">encargo aceptado</span>
+          {syncError && <span className="tag tag-outline mono" style={{ marginLeft: 8, color: '#f85149', borderColor: '#f85149' }}>Pendiente de sincronizar</span>}
           {mensajeAceptado && (
             <span className="rev-nota" style={{ margin: 0 }}>
               {mensajeAceptado}

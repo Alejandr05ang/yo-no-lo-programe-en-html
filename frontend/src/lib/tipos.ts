@@ -35,12 +35,18 @@ export interface ResultadoRevision {
   casosPasados: number
   casosTotales: number
   /** El feedback dice QUÉ falla, nunca CÓMO arreglarlo. */
-  nota: string
+  nota?: string
+  ok?: boolean
+  error?: string
+  htmlPreview?: string
+  logs?: string[]
 }
 
 export interface EstadoGuardado {
-  guardadoHaceSegundos: number
+  estado: 'dirty' | 'saving' | 'saved' | 'error'
   intentos: number
+  /** Opcional: la última vez que se guardó exitosamente, para mostrar "hace X s" */
+  ultimoGuardado?: number
 }
 
 export interface ArchivoEditor {

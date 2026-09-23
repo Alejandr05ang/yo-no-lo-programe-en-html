@@ -22,7 +22,7 @@ export const api = {
     return ENCARGOS[numero] ?? ENCARGOS[1]
   },
 
-  async getProgress(cliente: ApiClient | null, numero: number): Promise<{ draft_code: string, status: string }> {
+  async getProgress(cliente: ApiClient | null, numero: number): Promise<{ draft_code: string, status: string, cases_passed?: number, cases_total?: number }> {
     const key = challengeKeyFromNumero(numero)
     try {
       return await exigirCliente(cliente).request(`/challenges/${key}/progress`)

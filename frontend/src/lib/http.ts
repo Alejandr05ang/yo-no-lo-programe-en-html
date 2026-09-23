@@ -6,6 +6,8 @@ const MESSAGES: Record<string, string> = {
   NOT_COHORT_MEMBER: 'Primero debes unirte a una clase.',
   CHALLENGE_LOCKED: 'Tu docente todavía no ha habilitado este encargo.',
   SESSION_LOCKED: 'Tu docente todavía no ha abierto este día.',
+  SESSION_PAUSED: 'Tu docente pausó temporalmente este día. Tu progreso sigue guardado.',
+  SESSION_NOT_OPEN: 'Solo se puede pausar un día que la clase ya tiene disponible.',
   NOT_FOUND: 'No encontramos lo que buscabas.',
   ACCOUNT_DISABLED: 'Esta cuenta está desactivada. Comunícaselo a tu docente.',
   INVALID_AVATAR: 'Esa imagen no se pudo usar como avatar. Prueba con un JPEG, PNG o WebP de menos de 5 MB.',

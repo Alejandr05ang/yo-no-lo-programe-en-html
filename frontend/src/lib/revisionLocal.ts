@@ -152,7 +152,7 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
       descripcion: 'Hay una lista para los hobbies que vienen en datos',
       verificar: (d, datos) => {
         const hobbies = comoLista(datos.hobbies).map((h) => comoTexto(h))
-        return hobbies.length > 0 && !!encontrarListaConItems(d, hobbies)
+        return !!encontrarListaConItems(d, hobbies)
       },
     },
     {
@@ -169,7 +169,7 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
         const hobbies = comoLista(datos.hobbies).map((h) => comoTexto(h))
         const lista = encontrarListaConItems(d, hobbies)
         const textos = lista ? [...lista.children].map((li) => (li.textContent ?? '').trim()) : []
-        return hobbies.length > 0 && hobbies.every((h) => textos.includes(h))
+        return hobbies.every((h) => textos.includes(h))
       },
     },
   ],
@@ -327,6 +327,7 @@ export async function revisarLocalmente(
   numeroEncargo: number,
   codigo: string,
   datos: unknown,
+  overrideHtml?: string
 ): Promise<ResultadoRevision> {
   const casos = CASOS_POR_ENCARGO[numeroEncargo]
 
@@ -344,7 +345,7 @@ export async function revisarLocalmente(
     }
   }
 
-  const r = await ejecutarPreview(codigo, datos)
+  const r = overrideHtml === undefined ? await ejecutarPreview(codigo, datos) : { ok: true, html: overrideHtml, error: undefined }
   const doc = new DOMParser().parseFromString(
     `<body>${r.ok ? r.html : ''}</body>`,
     'text/html',
