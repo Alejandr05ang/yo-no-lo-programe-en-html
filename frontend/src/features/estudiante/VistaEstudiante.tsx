@@ -490,16 +490,10 @@ function VistaEstudianteInterna() {
       {misDatosAbierto && (
         <MisDatos
           perfil={perfil}
-          onGuardar={(p) => {
+          onGuardar={async (p) => {
             if (!clienteApi || !session) return
-            void (async () => {
-              try {
-                await clienteApi.request('/profile', { method: 'PUT', json: perfilParaBackend(p, session.user) })
-                await refresh()
-              } catch (e) {
-                console.error('No se pudo guardar el perfil', e)
-              }
-            })()
+            await clienteApi.request('/profile', { method: 'PUT', json: perfilParaBackend(p, session.user) })
+            await refresh()
           }}
           onCerrar={() => setMisDatosAbierto(false)}
         />

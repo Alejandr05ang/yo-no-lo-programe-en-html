@@ -251,6 +251,10 @@ textarea.input { min-height: 90px; resize: vertical; }
   font-size: 20px;
 }
 .dialog-body { font-size: 14px; opacity: 0.85; }
+.dialog-error {
+  padding: var(--space-3) var(--space-4); border-left: 2px solid var(--color-accent);
+  background: var(--color-accent-100); color: var(--color-accent-900); font-size: 14px; line-height: 1.5;
+}
 .dialog-actions { display: flex; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-2); }
 
 /* — solo para lectores de pantalla — */
