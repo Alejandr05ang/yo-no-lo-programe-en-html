@@ -45,8 +45,8 @@ function comoDia(s: SessionTeaser) {
   const is_current = s.is_current ?? s.state === 'active'
   const progress: ProgresoDia = s.progress ?? {
     required_total: s.challenges.filter((c) => c.required !== false).length,
-    accepted: s.challenges.filter((c) => c.progress_status === 'accepted').length,
-    started: s.challenges.filter((c) => c.progress_status === 'draft' || c.progress_status === 'in_progress').length,
+    accepted: s.challenges.filter((c) => c.progress_status === 'accepted' && c.required !== false).length,
+    started: s.challenges.filter((c) => (c.progress_status === 'draft' || c.progress_status === 'in_progress') && c.required !== false).length,
   }
   return { access, is_current, progress }
 }

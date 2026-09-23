@@ -127,13 +127,23 @@ export function AdminDashboard() {
       setMetricas(m)
       setCohortes(c)
       setSesiones(s)
-      setCohorteId((previo) => previo ?? c.find((x) => x.is_active)?.id ?? c[0]?.id ?? null)
+      const selectedId = cohorteId ?? c.find((x) => x.is_active)?.id ?? c[0]?.id ?? null
+      setCohorteId(selectedId)
+
+      if (selectedId) {
+        const [e, a] = await Promise.all([
+          api.request<EstadoTaller>(`/admin/cohorts/${selectedId}/state`),
+          api.request<Alumno[]>(`/admin/cohorts/${selectedId}/students`),
+        ])
+        setEstado(e)
+        setAlumnos(a)
+      }
     } catch (e) {
       setError(friendlyAuthError(e))
     } finally {
       setCargando(false)
     }
-  }, [api])
+  }, [api, cohorteId])
 
   useEffect(() => { void cargarBase() }, [cargarBase])
 
@@ -151,7 +161,15 @@ export function AdminDashboard() {
     }
   }, [api])
 
-  useEffect(() => { if (cohorteId) void cargarCohorte(cohorteId) }, [cohorteId, cargarCohorte])
+  // Solo corremos esto cuando el usuario CAMBIA la cohorte manualmente
+  // El useEffect inicial ya no hace falta porque cargarBase lo maneja
+  const prevCohorteId = useRef(cohorteId)
+  useEffect(() => {
+    if (cohorteId && cohorteId !== prevCohorteId.current) {
+      prevCohorteId.current = cohorteId
+      void cargarCohorte(cohorteId)
+    }
+  }, [cohorteId, cargarCohorte])
 
   const aplicar = async () => {
     if (!api || !cohorteId || porConfirmar === null) return
@@ -385,15 +403,39 @@ function CrearClase({ onCerrar, onCreada }: { onCerrar: () => void; onCreada: (c
     }
   }
 
+  const caja = useRef<HTMLDivElement>(null)
+  const inputNombre = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    const previo = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    inputNombre.current?.focus()
+    return () => previo?.focus()
+  }, [])
+
+  useEffect(() => {
+    const teclas = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !pendiente) onCerrar()
+      if (e.key !== 'Tab' || !caja.current) return
+      const focusables = [...caja.current.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled)')]
+      if (focusables.length === 0) return
+      const primero = focusables[0]
+      const ultimo = focusables[focusables.length - 1]
+      if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus() }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus() }
+    }
+    document.addEventListener('keydown', teclas)
+    return () => document.removeEventListener('keydown', teclas)
+  }, [onCerrar, pendiente])
+
   return (
-    <div className="dialog-backdrop" onClick={onCerrar}>
-      <div className="dialog" role="dialog" aria-modal="true" aria-label="Crear clase" onClick={(e) => e.stopPropagation()}>
+    <div className="dialog-backdrop" onClick={() => { if (!pendiente) onCerrar() }}>
+      <div ref={caja} className="dialog" role="dialog" aria-modal="true" aria-label="Crear clase" onClick={(e) => e.stopPropagation()}>
         <h2 className="dialog-title">Crear clase</h2>
         <form className="adm-form" onSubmit={enviar}>
           {error && <p className="auth-message" role="alert">{error}</p>}
           <div className="field">
             <label htmlFor="adm-nombre">Nombre</label>
-            <input id="adm-nombre" className="input" required minLength={2} value={nombre}
+            <input ref={inputNombre} id="adm-nombre" className="input" required minLength={2} value={nombre}
               onChange={(e) => setNombre(e.target.value)} disabled={pendiente} />
           </div>
           <div className="field">

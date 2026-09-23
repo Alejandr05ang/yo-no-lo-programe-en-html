@@ -87,7 +87,7 @@ export function SesionPage() {
     : null
 
   return <AccountFrame>
-    <Link to="/mapa" className="ses-volver">← Volver al mapa</Link>
+    <Link to={sesion?.preview ? "/admin" : "/mapa"} className="ses-volver">← Volver al {sesion?.preview ? "panel" : "mapa"}</Link>
     {error && <p className="auth-message" role="alert">{error}</p>}
     {!sesion && !error && <p role="status">Cargando la sesión…</p>}
     {sesion && progreso && estado && <>
