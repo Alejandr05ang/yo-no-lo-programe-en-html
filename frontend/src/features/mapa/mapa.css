@@ -248,14 +248,46 @@ button.mapa-celda:hover {
 .mapa-real .mapa-reto--abierto:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
 .mapa-real .mapa-reto[aria-disabled='true'] { color: var(--color-neutral-600); }
 
+/* Mapa real: una lista ordenada de días. Sin viñetas; la celda es el marcador. */
+ol.mapa-real { list-style: none; margin: 0; padding: 0; }
+.mapa-real .mapa-celda-tema { font-size: 18px; margin: 6px 0 0; }
+.mapa-real .mapa-celda-tag { display: flex; flex-wrap: wrap; gap: var(--space-1); margin-top: var(--space-3); padding-top: 0; }
+.mapa-real .mapa-celda[data-estado='hoy'] {
+  background: var(--color-accent-100);
+  box-shadow: inset 0 3px 0 var(--color-accent);
+}
+.mapa-real .mapa-celda[data-estado='completado'] { box-shadow: inset 0 3px 0 var(--color-accent-600); }
+.mapa-real .mapa-celda[data-estado='bloqueado'],
+.mapa-real .mapa-celda[data-estado='pausado'] { color: var(--color-neutral-700); }
+.mapa-real .mapa-celda[data-estado='bloqueado'] .mapa-celda-cod,
+.mapa-real .mapa-celda[data-estado='pausado'] .mapa-celda-cod { color: var(--color-neutral-700); }
+/* Pausado por el docente: trama diagonal suave, distinta del bloqueo por fecha. */
+.mapa-real .mapa-celda[data-estado='pausado'] {
+  background: repeating-linear-gradient(-45deg, transparent 0 10px, color-mix(in srgb, var(--color-text) 4%, transparent) 10px 20px);
+}
+.mapa-real .mapa-retos { display: grid; gap: var(--space-1); margin-top: var(--space-2); }
+
+.mapa-progreso { display: grid; gap: 6px; margin-top: var(--space-3); font-size: 12px; color: var(--color-neutral-800); }
+.mapa-progreso-barra { display: block; height: 3px; background: var(--color-neutral-200); position: relative; }
+.mapa-progreso-barra::after { content: ''; position: absolute; inset: 0; width: var(--pct, 0%); background: var(--color-accent-600); }
+
+.mapa-hoy {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4); margin-bottom: var(--space-4);
+  border: 1px solid var(--color-accent-300); border-radius: var(--radius-md); background: var(--color-accent-100);
+}
+.mapa-hoy p { margin: 0; }
+
 /* Acción principal de cada celda del mapa. */
 .mapa-real .mapa-entrar {
   margin-top: var(--space-3);
   width: 100%;
+  min-height: 40px;
   justify-content: center;
 }
 .mapa-real .mapa-entrar--bloqueado {
   display: block;
+  margin-bottom: 0;
   padding: var(--space-2);
   text-align: center;
   font-size: 12px;
@@ -267,3 +299,23 @@ button.mapa-celda:hover {
 /* Página de sesión. */
 .ses-volver { display: inline-block; margin-bottom: var(--space-3); font-size: 14px; }
 .ses-encargos { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+
+/* Página de un día. */
+.ses-cabecera { display: grid; gap: var(--space-2); margin-bottom: var(--space-4); }
+.ses-cabecera h1 { margin: 0; }
+.ses-estado { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.ses-lista { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.ses-actividad {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-2) var(--space-4);
+  padding: var(--space-3) var(--space-4); border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+}
+.ses-actividad[data-progreso='accepted'] { border-color: var(--color-accent-400); }
+.ses-actividad-num { font-family: var(--font-heading); font-size: 22px; color: var(--color-accent-700); min-width: 2ch; text-align: center; }
+.ses-actividad-cuerpo { display: grid; gap: 2px; min-width: 0; }
+.ses-actividad-cuerpo h3 { font-size: 18px; margin: 0; }
+.ses-actividad-cuerpo p { margin: 0; font-size: 13px; color: var(--color-neutral-800); }
+.ses-actividad .btn { min-height: 40px; min-width: 110px; }
+@media (max-width: 560px) {
+  .ses-actividad { grid-template-columns: auto 1fr; }
+  .ses-actividad .btn, .ses-actividad .ses-actividad-cerrada { grid-column: 1 / -1; width: 100%; }
+}

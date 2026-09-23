@@ -270,6 +270,48 @@ class ChallengeOverride(Base):
     )
 
 
+class CohortSessionOverride(Base):
+    """Pausa manual de un dia para una cohorte, puesta por el docente.
+
+    Es independiente de cohort_state.active_session_id: el dia actual sigue
+    marcando hasta donde llega el curso, y esta fila solo puede CERRAR un dia que
+    ese avance habria dejado abierto. Nunca abre uno futuro. Reabrir pone
+    is_closed a false; la fila se conserva para saber quien lo hizo y cuando.
+    """
+
+    __tablename__ = "cohort_session_overrides"
+    __table_args__ = (
+        Index("cohort_session_overrides_session_idx", "session_id"),
+        Index("cohort_session_overrides_updated_by_idx", "updated_by"),
+    )
+    cohort_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey(
+            "app.cohorts.id", ondelete="CASCADE", name="cohort_session_overrides_cohort_id_fkey"
+        ),
+        primary_key=True,
+    )
+    session_id: Mapped[UUID] = mapped_column(
+        Uuid,
+        ForeignKey(
+            "app.sessions_catalog.id",
+            ondelete="CASCADE",
+            name="cohort_session_overrides_session_id_fkey",
+        ),
+        primary_key=True,
+    )
+    is_closed: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
+    updated_by: Mapped[UUID | None] = mapped_column(
+        Uuid,
+        ForeignKey(
+            "app.users.id", ondelete="SET NULL", name="cohort_session_overrides_updated_by_fkey"
+        ),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+
 class Progress(Base):
     __tablename__ = "progress"
     __table_args__ = (

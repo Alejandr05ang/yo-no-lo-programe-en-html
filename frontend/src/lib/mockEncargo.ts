@@ -6,8 +6,8 @@ import type { EstadoGuardado, SalidaEjecucion } from './tipos'
 export const salidaEjemplo: SalidaEjecucion | null = null
 
 export const guardadoEjemplo: EstadoGuardado = {
-  guardadoHaceSegundos: 2,
-  intentos: 0,
+  estado: 'saved',
+  intentos: 2,
 }
 
 // El portafolio publicado que ve un visitante (pantalla 1g, barra de URL de 1a).

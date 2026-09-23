@@ -1,16 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Nav } from '../../components/Nav'
 import { api } from '../../lib/api'
 import { useAuth } from '../auth/authContext'
 import { challengeKeyFromNumero } from '../../lib/challengeIdentity'
 import { esVistaDeConsulta, habilitarEdicionForzada } from '../../lib/dispositivo'
-import { componerAndamiaje, diaDeEncargo, NUMEROS_DE_ENCARGO } from '../../lib/encargos'
-import { datosComoTexto, guardadoEjemplo, pareceContenidoDeDatos, portafolioEjemplo } from '../../lib/mockEncargo'
+import { componerAndamiaje, diaDeEncargo, ENCARGOS, NUMEROS_DE_ENCARGO } from '../../lib/encargos'
+import { posicionEnDia, rutaDia, type ActividadDelDia } from '../../lib/navegacionActividades'
+import { datosComoTexto, pareceContenidoDeDatos, portafolioEjemplo } from '../../lib/mockEncargo'
 import { leerPerfilLegado, olvidarPerfilLegado, perfilComoDatos, perfilDesdeBackend, perfilDelServidorEstaVacio, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
 import { ejecutarPreview } from '../../lib/sandbox'
-import type { ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
+import type { EstadoGuardado, ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
 import { PanelEncargo } from '../encargo/PanelEncargo'
 import { DivisorArrastrable } from './DivisorArrastrable'
 import { EditorPanel } from '../editor/EditorPanel'
@@ -64,6 +65,7 @@ export function VistaEstudiante() {
 
 function VistaEstudianteInterna() {
   const [params, setParams] = useSearchParams()
+  const navigate = useNavigate()
   const numero = clamp(Number(params.get('e')) || MIN_ENCARGO, MIN_ENCARGO, MAX_ENCARGO)
 
   const { data: encargo } = useQuery({
@@ -81,6 +83,34 @@ function VistaEstudianteInterna() {
   // ancho de ventana — una pantalla dividida angosta en una computadora real no debe caer acá.
   const { user, api: clienteApi, session, refresh } = useAuth()
   const [vistaConsulta, setVistaConsulta] = useState(esVistaDeConsulta)
+
+  // Fallback para calcular la posición sin pegarle a la API (o si falla)
+  const actividadesDelDia = useMemo(() => {
+    const sesionActual = diaDeEncargo(numero)
+    return NUMEROS_DE_ENCARGO
+      .filter((n) => diaDeEncargo(n) === sesionActual)
+      .map((n) => ({
+        key: challengeKeyFromNumero(n),
+        title: ENCARGOS[n]?.meta.titulo || `Encargo ${n}`,
+        unlocked: true,
+      }))
+  }, [numero])
+
+  // Obtener la sesión real si hay clienteApi
+  const { data: sesionActiva } = useQuery({
+    queryKey: ['session', diaDeEncargo(numero)],
+    queryFn: async () => {
+      if (!clienteApi) throw new Error('No api')
+      return clienteApi.request<{ challenges: ActividadDelDia[] }>(`/map/sessions/${encodeURIComponent(diaDeEncargo(numero))}`)
+    },
+    enabled: !!clienteApi,
+  })
+
+  const posicion = useMemo(() => {
+    const key = challengeKeyFromNumero(numero)
+    const retos = sesionActiva?.challenges ?? actividadesDelDia
+    return posicionEnDia(retos, key)
+  }, [sesionActiva, actividadesDelDia, numero])
 
   // El perfil sale de Postgres, no del navegador: así es el mismo en cualquier
   // equipo y sobrevive a vaciar el almacenamiento local.
@@ -141,11 +171,42 @@ function VistaEstudianteInterna() {
     [datos],
   )
 
-  const irAEncargo = (n: number) =>
+  const [estadoGuardado, setEstadoGuardado] = useState<EstadoGuardado>({ estado: 'saved', intentos: 0 })
+  const getProgressReq = useRef(0)
+  const numeroRef = useRef(numero)
+  useEffect(() => { numeroRef.current = numero }, [numero])
+
+  // Cola para serializar los guardados y evitar carreras de red.
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve())
+
+  const [progressStatus, setProgressStatus] = useState<string>('not_started')
+
+  const flushPendiente = async () => {
+    // Si está sucio el actual, lo encolamos para guardarlo.
+    if (user && contenidoRef.current && estadoGuardado.estado === 'dirty') {
+      setEstadoGuardado(prev => ({ ...prev, estado: 'saving' }))
+      const numSave = numero
+      const cont = contenidoRef.current
+      saveChainRef.current = saveChainRef.current.catch(() => {}).then(async () => {
+        try {
+          await api.autoguardar(clienteApi, numSave, cont)
+          if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
+        } catch {
+          if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
+        }
+      })
+    }
+    // Esperamos a que todo lo encolado termine (incluyendo el posible dirty anterior)
+    await saveChainRef.current.catch(() => {})
+  }
+
+  const irAEncargo = async (n: number) => {
+    await flushPendiente()
     setParams((p) => {
       p.set('e', String(n))
       return p
     })
+  }
 
   // Al cambiar de encargo: guardar el borrador del que se sale y cargar el que entra.
   useEffect(() => {
@@ -154,7 +215,7 @@ function VistaEstudianteInterna() {
     if (anterior != null && anterior !== numero) {
       borradoresRef.current[anterior] = contenidoRef.current
       persistir(CLAVE_BORRADORES, borradoresRef.current)
-      if (user && contenidoRef.current) {
+      if (user && contenidoRef.current && estadoGuardado.estado === 'dirty') {
          void api.autoguardar(clienteApi, anterior, contenidoRef.current)
       }
     }
@@ -172,6 +233,7 @@ function VistaEstudianteInterna() {
 
     const setInitialCode = (code: string) => {
       setContenido(code)
+      setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
       setSalida(null)
       setRevision(null)
       if (encargo.heredaDe != null) {
@@ -184,19 +246,42 @@ function VistaEstudianteInterna() {
       }
     }
 
+    let cancelled = false
     if (user) {
+      const reqId = ++getProgressReq.current
       api.getProgress(clienteApi, numero).then(res => {
+         if (cancelled || reqId !== getProgressReq.current) return
+         setProgressStatus(res.status)
+         if (res.status === 'accepted') {
+           setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
+         }
+         // Un bug de Monaco (arreglado en EditorPanel.tsx) podía autoguardar el contenido de
+         // datos.js como si fuera el borrador de portafolio.js — lo que ya haya quedado
+         // guardado así en el backend se descarta acá en vez de mostrárselo al estudiante.
          if (res.draft_code && !pareceContenidoDeDatos(res.draft_code)) {
              setInitialCode(res.draft_code)
          } else {
              setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
          }
+         // Set revision after initial code because initial code clears it!
+         if (res.status === 'accepted') {
+           setRevision({ 
+             ok: true, 
+             casosPasados: res.cases_passed ?? 0, 
+             casosTotales: res.cases_total ?? 0, 
+             casos: [], 
+             htmlPreview: '', 
+             logs: [] 
+           })
+         }
       }).catch(() => {
+         if (cancelled || reqId !== getProgressReq.current) return
          setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
       })
     } else {
       setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
     }
+    return () => { cancelled = true }
   }, [numero, encargo, user, clienteApi])
 
   const ejecutar = useCallback(async () => {
@@ -225,7 +310,26 @@ function VistaEstudianteInterna() {
     const r = await api.entregarARevision(clienteApi, numero, contenido, datos)
     setRevision(r)
     setEntregando(false)
-  }, [contenido, datos, numero, clienteApi])
+    setEstadoGuardado(prev => ({ ...prev, intentos: prev.intentos + 1 }))
+    
+    if (r.casosPasados === r.casosTotales && user && clienteApi) {
+      try {
+        await clienteApi.request(`/challenges/${challengeKeyFromNumero(numero)}/progress`, {
+          method: 'PUT',
+          json: { 
+            draft_code: contenido, 
+            status: 'accepted',
+            cases_passed: r.casosPasados,
+            cases_total: r.casosTotales
+          }
+        })
+        setProgressStatus('accepted')
+      } catch (e) {
+        console.error('Error al persistir accepted', e)
+        setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
+      }
+    }
+  }, [contenido, datos, numero, clienteApi, user])
 
   // Al guardar "Mis datos": refrescar la preview para que se vea el cambio de una.
   useEffect(() => {
@@ -236,33 +340,49 @@ function VistaEstudianteInterna() {
   // Autoguardado + cache del borrador del encargo actual.
   useEffect(() => {
     if (!contenido) return
+    if (estadoGuardado.estado === 'saved') {
+      // Evitar que el setInitialCode dispare un dirty
+      return
+    }
     const t = setTimeout(() => {
+      setEstadoGuardado(prev => ({ ...prev, estado: 'saving' }))
       if (user) {
-        void api.autoguardar(clienteApi, numero, contenido)
+        const numSave = numero
+        const cont = contenido
+        saveChainRef.current = saveChainRef.current.catch(() => {}).then(async () => {
+          try {
+            await api.autoguardar(clienteApi, numSave, cont)
+            if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
+          } catch {
+            if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
+          }
+        })
         localStorage.setItem(`tutorias:draft:${user.uid}:${challengeKeyFromNumero(numero)}`, contenido)
+      } else {
+        setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
       }
       borradoresRef.current[numero] = contenido
       persistir(CLAVE_BORRADORES, borradoresRef.current)
     }, 800)
     return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contenido, numero, user, clienteApi])
 
-  const aceptado = !!revision && revision.casosPasados === revision.casosTotales
+  const onChangeContenido = useCallback((v: string) => {
+    setContenido(v)
+    setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
+  }, [])
+
+  const aceptado = progressStatus === 'accepted' || (!!revision && revision.casosPasados === revision.casosTotales)
   const esUltimo = numero >= MAX_ENCARGO
 
-  // Al aceptar: guardar la solución (para heredarla) y pasar SOLO al siguiente encargo,
-  // siempre, sin botón ni aviso (docs/encargos.md §5.2). Un instante de sello y salta.
+  // Al aceptar: guardar la solución (para heredarla)
   useEffect(() => {
     if (!aceptado) return
     solucionesRef.current[numero] = contenidoRef.current
     borradoresRef.current[numero] = contenidoRef.current
     persistir(CLAVE_SOLUCIONES, solucionesRef.current)
     persistir(CLAVE_BORRADORES, borradoresRef.current)
-
-    if (esUltimo) return
-    const id = window.setTimeout(() => irAEncargo(numero + 1), 1000)
-    return () => window.clearTimeout(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [aceptado, numero])
 
   const mensajeAceptado =
@@ -316,11 +436,12 @@ function VistaEstudianteInterna() {
         )}
 
         <EditorPanel
+          numero={numero}
           archivos={[{ nombre: 'portafolio.js', soloLectura: false, contenido }, archivoDatos]}
           contenido={contenido}
-          onCambio={setContenido}
+          onCambio={onChangeContenido}
           salida={salida}
-          guardado={guardadoEjemplo}
+          guardado={estadoGuardado}
           ejecutando={ejecutando}
           entregando={entregando}
           onEjecutar={ejecutar}
@@ -339,7 +460,31 @@ function VistaEstudianteInterna() {
             expandido={previewExpandido}
             onToggleExpandir={() => setPreviewExpandido((v) => !v)}
           />
-          <PanelRevision resultado={revision} aceptado={aceptado} mensajeAceptado={mensajeAceptado} />
+          <PanelRevision resultado={revision} aceptado={aceptado} mensajeAceptado={mensajeAceptado} syncError={estadoGuardado.estado === 'error'} />
+          {posicion && (
+            <div className="ve-navegacion">
+              {posicion.anterior ? (
+                <button className="btn btn-outline" onClick={() => irAEncargo(posicion.anterior!.numero)}>
+                  ← Anterior
+                </button>
+              ) : <div></div>}
+              {posicion.siguiente ? (
+                <button className="btn btn-outline" onClick={() => irAEncargo(posicion.siguiente!.numero)}>
+                  Siguiente →
+                </button>
+              ) : (
+                <button
+                  className="btn btn-outline"
+                  onClick={async () => {
+                    await flushPendiente()
+                    navigate(rutaDia(diaDeEncargo(numero)))
+                  }}
+                >
+                  Ver actividades del día
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

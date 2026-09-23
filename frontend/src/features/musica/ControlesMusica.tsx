@@ -6,6 +6,7 @@ import {
   estado,
   siguiente,
   suscribir,
+  cambiarVolumen,
 } from '../../lib/musica'
 import './controles-musica.css'
 
@@ -85,6 +86,20 @@ export function ControlesMusica() {
               <button className="mus-pbtn mus-pbtn-apagar" onClick={detener}>
                 Apagar
               </button>
+            </div>
+            <div className="mus-pop-fila mus-pop-vol">
+              <label htmlFor="mus-vol" className="sr-only">Volumen de la música</label>
+              <input
+                id="mus-vol"
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={e.volumen}
+                onChange={(ev) => cambiarVolumen(Number(ev.target.value))}
+                aria-label="Volumen de la música"
+              />
+              <span className="mus-vol-pct" aria-hidden>{Math.round(e.volumen * 100)}%</span>
             </div>
           </div>
         )}

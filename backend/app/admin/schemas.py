@@ -86,6 +86,22 @@ class CohortStudent(BaseModel):
     joined_at: datetime
 
 
+class SessionAccessUpdate(BaseModel):
+    """Pausar o reabrir un dia concreto para una cohorte."""
+
+    model_config = ConfigDict(extra="forbid")
+    paused: bool
+
+
+class PausedSession(BaseModel):
+    """Un dia que el docente cerro a mano, con quien y cuando."""
+
+    session_id: UUID
+    code: str
+    updated_at: datetime | None
+    updated_by_name: str | None
+
+
 class WorkshopState(BaseModel):
     """Estado del taller de una cohorte.
 
@@ -102,3 +118,7 @@ class WorkshopState(BaseModel):
     active_order_index: int
     students_count: int
     updated_at: datetime | None
+    # Dias pausados por el docente. Un dia puede estar pausado y a la vez por
+    # delante del dia actual (si se retrocedio el curso): sigue cerrado hasta que
+    # alguien lo reabra.
+    paused_sessions: list[PausedSession] = []
