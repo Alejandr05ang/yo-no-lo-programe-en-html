@@ -3,9 +3,18 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 
+from app.admin.routes import create_audit_log
 from app.auth.dependencies import CurrentUser, require_cohort_access, require_role
 from app.core.errors import ApiError
-from app.db.models import Cohort, CohortMembership, CohortState, Submission, SubmissionReview, User
+from app.db.models import (
+    Cohort,
+    CohortMembership,
+    CohortState,
+    SessionCatalog,
+    Submission,
+    SubmissionReview,
+    User,
+)
 from app.db.session import SessionDep
 from app.instructor.schemas import ActiveSessionUpdate, ReviewBody
 
@@ -85,14 +94,31 @@ async def update_cohort_active_session(
 ):
     await require_cohort_access(cohort_id, user, session, staff=True)
 
+    if body.active_session_id is not None:
+        objetivo = await session.get(SessionCatalog, body.active_session_id)
+        if objetivo is None or not objetivo.is_published:
+            raise ApiError(404, "NOT_FOUND", "Esa sesion no existe o no esta publicada.")
+
     state = await session.scalar(select(CohortState).where(CohortState.cohort_id == cohort_id))
     if not state:
         state = CohortState(cohort_id=cohort_id)
         session.add(state)
         await session.flush()
 
+    before = {"active_session_id": str(state.active_session_id) if state.active_session_id else None}
     state.active_session_id = body.active_session_id
     state.updated_by = user.id
+    # Cambiar el dia actual cambia lo que ve toda la clase: queda registrado igual
+    # que cuando lo hace un administrador. La pausa de dias es solo de admin.
+    await create_audit_log(
+        session,
+        user.id,
+        "ADVANCE_SESSION",
+        "cohort_state",
+        str(cohort_id),
+        before,
+        {"active_session_id": str(state.active_session_id) if state.active_session_id else None},
+    )
 
     await session.commit()
     return state

@@ -37,6 +37,31 @@
   min-width: 520px;
 }
 
+/* Días del taller: una fila por día, con estado escrito y sus acciones. */
+.adm-dias { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--color-divider); }
+.adm-dia {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center;
+  gap: var(--space-2) var(--space-4); padding: var(--space-3) var(--space-2);
+  border-bottom: 1px solid var(--color-divider);
+}
+.adm-dia[data-estado='actual'] { background: var(--color-accent-100); box-shadow: inset 3px 0 0 var(--color-accent); }
+.adm-dia[data-estado='pausado'] {
+  background: repeating-linear-gradient(-45deg, transparent 0 10px, color-mix(in srgb, var(--color-text) 4%, transparent) 10px 20px);
+}
+.adm-dia[data-estado='futuro'] .adm-dia-titulo { color: var(--color-neutral-700); }
+.adm-dia-cabeza { display: grid; gap: 4px; min-width: 0; }
+.adm-dia-cod { font-size: 11px; color: var(--color-accent-700); }
+.adm-dia-titulo { font-size: 19px; margin: 0; }
+.adm-dia-estado { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: 13px; }
+.adm-dia-nota { margin: 0; font-size: 13px; color: var(--color-neutral-800); }
+.adm-dia-acciones { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); }
+.adm-dia-acciones .btn { min-height: 40px; }
+@media (max-width: 720px) {
+  .adm-dia { grid-template-columns: 1fr; }
+  .adm-dia-acciones { justify-content: stretch; }
+  .adm-dia-acciones .btn { flex: 1 1 100%; }
+}
+
 .adm-fila-activa > td {
   background: var(--color-accent-100);
 }

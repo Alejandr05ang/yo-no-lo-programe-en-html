@@ -13,6 +13,17 @@ from app.progress.schemas import ProgressUpdateBody, ProgressView, SubmitBody, S
 router = APIRouter(prefix="/api/challenges", tags=["progress"])
 
 
+def siguiente_estado(actual: str | None, pedido: str | None) -> str:
+    """Un reto aceptado sigue aceptado aunque el alumno vuelva a editarlo.
+
+    El autoguardado manda in_progress en cada pulsacion; sin esta regla, volver a
+    abrir un reto terminado para repasarlo borraria el logro.
+    """
+    if actual == "accepted":
+        return "accepted"
+    return pedido or actual or "draft"
+
+
 @router.get("/{challenge_key}/progress", response_model=ProgressView)
 async def get_progress(challenge_key: str, user: CurrentUser, session: SessionDep):
     cohort, challenge = await require_challenge_access(session, user, challenge_key)
@@ -72,16 +83,16 @@ async def update_progress(
             user_id=user.id,
             cohort_id=cohort.id,
             challenge_id=challenge.id,
-            status=body.status or "draft",
+            status=siguiente_estado(None, body.status),
             draft_code=body.draft_code or "",
             cases_passed=body.cases_passed or 0,
             cases_total=body.cases_total or 0,
             last_saved_at=now,
+            accepted_at=now if body.status == "accepted" else None,
         )
         session.add(progress)
     else:
-        if body.status is not None:
-            progress.status = body.status
+        progress.status = siguiente_estado(progress.status, body.status)
         if body.draft_code is not None:
             progress.draft_code = body.draft_code
         if body.cases_passed is not None:

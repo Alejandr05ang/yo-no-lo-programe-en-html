@@ -1,14 +1,22 @@
-import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { AccountFrame } from '../auth/AuthPages'
 import { useAuth } from '../auth/authContext'
 import { friendlyAuthError } from '../auth/session'
+import {
+  confirmacion,
+  ETIQUETA_ESTADO_ADMIN,
+  filaDia,
+  type AccionDiaAdmin,
+  type PausaAdmin,
+  type SesionAdmin,
+} from '../../lib/controlDias'
+import { rutaDia } from '../../lib/navegacionActividades'
 import './admin.css'
 
 interface Cohorte { id: string; name: string; slug: string; description: string; is_active: boolean }
-interface Sesion {
-  id: string; code: string; day_number: number; order_index: number
-  title: string; teaser_summary: string; is_published: boolean; challenges_count: number
+interface Sesion extends SesionAdmin {
+  teaser_summary: string; is_published: boolean
 }
 interface EstadoTaller {
   cohort_id: string; cohort_name: string
@@ -18,13 +26,9 @@ interface EstadoTaller {
   active_order_index: number
   students_count: number
   updated_at: string | null
+  paused_sessions?: PausaAdmin[]
 }
 interface Alumno { id: string; email: string; full_name: string; display_name: string; joined_at: string }
-
-/** La demo no es una fila del catálogo: es el estado en el que no hay ningún día
- *  abierto. Se representa con active_session_id = null, que es lo que el backend
- *  ya traduce a "nada desbloqueado". */
-const DEMO = { id: null as string | null, etiqueta: 'Demo', titulo: 'Solo la demo, ningún día abierto' }
 
 function Aviso({ error, exito }: { error?: string | null; exito?: string | null }) {
   return <>
@@ -33,28 +37,65 @@ function Aviso({ error, exito }: { error?: string | null; exito?: string | null 
   </>
 }
 
-function Dialogo({ titulo, children, onCancelar, onConfirmar, pendiente }: {
-  titulo: string; children: ReactNode; onCancelar: () => void; onConfirmar: () => void; pendiente: boolean
+/**
+ * Confirmación dentro de la página: nada de window.confirm. El foco entra en
+ * "Cancelar" —la opción que no cambia nada—, Tab no sale del diálogo y al cerrar
+ * vuelve al botón que lo abrió.
+ */
+function Dialogo({ titulo, parrafos, boton, onCancelar, onConfirmar, pendiente }: {
+  titulo: string; parrafos: string[]; boton: string
+  onCancelar: () => void; onConfirmar: () => void; pendiente: boolean
 }) {
+  const caja = useRef<HTMLDivElement>(null)
+  const cancelar = useRef<HTMLButtonElement>(null)
   useEffect(() => {
-    const esc = (e: KeyboardEvent) => { if (e.key === 'Escape') onCancelar() }
-    document.addEventListener('keydown', esc)
-    return () => document.removeEventListener('keydown', esc)
-  }, [onCancelar])
+    const previo = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    cancelar.current?.focus()
+    return () => previo?.focus()
+  }, [])
+  useEffect(() => {
+    const teclas = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !pendiente) onCancelar()
+      if (e.key !== 'Tab' || !caja.current) return
+      const botones = [...caja.current.querySelectorAll<HTMLButtonElement>('button:not(:disabled)')]
+      if (botones.length === 0) return
+      const primero = botones[0]
+      const ultimo = botones[botones.length - 1]
+      if (e.shiftKey && document.activeElement === primero) { e.preventDefault(); ultimo.focus() }
+      else if (!e.shiftKey && document.activeElement === ultimo) { e.preventDefault(); primero.focus() }
+    }
+    document.addEventListener('keydown', teclas)
+    return () => document.removeEventListener('keydown', teclas)
+  }, [onCancelar, pendiente])
   return (
-    <div className="dialog-backdrop" onClick={onCancelar}>
-      <div className="dialog" role="dialog" aria-modal="true" aria-label={titulo} onClick={(e) => e.stopPropagation()}>
-        <h2 className="dialog-title">{titulo}</h2>
-        <div className="dialog-body">{children}</div>
+    <div className="dialog-backdrop" onClick={() => { if (!pendiente) onCancelar() }}>
+      <div ref={caja} className="dialog" role="dialog" aria-modal="true" aria-labelledby="adm-dialogo-titulo"
+        aria-describedby="adm-dialogo-cuerpo" onClick={(e) => e.stopPropagation()}>
+        <h2 className="dialog-title" id="adm-dialogo-titulo">{titulo}</h2>
+        <div className="dialog-body" id="adm-dialogo-cuerpo">
+          {parrafos.map((texto) => <p key={texto}>{texto}</p>)}
+        </div>
         <div className="dialog-actions">
-          <button type="button" className="btn btn-secondary" onClick={onCancelar} disabled={pendiente}>Cancelar</button>
+          <button ref={cancelar} type="button" className="btn btn-secondary" onClick={onCancelar} disabled={pendiente}>Cancelar</button>
           <button type="button" className="btn btn-primary" onClick={onConfirmar} disabled={pendiente}>
-            {pendiente ? 'Aplicando…' : 'Activar'}
+            {pendiente ? 'Aplicando…' : boton}
           </button>
         </div>
       </div>
     </div>
   )
+}
+
+const TEXTO_ACCION: Record<AccionDiaAdmin, string> = {
+  activar: 'Activar como día actual',
+  pausar: 'Pausar acceso',
+  reabrir: 'Reabrir acceso',
+}
+
+function fechaCorta(iso: string | null): string {
+  if (!iso) return ''
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleString('es', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 }
 
 export function AdminDashboard() {
@@ -69,7 +110,7 @@ export function AdminDashboard() {
   const [error, setError] = useState<string | null>(null)
   const [exito, setExito] = useState<string | null>(null)
   const [pendiente, setPendiente] = useState(false)
-  const [porActivar, setPorActivar] = useState<{ id: string | null; etiqueta: string } | null>(null)
+  const [porConfirmar, setPorConfirmar] = useState<{ accion: AccionDiaAdmin; objetivo: Sesion | null } | null>(null)
   const [codigoNuevo, setCodigoNuevo] = useState<string | null>(null)
   const [creando, setCreando] = useState(false)
 
@@ -112,18 +153,28 @@ export function AdminDashboard() {
 
   useEffect(() => { if (cohorteId) void cargarCohorte(cohorteId) }, [cohorteId, cargarCohorte])
 
-  const activar = async () => {
-    if (!api || !cohorteId || porActivar === null) return
+  const aplicar = async () => {
+    if (!api || !cohorteId || porConfirmar === null) return
+    const { accion, objetivo } = porConfirmar
     setPendiente(true)
     setError(null)
+    setExito(null)
     try {
-      const nuevo = await api.request<EstadoTaller>(`/admin/cohorts/${cohorteId}/active-session`, {
-        method: 'PATCH',
-        json: { active_session_id: porActivar.id },
-      })
+      const nuevo = accion === 'activar'
+        ? await api.request<EstadoTaller>(`/admin/cohorts/${cohorteId}/active-session`, {
+            method: 'PATCH',
+            json: { active_session_id: objetivo?.id ?? null },
+          })
+        : await api.request<EstadoTaller>(`/admin/cohorts/${cohorteId}/sessions/${objetivo?.id}/access`, {
+            method: 'PUT',
+            json: { paused: accion === 'pausar' },
+          })
       setEstado(nuevo)
-      setExito(`Ahora tus alumnos ven: ${porActivar.etiqueta}.`)
-      setPorActivar(null)
+      const dia = objetivo ? `Día ${objetivo.day_number} · ${objetivo.title}` : 'solo la demo'
+      setExito(accion === 'activar'
+        ? `Día actual: ${dia}.`
+        : accion === 'pausar' ? `${dia}: acceso pausado. El progreso sigue guardado.` : `${dia}: acceso reabierto.`)
+      setPorConfirmar(null)
     } catch (e) {
       setError(friendlyAuthError(e))
     } finally {
@@ -149,7 +200,11 @@ export function AdminDashboard() {
   if (cargando) return <AccountFrame><p role="status">Cargando el panel…</p></AccountFrame>
 
   const cohorte = cohortes.find((c) => c.id === cohorteId) ?? null
-  const activaOrden = estado?.active_order_index ?? 0
+  const activo = { id: estado?.active_session_id ?? null, orden: estado?.active_order_index ?? 0 }
+  const pausas = estado?.paused_sessions ?? []
+  const dialogo = porConfirmar
+    ? confirmacion(porConfirmar.accion, porConfirmar.objetivo, sesiones, activo, pausas)
+    : null
 
   return <AccountFrame>
     <div className="kicker">Administración</div>
@@ -189,72 +244,64 @@ export function AdminDashboard() {
     )}
 
     {cohorte && <>
-      <section className="adm-seccion">
+      <section className="adm-seccion" aria-labelledby="adm-dias-titulo">
         <div className="adm-seccion-cabecera">
           <div>
-            <h2>Qué pueden abrir tus alumnos</h2>
+            <h2 id="adm-dias-titulo">Días del taller</h2>
             <p className="text-muted">
               {estado?.active_session_code
-                ? `Ahora mismo: hasta ${estado.active_session_title}.`
+                ? `Día actual: ${estado.active_session_title}. Tus estudiantes tienen abierto todo hasta ese día, salvo lo que pauses.`
                 : 'Ahora mismo: solo la demo. Ningún día está abierto.'}
             </p>
           </div>
-          <Link to="/demo" className="btn btn-secondary">Ver la demo</Link>
+          <div className="adm-acciones">
+            <Link to="/demo" className="btn btn-secondary">Ver la demo</Link>
+            {activo.orden !== 0 && (
+              <button className="btn btn-secondary" onClick={() => setPorConfirmar({ accion: 'activar', objetivo: null })}>
+                Volver a solo la demo
+              </button>
+            )}
+          </div>
         </div>
 
-        <div className="adm-tabla-scroll">
-          <table className="table">
-            <thead>
-              <tr>
-                <th scope="col">Sesión</th>
-                <th scope="col">Título</th>
-                <th scope="col">Encargos</th>
-                <th scope="col">Estado</th>
-                <th scope="col"><span className="sr-only">Acción</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className={activaOrden === 0 ? 'adm-fila-activa' : undefined}>
-                <th scope="row" className="mono">{DEMO.etiqueta}</th>
-                <td>{DEMO.titulo}</td>
-                <td>—</td>
-                <td>{activaOrden === 0
-                  ? <span className="tag tag-accent">Activa</span>
-                  : <span className="tag tag-neutral">Abierta</span>}</td>
-                <td>
-                  {activaOrden !== 0 && (
-                    <button className="btn btn-secondary" onClick={() => setPorActivar({ id: null, etiqueta: 'solo la demo' })}>
-                      Volver a la demo
-                    </button>
-                  )}
-                </td>
-              </tr>
-              {sesiones.map((s) => {
-                const esActiva = s.id === estado?.active_session_id
-                const abierta = s.order_index <= activaOrden
-                return <tr key={s.id} className={esActiva ? 'adm-fila-activa' : undefined}>
-                  <th scope="row" className="mono">Día {s.day_number} · {s.code}</th>
-                  <td>{s.title}</td>
-                  <td>{s.challenges_count}</td>
-                  <td>
-                    {esActiva
-                      ? <span className="tag tag-accent">Activa</span>
-                      : abierta
-                        ? <span className="tag tag-neutral">Abierta</span>
-                        : <span className="tag tag-outline">Bloqueada</span>}
-                  </td>
-                  <td>
-                    {!esActiva && (
-                      <button className="btn btn-secondary" onClick={() => setPorActivar({ id: s.id, etiqueta: `Día ${s.day_number} · ${s.title}` })}>
-                        Activar
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              })}
-            </tbody>
-          </table>
-        </div>
+        <ol className="adm-dias">
+          {sesiones.map((s) => {
+            const fila = filaDia(s, activo, pausas)
+            const pausa = pausas.find((p) => p.session_id === s.id)
+            return <li key={s.id} className="adm-dia" data-estado={fila.estado} data-pausado={fila.pausado || undefined}
+              aria-current={fila.esActual ? 'step' : undefined}>
+              <div className="adm-dia-cabeza">
+                <span className="adm-dia-cod mono">Día {s.day_number} · {s.code}</span>
+                <h3 className="adm-dia-titulo">{s.title}</h3>
+                <div className="adm-dia-estado">
+                  <span className={fila.estado === 'actual' ? 'tag tag-accent' : fila.estado === 'pausado' ? 'tag tag-neutral' : 'tag tag-outline'}>
+                    {fila.estado === 'pausado' && <span aria-hidden="true">⏸ </span>}
+                    {ETIQUETA_ESTADO_ADMIN[fila.estado]}
+                  </span>
+                  {fila.esActual && fila.estado !== 'actual' && <span className="tag tag-accent">Actual</span>}
+                  {fila.pausado && fila.estado === 'futuro' && <span className="tag tag-neutral">Pausado</span>}
+                  <span className="text-muted">
+                    {s.challenges_count === 0 ? 'Sin actividades en la plataforma' : `${s.challenges_count} ${s.challenges_count === 1 ? 'actividad' : 'actividades'}`}
+                  </span>
+                </div>
+                {pausa && <p className="adm-dia-nota">
+                  Pausado{pausa.updated_by_name ? ` por ${pausa.updated_by_name}` : ''}{pausa.updated_at ? ` · ${fechaCorta(pausa.updated_at)}` : ''}.
+                  {' '}Sus estudiantes no pueden entrar; su progreso sigue guardado.
+                </p>}
+              </div>
+              <div className="adm-dia-acciones">
+                {fila.acciones.map((accion) => <button key={accion} type="button"
+                  className={accion === 'activar' && fila.estado === 'futuro' ? 'btn btn-primary' : 'btn btn-secondary'}
+                  onClick={() => setPorConfirmar({ accion, objetivo: s })}>
+                  {TEXTO_ACCION[accion]}<span className="sr-only">: Día {s.day_number}</span>
+                </button>)}
+                <Link className="btn btn-ghost" to={rutaDia(s.code)}>
+                  Previsualizar<span className="sr-only">: Día {s.day_number}</span>
+                </Link>
+              </div>
+            </li>
+          })}
+        </ol>
       </section>
 
       <section className="card adm-seccion">
@@ -300,19 +347,14 @@ export function AdminDashboard() {
       onCreada={(codigo) => { setCreando(false); setCodigoNuevo(codigo); void cargarBase() }}
     />}
 
-    {porActivar && <Dialogo
-      titulo="Cambiar lo que ven tus alumnos"
+    {dialogo && <Dialogo
+      titulo={dialogo.titulo}
+      parrafos={dialogo.parrafos}
+      boton={dialogo.boton}
       pendiente={pendiente}
-      onCancelar={() => setPorActivar(null)}
-      onConfirmar={() => void activar()}
-    >
-      <p>
-        {porActivar.id === null
-          ? 'Tus alumnos volverán a tener solo la demo: ningún día quedará abierto.'
-          : `Tus alumnos podrán abrir todo hasta ${porActivar.etiqueta}. Lo anterior sigue disponible; lo posterior queda bloqueado.`}
-      </p>
-      <p className="text-muted">El trabajo que ya hayan guardado no se pierde.</p>
-    </Dialogo>}
+      onCancelar={() => setPorConfirmar(null)}
+      onConfirmar={() => void aplicar()}
+    />}
   </AccountFrame>
 }
 
