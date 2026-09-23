@@ -102,12 +102,12 @@ export function FichaHerramienta({ nombre, anclaEl, onCerrar, onIrA }: Props) {
 
       {pseudo?.ok && (
         <>
-          <div className="enc-ficha-ejemplo-titulo">en palabras simples</div>
+          <div className="enc-ficha-ejemplo-titulo">la idea, en palabras — esto NO es código</div>
           <pre className="enc-ficha-pseudo">{pseudo.pseudocodigo}</pre>
         </>
       )}
 
-      <div className="enc-ficha-ejemplo-titulo">{pseudo?.ok ? 'en código' : 'ejemplo'}</div>
+      <div className="enc-ficha-ejemplo-titulo">{pseudo?.ok ? 'así se escribe en código' : 'ejemplo'}</div>
       <pre className="enc-ficha-ejemplo">{doc.ejemplo}</pre>
 
       {doc.relacionadas && doc.relacionadas.length > 0 && (

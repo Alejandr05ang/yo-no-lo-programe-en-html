@@ -1,54 +1,56 @@
 import { useState } from 'react'
 import { EJEMPLOS_PEDAGOGICOS } from '../../lib/pseudocodigo'
+import './panel-pedagogico.css'
 
 interface Props {
   numero: number
 }
 
+type Pestana = 'pseudocodigo' | 'javascript'
+
+// Puente pedagógico curado a mano por encargo, arriba del editor mientras el estudiante
+// trabaja ESE encargo (a diferencia de las fichas de ayuda de PanelEncargo, que son de
+// juguete y no cambian por encargo). Arranca en "Pseudocódigo" porque es el paso previo a
+// la sintaxis real — la nota de abajo deja explícito que esa pestaña no es JavaScript, para
+// que nadie la copie tal cual en el editor (mismo cuidado que FichaHerramienta.tsx).
 export function PanelPedagogico({ numero }: Props) {
   const ejemplo = EJEMPLOS_PEDAGOGICOS[numero]
-  const [mostrarPseudocodigo, setMostrarPseudocodigo] = useState(true)
+  const [pestana, setPestana] = useState<Pestana>('pseudocodigo')
 
   if (!ejemplo) return null
 
   return (
-    <div className="panel-pedagogico" style={{
-      background: '#2b2a27',
-      borderBottom: '1px solid #3c3a36',
-      padding: '8px 12px',
-      fontSize: '12px',
-      color: '#d7d3d3'
-    }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-        <span style={{ fontWeight: 'bold', color: '#e1ad66' }}>💡 Así se piensa</span>
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button 
-            className={`btn btn-outline ${mostrarPseudocodigo ? 'active' : ''}`} 
-            onClick={() => setMostrarPseudocodigo(true)}
-            style={{ padding: '2px 8px', fontSize: '11px', borderColor: mostrarPseudocodigo ? '#e1ad66' : '#555', color: mostrarPseudocodigo ? '#e1ad66' : '#999' }}
+    <div className="pp">
+      <div className="pp-cab">
+        <span className="pp-titulo">Así se piensa</span>
+        <div className="pp-tabs" role="tablist">
+          <button
+            role="tab"
+            aria-selected={pestana === 'pseudocodigo'}
+            className="pp-tab"
+            onClick={() => setPestana('pseudocodigo')}
           >
             Pseudocódigo
           </button>
-          <button 
-            className={`btn btn-outline ${!mostrarPseudocodigo ? 'active' : ''}`} 
-            onClick={() => setMostrarPseudocodigo(false)}
-            style={{ padding: '2px 8px', fontSize: '11px', borderColor: !mostrarPseudocodigo ? '#e1ad66' : '#555', color: !mostrarPseudocodigo ? '#e1ad66' : '#999' }}
+          <button
+            role="tab"
+            aria-selected={pestana === 'javascript'}
+            className="pp-tab"
+            onClick={() => setPestana('javascript')}
           >
             JavaScript
           </button>
         </div>
       </div>
-      <pre style={{ 
-        margin: 0, 
-        fontFamily: 'ui-monospace, Menlo, monospace', 
-        whiteSpace: 'pre-wrap',
-        color: mostrarPseudocodigo ? '#a8c7fa' : '#d7d3d3',
-        backgroundColor: '#191816',
-        padding: '8px',
-        borderRadius: '4px',
-        border: '1px solid #3c3a36'
-      }}>
-        {mostrarPseudocodigo ? ejemplo.pseudocodigo : ejemplo.javascript}
+
+      <p className="pp-nota">
+        {pestana === 'pseudocodigo'
+          ? 'Esto no es código: es la idea en palabras, para pensarla antes de escribir. No lo copies en el editor.'
+          : 'Así se ve en JavaScript. No es la solución de tu encargo — tu código va a tener otros nombres y otros datos.'}
+      </p>
+
+      <pre className="pp-codigo" data-modo={pestana}>
+        {pestana === 'pseudocodigo' ? ejemplo.pseudocodigo : ejemplo.javascript}
       </pre>
     </div>
   )

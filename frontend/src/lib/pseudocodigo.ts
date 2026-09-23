@@ -4,32 +4,20 @@ export interface EjemploCurado {
 }
 
 export const EJEMPLOS_PEDAGOGICOS: Record<number, EjemploCurado> = {
-  // e4: Listas y Redes
+  // e4: redes — todavía no se enseñó crearLista()/crearItem() (eso arranca en e5), así que
+  // el ejemplo no los usa: mostrar(crearEnlace(...)) directo, uno por red, como pide la pista
+  // real del encargo (lib/encargos.ts).
   4: {
-    pseudocodigo: `definir lista = crearLista()
-
-Para cada red en datos.redes Hacer
+    pseudocodigo: `Para cada red en datos.redes Hacer
   Si red.url tiene una dirección Entonces
-    definir enlace = crearEnlace(red.nombre, red.url)
-    definir item = crearItem("")
-    agregarA(item, enlace)
-    agregarA(lista, item)
+    mostrar el enlace de red.nombre hacia red.url
   FinSi
-FinPara
-
-mostrar(lista)`,
-    javascript: `const lista = crearLista()
-
-for (const red of datos.redes) {
+FinPara`,
+    javascript: `for (const red of datos.redes) {
   if (red.url) {
-    const enlace = crearEnlace(red.nombre, red.url)
-    const item = crearItem("")
-    agregarA(item, enlace)
-    agregarA(lista, item)
+    mostrar(crearEnlace(red.nombre, red.url))
   }
-}
-
-mostrar(lista)`
+}`
   },
   
   // e5: Proyectos con for..of -> Ahora es construcción manual para introducir a las listas generadas.
@@ -66,21 +54,24 @@ for (const hobby of datos.hobbies) {
 mostrar(lista)`
   },
   
-  // e8: Carrusel (Imágenes)
+  // e8: carrusel — la pista real pide cadaSegundo() (lib/encargos.ts), no un bucle que
+  // agregue todas las imágenes de una vez: un carrusel muestra un proyecto a la vez y va
+  // cambiando solo. Un for…of + agregarA() acumularía todas las imágenes juntas, que es
+  // justo lo que este encargo no pide.
   8: {
-    pseudocodigo: `definir carrusel = crearCarrusel()
+    pseudocodigo: `definir destacados = los proyectos de datos.proyectos que están destacados
+definir carrusel = crearCarrusel()
+mostrar(carrusel)
 
-Para cada proyecto en proyectosDestacados(datos.proyectos) Hacer
-  agregarA(carrusel, crearImagen(proyecto.imagenUrl, proyecto.nombre))
-FinPara
+Cada segundo, con el próximo proyecto de destacados Hacer
+  mostrar su imagen en el carrusel
+FinCada`,
+    javascript: `const destacados = proyectosDestacados(datos.proyectos)
+const carrusel = crearCarrusel()
+mostrar(carrusel)
 
-mostrar(carrusel)`,
-    javascript: `const carrusel = crearCarrusel()
-
-for (const proyecto of proyectosDestacados(datos.proyectos)) {
-  agregarA(carrusel, crearImagen(proyecto.imagenUrl, proyecto.nombre))
-}
-
-mostrar(carrusel)`
+cadaSegundo(carrusel, destacados, proyecto =>
+  crearImagen(proyecto.imagenUrl, proyecto.nombre)
+)`
   }
 }

@@ -1,0 +1,78 @@
+/* Puente pedagógico curado por encargo (PanelPedagogico.tsx), arriba del editor. Mismo
+   tratamiento oscuro que el resto del editor (vista-estudiante.css .ed-*), en su propio
+   archivo porque el componente puede usarse fuera de esa vista. */
+
+.pp {
+  background: #1f1d1b;
+  border-bottom: 1px solid #2d2b2b;
+  padding: 10px 16px 12px;
+  font-size: 12px;
+  color: #d7d3d3;
+}
+
+.pp-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-bottom: 6px;
+}
+
+.pp-titulo {
+  font-weight: 600;
+  color: var(--color-accent-400);
+  font-family: ui-monospace, Menlo, monospace;
+}
+
+.pp-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.pp-tab {
+  padding: 3px 10px;
+  font: 11px/1 ui-monospace, Menlo, monospace;
+  color: #7d7979;
+  background: transparent;
+  border: 1px solid #3c3a36;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.pp-tab:hover {
+  color: #d7d3d3;
+}
+
+.pp-tab[aria-selected='true'] {
+  color: var(--color-accent-300);
+  border-color: var(--color-accent-400);
+}
+
+.pp-nota {
+  margin: 0 0 8px;
+  font-size: 11px;
+  color: #9b9797;
+  font-style: italic;
+}
+
+.pp-codigo {
+  margin: 0;
+  padding: 8px 10px;
+  background: #151412;
+  border: 1px solid #2d2b2b;
+  border-radius: var(--radius-sm);
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: pre-wrap;
+  max-height: 180px;
+  overflow: auto;
+}
+
+/* Mismo color de acento que .enc-ficha-pseudo (FichaHerramienta.tsx) para que el pseudocódigo
+   se reconozca por color en toda la app: ese tono = "esto no es código". */
+.pp-codigo[data-modo='pseudocodigo'] {
+  color: var(--color-accent-200);
+}
+
+.pp-codigo[data-modo='javascript'] {
+  color: #d7d3d3;
+}
