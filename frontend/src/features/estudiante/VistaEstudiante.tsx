@@ -7,7 +7,7 @@ import { useAuth } from '../auth/authContext'
 import { challengeKeyFromNumero } from '../../lib/challengeIdentity'
 import { esVistaDeConsulta, habilitarEdicionForzada } from '../../lib/dispositivo'
 import { componerAndamiaje, diaDeEncargo, NUMEROS_DE_ENCARGO } from '../../lib/encargos'
-import { datosComoTexto, guardadoEjemplo, portafolioEjemplo } from '../../lib/mockEncargo'
+import { datosComoTexto, guardadoEjemplo, pareceContenidoDeDatos, portafolioEjemplo } from '../../lib/mockEncargo'
 import { leerPerfilLegado, olvidarPerfilLegado, perfilComoDatos, perfilDesdeBackend, perfilDelServidorEstaVacio, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
 import { ejecutarPreview } from '../../lib/sandbox'
 import type { ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
@@ -160,11 +160,15 @@ function VistaEstudianteInterna() {
     }
     numeroAnteriorRef.current = numero
 
-    let fallbackLocal = borradoresRef.current[numero]
+    let fallbackLocal: string | undefined = borradoresRef.current[numero]
     if (user) {
       const fallbackExt = localStorage.getItem(`tutorias:draft:${user.uid}:${challengeKeyFromNumero(numero)}`)
       if (fallbackExt) fallbackLocal = fallbackExt
     }
+    // Un bug de Monaco (arreglado en EditorPanel.tsx) podía autoguardar el contenido de
+    // datos.js como si fuera el borrador de portafolio.js. Lo que ya haya quedado guardado
+    // así (de antes del arreglo) se descarta acá en vez de mostrárselo al estudiante.
+    if (fallbackLocal && pareceContenidoDeDatos(fallbackLocal)) fallbackLocal = undefined
 
     const setInitialCode = (code: string) => {
       setContenido(code)
@@ -182,7 +186,7 @@ function VistaEstudianteInterna() {
 
     if (user) {
       api.getProgress(clienteApi, numero).then(res => {
-         if (res.draft_code) {
+         if (res.draft_code && !pareceContenidoDeDatos(res.draft_code)) {
              setInitialCode(res.draft_code)
          } else {
              setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))

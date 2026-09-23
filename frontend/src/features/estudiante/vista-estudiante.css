@@ -325,6 +325,20 @@
   white-space: pre-wrap;
   overflow-x: auto;
 }
+/* Puente pedagógico antes del código real (docs: simplificación de condicionales y bucles):
+   mismo tratamiento que .enc-ficha-ejemplo, con un filo de acento para marcar que es el paso
+   previo, no la sintaxis que se va a escribir. */
+.enc-ficha-pseudo {
+  margin: 0 0 var(--space-2);
+  padding: var(--space-2);
+  background: #151412;
+  border-left: 2px solid var(--color-accent-400);
+  border-radius: var(--radius-sm);
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--color-accent-200);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
 .enc-ficha-rel {
   margin-top: var(--space-2);
   font: 11.5px/1.5 ui-monospace, Menlo, monospace;
@@ -536,8 +550,32 @@
   background-color: #191816 !important;
 }
 
-.ed-consola {
+/* Barra de acciones sobre la consola — hoy solo el botón del diagrama de flujo, pero es
+   donde va cualquier acción futura sobre "lo que acabo de correr" (docs: requerimiento de
+   diagrama de flujo, sección de la consola de texto). */
+.ed-consola-acciones {
   border-top: 1px solid #2d2b2b;
+  padding: 6px 20px 0;
+  display: flex;
+  justify-content: flex-end;
+  background: #151412;
+}
+.ed-ver-flujo {
+  padding: 4px 10px;
+  margin-bottom: 6px;
+  font: 11px/1 ui-monospace, Menlo, monospace;
+  color: var(--color-accent-300);
+  background: transparent;
+  border: 1px solid var(--color-accent-400);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.ed-ver-flujo:hover {
+  color: var(--color-accent-200);
+  border-color: var(--color-accent-300);
+}
+
+.ed-consola {
   padding: 10px 20px;
   font: 11.5px/1.7 ui-monospace, Menlo, monospace;
   color: #9b9797;

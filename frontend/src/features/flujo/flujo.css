@@ -1,0 +1,106 @@
+/* Diagrama de flujo (DiagramaFlujo.tsx) — modal de solo lectura sobre el mismo tratamiento
+   oscuro que el editor (vista-estudiante.css .ed-*), pero más ancho: un diagrama necesita
+   más aire que un formulario. */
+
+.flujo-backdrop {
+  z-index: 60;
+}
+
+.flujo-dialog {
+  width: min(920px, 96vw);
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: #191816;
+  color: #d7d3d3;
+  box-shadow: var(--shadow-lg);
+  border: 1px solid #2d2b2b;
+}
+
+.flujo-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.flujo-tabs {
+  display: flex;
+  gap: 4px;
+}
+
+.flujo-tab {
+  padding: 7px 14px;
+  font: 12px/1 ui-monospace, Menlo, monospace;
+  color: #9b9797;
+  background: transparent;
+  border: 1px solid #2d2b2b;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+.flujo-tab:hover {
+  color: #d7d3d3;
+}
+
+.flujo-tab[aria-selected='true'] {
+  color: var(--color-accent-300);
+  border-color: var(--color-accent-400);
+  background: var(--color-accent-900);
+}
+
+.flujo-x {
+  flex: none;
+  background: transparent;
+  border: 0;
+  color: #7d7979;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.flujo-x:hover {
+  color: #f8f4f4;
+}
+
+.flujo-nota {
+  margin: 0;
+  font-size: 12.5px;
+  color: #9b9797;
+}
+
+.flujo-cuerpo {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: #151412;
+  border-radius: var(--radius-md);
+  border: 1px solid #2d2b2b;
+  padding: var(--space-3);
+}
+
+.flujo-pseudo {
+  margin: 0;
+  font: 13px/1.85 ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #d7d3d3;
+  white-space: pre-wrap;
+}
+
+.flujo-svg {
+  display: flex;
+  justify-content: center;
+}
+.flujo-svg svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.flujo-error {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--color-accent-300);
+}

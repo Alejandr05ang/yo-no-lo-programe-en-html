@@ -14,6 +14,16 @@ export interface DocHerramienta {
   devuelve?: string
   /** Fragmento de ejemplo — contexto de juguete, no del portafolio. */
   ejemplo: string
+  /** true en condicionales, bucles y función: ahí la ficha antepone un puente pedagógico
+   *  (pseudocódigo español, estilo PSeInt — "SI … ENTONCES", "PARA CADA … HACER") antes de
+   *  este mismo `ejemplo`. Se GENERA con lib/flujo.ts —el mismo motor que arma el diagrama
+   *  de flujo del código real del estudiante— en vez de escribirse a mano acá: si el ejemplo
+   *  cambia, el pseudocódigo se actualiza solo, y nunca queda un estilo distinto al que el
+   *  estudiante ve sobre su propio código. Por eso estos ejemplos evitan anidar llamadas
+   *  (mostrar(crearParrafo(...))): el traductor no persigue una frase perfecta para cada
+   *  composición, así que el ejemplo se escribe en los mismos dos pasos que cualquier
+   *  encargo real (crear, guardar en una variable, mostrar esa variable). */
+  puente?: true
   /** Nombres (clave del catálogo) de herramientas relacionadas. */
   relacionadas?: string[]
 }
@@ -144,24 +154,27 @@ export const API_DOCS: Record<string, DocHerramienta> = {
     firma: 'if (condición) { … } else { … }',
     descripcion:
       'Hace algo solo cuando se cumple una condición. Con "else", hace otra cosa cuando no se cumple.',
+    puente: true,
     ejemplo:
-      'const temperatura = 32\nif (temperatura > 30) {\n  mostrar(crearParrafo("Hace calor"))\n} else {\n  mostrar(crearParrafo("Está fresco"))\n}',
+      'const temperatura = 32\nif (temperatura > 30) {\n  const p = crearParrafo("Hace calor")\n  mostrar(p)\n} else {\n  const p = crearParrafo("Está fresco")\n  mostrar(p)\n}',
   },
 
   'condición': {
     firma: 'if (condición) { … } else { … }',
     descripcion:
       'Hace algo solo cuando se cumple una condición. Con "else", hace otra cosa cuando no se cumple.',
+    puente: true,
     ejemplo:
-      'const temperatura = 32\nif (temperatura > 30) {\n  mostrar(crearParrafo("Hace calor"))\n} else {\n  mostrar(crearParrafo("Está fresco"))\n}',
+      'const temperatura = 32\nif (temperatura > 30) {\n  const p = crearParrafo("Hace calor")\n  mostrar(p)\n} else {\n  const p = crearParrafo("Está fresco")\n  mostrar(p)\n}',
   },
 
   'por cada': {
     firma: 'for (const x of lista) { … }',
     descripcion:
       'Repite lo mismo por cada elemento de una lista, sin importar cuántos haya. En cada vuelta, "x" es un elemento.',
+    puente: true,
     ejemplo:
-      'const frutas = ["manzana", "pera", "uva"]\nfor (const fruta of frutas) {\n  mostrar(crearParrafo(fruta))\n}',
+      'const frutas = ["manzana", "pera", "uva"]\nfor (const fruta of frutas) {\n  const p = crearParrafo(fruta)\n  mostrar(p)\n}',
     relacionadas: ['crearLista()', 'crearItem()', 'agregarA()'],
   },
 
@@ -178,7 +191,8 @@ export const API_DOCS: Record<string, DocHerramienta> = {
     firma: 'function nombre(entrada) { … }',
     descripcion:
       'Guarda una serie de pasos con un nombre para no repetirlos. Después la "llamás" por su nombre las veces que haga falta.',
+    puente: true,
     ejemplo:
-      'function saludar(quien) {\n  mostrar(crearParrafo("Hola, " + quien))\n}\n\nsaludar("Sofía")\nsaludar("Marcos")',
+      'function saludar(quien) {\n  const p = crearParrafo("Hola, " + quien)\n  mostrar(p)\n}\n\nsaludar("Sofía")\nsaludar("Marcos")',
   },
 }

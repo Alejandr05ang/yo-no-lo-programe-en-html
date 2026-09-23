@@ -3,6 +3,7 @@ import type { editor } from 'monaco-editor'
 import { useEffect, useRef, useState } from 'react'
 import { API_DOCS } from '../../lib/apiDocs'
 import type { ArchivoEditor, EstadoGuardado, SalidaEjecucion } from '../../lib/tipos'
+import { DiagramaFlujo } from '../flujo/DiagramaFlujo'
 
 interface Props {
   archivos: ArchivoEditor[] // [portafolio.js, datos.js, …]
@@ -144,12 +145,51 @@ export function EditorPanel({
   const menuRef = useRef<HTMLDetailsElement>(null)
   const hayOverflow = archivos.length > 3
   const monacoRef = useRef<Monaco | null>(null)
+  const [flujoAbierto, setFlujoAbierto] = useState(false)
 
   const onMount: OnMount = (editor, monaco) => {
     monacoRef.current = monaco
     monaco.editor.setTheme('taller-oscuro')
     editor.updateOptions({ fontSize: 13, lineHeight: 23, fontFamily: 'ui-monospace, Menlo, monospace' })
   }
+
+  // @monaco-editor/react mantiene un modelo por pestaña (portafolio.js, datos.js…), pero al
+  // desmontar SOLO dispone el que estaba activo en ese momento (su prop `keepCurrentModel`,
+  // que acá no usamos, queda en false) — el modelo de la OTRA pestaña queda huérfano en el
+  // registro global de Monaco, sin dueño. Como Monaco busca los modelos por nombre de archivo
+  // (getModel(Uri.parse(path))) y ese nombre no cambia entre encargos ni entre visitas, la
+  // próxima vez que este panel se monta reutiliza ese modelo huérfano con SU contenido viejo
+  // en vez del que le pasamos por props — así es como una pestaña puede terminar mostrando el
+  // texto de otro archivo (o de una sesión anterior) después de recargar o de volver a entrar.
+  // Disponemos acá los modelos de todos los archivos de este panel para que cada montaje
+  // arranque limpio, siempre con el contenido real.
+  const nombresArchivosRef = useRef<string[]>([])
+  nombresArchivosRef.current = archivos.map((a) => a.nombre)
+
+  // BUG REAL (reportado en producción): al cambiar de pestaña, @monaco-editor/react dispara
+  // "onDidChangeModelContent" de forma SÍNCRONA al cambiar de modelo — pero lo hace dentro de
+  // su efecto de "cambiar de modelo", que corre ANTES que su efecto de "volver a registrar el
+  // listener onChange" (mismo commit de React, pero los efectos internos de la librería se
+  // ejecutan en ese orden). El listener que atiende ese evento es todavía el de la versión
+  // ANTERIOR de este componente — su clausura de `archivo` sigue siendo la pestaña de ANTES
+  // del cambio. Si esa pestaña anterior era portafolio.js (no solo lectura), el guard
+  // `archivo.soloLectura` de abajo no frenaba nada, y el contenido del modelo RECIÉN activado
+  // (datos.js) se guardaba con onCambio() como si fuera el código de portafolio.js — que
+  // además se autoguarda (VistaEstudiante.tsx) y sobrevive a la próxima recarga.
+  // Arreglo: leer `soloLectura` de un ref que se actualiza en el CUERPO del render (no en un
+  // efecto), así que para cuando cualquier efecto corre — viejo o nuevo — ya ve la pestaña
+  // real del commit actual, sin depender del orden interno de la librería.
+  const archivoRef = useRef(archivo)
+  archivoRef.current = archivo
+  useEffect(() => {
+    return () => {
+      const monaco = monacoRef.current
+      if (!monaco) return
+      for (const nombre of nombresArchivosRef.current) {
+        monaco.editor.getModel(monaco.Uri.parse(nombre))?.dispose()
+      }
+    }
+  }, [])
 
   // Encuentra el modelo del archivo editable (no el de datos.js, que es solo lectura)
   // sin importar qué pestaña esté abierta ahora mismo.
@@ -267,7 +307,7 @@ export function EditorPanel({
           beforeMount={definirTema}
           onMount={onMount}
           onChange={(v) => {
-            if (archivo.soloLectura) return
+            if (archivoRef.current.soloLectura) return
             onCambio(v ?? '')
             marcarLineaDeError(undefined)
           }}
@@ -283,6 +323,16 @@ export function EditorPanel({
             automaticLayout: true, // recupera el tamaño al salir de "pantalla completa" del preview
           }}
         />
+      </div>
+
+      <div className="ed-consola-acciones">
+        <button
+          className="ed-ver-flujo"
+          onClick={() => setFlujoAbierto(true)}
+          title="Ver el diagrama de flujo de tu código (solo lectura)"
+        >
+          diagrama de flujo
+        </button>
       </div>
 
       <div className="ed-consola" aria-live="polite">
@@ -317,6 +367,8 @@ export function EditorPanel({
           guardado hace {guardado.guardadoHaceSegundos} s · {guardado.intentos} intentos
         </span>
       </div>
+
+      {flujoAbierto && <DiagramaFlujo codigo={contenido} onCerrar={() => setFlujoAbierto(false)} />}
     </div>
   )
 }
