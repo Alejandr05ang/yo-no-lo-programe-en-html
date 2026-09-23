@@ -158,10 +158,22 @@ function pseudoIf(s: Nodo, codigo: string, nivel: number, lineas: string[]) {
   lineas.push(`${sangria}FIN SI`)
 }
 
+/** ¿Dejó el estudiante al menos una línea en blanco entre dos sentencias seguidas? */
+function hayLineaEnBlanco(codigo: string, desde: number, hasta: number): boolean {
+  return /\n[ \t]*\r?\n/.test(codigo.slice(desde, hasta))
+}
+
+// Las líneas en blanco que separan partes del código (el título, las redes, los hobbies…) se
+// conservan en el pseudocódigo, una sola aunque haya varias seguidas: así se lee por partes,
+// igual que el código del estudiante, en vez de un bloque continuo. La sangría sí se
+// normaliza (4 espacios por nivel), porque es la que muestra dónde empieza y acaba cada bloque.
 function pseudoBloque(stmts: Nodo[], codigo: string, nivel: number): string[] {
   const sangria = '    '.repeat(nivel)
   const lineas: string[] = []
+  let anterior: Nodo | null = null
   for (const s of stmts) {
+    if (anterior && hayLineaEnBlanco(codigo, anterior.end, s.start)) lineas.push('')
+    anterior = s
     if (s.type === 'IfStatement') {
       pseudoIf(s, codigo, nivel, lineas)
     } else if (s.type === 'ForOfStatement' || s.type === 'ForStatement' || s.type === 'WhileStatement') {
@@ -299,7 +311,7 @@ function generarMermaid(programa: Nodo, codigo: string): string {
  *  programar, no el mensaje crudo del parser. */
 export function analizarFlujo(codigoEstudiante: string): ResultadoFlujo {
   if (!codigoEstudiante.trim()) {
-    return { ok: false, mermaid: '', pseudocodigo: '', error: 'Escribí algo de código para ver acá su diagrama de flujo.' }
+    return { ok: false, mermaid: '', pseudocodigo: '', error: 'Escribe algo de código para ver aquí su diagrama de flujo.' }
   }
   // El estudiante escribe pseudocódigo (SI/PARA CADA/MIENTRAS/FUNCIÓN — pseudocodigoAJS.ts);
   // acá hace falta JS real para poder parsearlo con acorn. Un pseudocódigo mal cerrado (falta
@@ -318,11 +330,11 @@ export function analizarFlujo(codigoEstudiante: string): ResultadoFlujo {
       ok: false,
       mermaid: '',
       pseudocodigo: '',
-      error: 'Tu código tiene un error de sintaxis. Corregilo para ver el diagrama.',
+      error: 'Tu código tiene un error de sintaxis. Corrígelo para ver el diagrama.',
     }
   }
   if (programa.body.length === 0) {
-    return { ok: false, mermaid: '', pseudocodigo: '', error: 'Escribí algo de código para ver acá su diagrama de flujo.' }
+    return { ok: false, mermaid: '', pseudocodigo: '', error: 'Escribe algo de código para ver aquí su diagrama de flujo.' }
   }
   return {
     ok: true,

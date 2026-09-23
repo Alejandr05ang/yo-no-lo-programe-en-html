@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    * Solo se limpia cuando la cuenta cambia de verdad, que es cuando los permisos
    * anteriores dejan de ser validos.
    */
-  const bootstrap = useCallback(async (current: User, { silencioso = false } = {}) => {
+  const bootstrap = useCallback(async (current: User, { silencioso = false, lanzar = false } = {}) => {
     const ticket = requests.current.begin(current.uid)
     inFlight.current = true
     if (!silencioso) {
@@ -77,6 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (requests.current.isCurrent(ticket, auth?.currentUser?.uid ?? null)) setSession(resolved)
     } catch (error) {
       if (requests.current.isCurrent(ticket, auth?.currentUser?.uid ?? null)) setSessionError(friendlyAuthError(error))
+      // Quien lo pidió a propósito (refresh silencioso) necesita saber que falló: la sesión
+      // que queda en pantalla es la de antes.
+      if (lanzar) throw error
     } finally {
       if (requests.current.isCurrent(ticket, auth?.currentUser?.uid ?? null)) {
         inFlight.current = false
@@ -126,7 +129,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!current) throw new ApiError('AUTH_REQUIRED', 401)
     return current
   }
-  const refresh = async () => {
+  const refresh = async ({ silencioso = false }: { silencioso?: boolean } = {}) => {
     const current = requireUser()
     refreshing.current = true
     try {
@@ -134,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await current.getIdToken(true)
       if (auth?.currentUser?.uid !== current.uid) throw new ApiError('SESSION_CHANGED')
       setUser(current)
-      await bootstrap(current)
+      await bootstrap(current, { silencioso, lanzar: silencioso })
     } finally {
       refreshing.current = false
     }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { documentoPortafolio } from '../../lib/andamiajeEstilos'
+import { useAbrirEnlaces } from './useAbrirEnlaces'
 
 type Viewport = 'movil' | 'tablet' | 'escritorio' | 'completo'
 
@@ -26,6 +27,8 @@ interface Props {
 export function PanelPreview({ url, html, enVivo = true, expandido, onToggleExpandir }: Props) {
   const [vp, setVp] = useState<Viewport>('escritorio')
   const zonaRef = useRef<HTMLDivElement>(null)
+  const marcoRef = useRef<HTMLIFrameElement>(null)
+  useAbrirEnlaces(marcoRef)
   const [zona, setZona] = useState({ w: 0, h: 0 })
 
   useEffect(() => {
@@ -80,6 +83,7 @@ export function PanelPreview({ url, html, enVivo = true, expandido, onToggleExpa
 
       <div className="pv-zona" ref={zonaRef}>
         <iframe
+          ref={marcoRef}
           className="pv-marco"
           title="Vista previa del portafolio"
           sandbox="allow-scripts"

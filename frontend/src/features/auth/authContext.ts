@@ -19,7 +19,9 @@ export interface AuthContextValue {
   linkGoogle: () => Promise<void>
   sendVerification: () => Promise<void>
   resetPassword: (email: string) => Promise<void>
-  refresh: () => Promise<void>
+  /** `silencioso`: vuelve a leer la sesión sin vaciarla antes, para no desmontar la
+   *  pantalla abierta (por ejemplo, el editor tras guardar "Mis datos"). */
+  refresh: (opciones?: { silencioso?: boolean }) => Promise<void>
   retrySession: () => Promise<void>
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>
 }

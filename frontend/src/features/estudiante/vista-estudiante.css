@@ -704,10 +704,46 @@
 }
 
 .ve-navegacion {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
   gap: var(--space-2);
   padding: var(--space-3);
   border-top: 1px solid var(--color-divider);
   background: var(--color-surface);
+}
+.ve-nav-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.ve-nav-fila .btn { min-height: 40px; }
+.ve-nav-posicion { font-size: 13px; color: var(--color-neutral-800); }
+/* Al terminar un día: qué hay después. Nunca navega solo; el alumno decide. */
+.ve-nav-dia {
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--color-accent-300);
+  border-radius: var(--radius-md);
+  background: var(--color-accent-100);
+}
+.ve-nav-dia p, .ve-nav-nota { margin: 0; font-size: 13px; color: var(--color-neutral-800); }
+.ve-nav-dia .btn { justify-self: start; min-height: 40px; }
+.ve-error-entrega { margin: var(--space-2) var(--space-3) 0; }
+
+/* Actividad cerrada (por fecha o por pausa del docente): ni editor ni instrucciones. */
+.ve-bloqueo {
+  max-width: 640px;
+  margin: var(--space-8) auto;
+  padding: 0 var(--space-4);
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+}
+.ve-bloqueo h1 { margin: 0; font-size: 32px; }
+.ve-bloqueo p { margin: 0; }
+@media (max-width: 560px) {
+  .ve-nav-fila .btn, .ve-nav-dia .btn { flex: 1 1 100%; justify-self: stretch; }
+  .ve-nav-posicion { order: -1; flex-basis: 100%; }
 }

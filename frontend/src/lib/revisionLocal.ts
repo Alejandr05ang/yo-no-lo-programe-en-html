@@ -1,13 +1,13 @@
-import { ENCARGOS } from './encargos'
-import { ejecutarPreview } from './sandbox'
+import { normalizarEnlace } from './enlaces.ts'
+import { ENCARGOS } from './encargos.ts'
+import { ejecutarPreview } from './sandbox.ts'
 import type { ResultadoRevision } from './tipos'
 
-// Aproximación LOCAL de la revisión automática — solo para el andamiaje del frontend.
-//
-// La revisión real corre en el SERVIDOR (subproceso Deno) con casos ocultos de tamaño
-// variable que el cliente nunca ve (docs/arquitectura.md §2, brief §2.3, §5.4). Esto es
-// una versión de juguete: corre el código una vez y verifica el DOM resultante contra
-// unos criterios fijos por encargo. No detecta hardcodeo ni prueba con datos distintos.
+// Revisión automática LOCAL: es la que acepta los encargos hoy. El servidor guarda cada
+// entrega (POST /submit) y el estado accepted, pero no corre casos propios; el autograder
+// Deno con casos ocultos de docs/arquitectura.md sigue sin integrarse. Esta revisión corre
+// el código una vez y verifica el DOM resultante contra unos criterios fijos por encargo.
+// No detecta hardcodeo ni prueba con datos distintos.
 
 type DatosLike = Record<string, unknown>
 
@@ -31,6 +31,20 @@ function comoObjeto(v: unknown): DatosLike {
 }
 function comoTexto(v: unknown): string {
   return typeof v === 'string' ? v : ''
+}
+
+/** Las direcciones de todos los enlaces, ya normalizadas con la MISMA regla que aplica la
+ *  vista previa (lib/enlaces.ts). Normalizar los dos lados hace que "wikipedia.com" en
+ *  datos y "https://wikipedia.com" en la página cuenten como el mismo enlace. */
+function destinosDeEnlaces(doc: Document): (string | null)[] {
+  return [...doc.querySelectorAll('a')].map((a) => normalizarEnlace(a.getAttribute('href') ?? ''))
+}
+
+/** ¿Hay un enlace que lleve a `url`? Nunca por coincidir en "ninguna dirección": un enlace
+ *  vacío no cuenta como el enlace a una dirección que no se pudo interpretar. */
+function hayEnlaceA(destinos: (string | null)[], url: unknown): boolean {
+  const destino = normalizarEnlace(comoTexto(url))
+  return destino !== null && destinos.includes(destino)
 }
 
 /** Busca una lista concreta por sus items directos, sin contar listas heredadas de otras secciones. */
@@ -111,7 +125,7 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
       verificar: (d) => !!d.querySelector('h1') && d.querySelectorAll('p').length >= 2 && !!d.querySelector('h2'),
     },
     {
-      descripcion: 'Hay un enlace por cada red que tenés cargada',
+      descripcion: 'Hay un enlace por cada red que tienes cargada',
       verificar: (d, datos) => {
         const redes = comoLista(datos.redes).filter((red) => comoTexto(red.url).trim() !== '')
         return d.querySelectorAll('a').length === redes.length
@@ -121,8 +135,12 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
       descripcion: 'Cada enlace apunta a la dirección correcta',
       verificar: (d, datos) => {
         const redes = comoLista(datos.redes).filter((red) => comoTexto(red.url).trim() !== '')
-        const hrefs = [...d.querySelectorAll('a')].map((a) => a.getAttribute('href'))
-        return redes.every((red) => hrefs.includes(comoTexto(red.url)))
+        const destinos = destinosDeEnlaces(d)
+        // Una red cuya dirección no se puede interpretar no se le puede exigir a la solución:
+        // se revisan las que sí son direcciones.
+        return redes
+          .filter((red) => normalizarEnlace(comoTexto(red.url)) !== null)
+          .every((red) => hayEnlaceA(destinos, red.url))
       },
     },
   ],
@@ -297,8 +315,8 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
       descripcion: 'El proyecto de tipo "demo" muestra un enlace a su url',
       verificar: (d, datos) => {
         const demos = comoLista(datos.proyectos).filter((p) => comoTexto(p.tipo) === 'demo')
-        const hrefs = [...d.querySelectorAll('a')].map((a) => a.getAttribute('href'))
-        return demos.length > 0 && demos.every((p) => hrefs.includes(comoTexto(p.url)))
+        const destinos = destinosDeEnlaces(d)
+        return demos.length > 0 && demos.every((p) => hayEnlaceA(destinos, p.url))
       },
     },
     {

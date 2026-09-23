@@ -1,4 +1,5 @@
-import { ANDAMIAJE_CSS } from './andamiajeEstilos'
+import { ANDAMIAJE_CSS } from './andamiajeEstilos.ts'
+import { normalizarEnlacesDelHtml } from './enlaces.ts'
 import { aJavaScript } from './pseudocodigoAJS.ts'
 
 // Ejecuta el código del estudiante en un iframe aislado y devuelve el HTML generado.
@@ -107,12 +108,19 @@ const RUNTIME = String.raw`
 // 2) un error de sintaxis (llave sin cerrar, etc.) pasa a ser una excepción que el
 //    try/catch puede atrapar, en vez de abortar en silencio todo el <script> y que el
 //    estudiante vea "no terminó a tiempo" por un typo (confuso para quien no programa).
-function construirSrcdoc(codigoEstudiante: string, datos: unknown): string {
+// Un texto con "</script>" (en "Mis datos" o en el código) cerraría el <script> antes de
+// tiempo y la vista previa acabaría en "no terminó a tiempo". Se escribe "<" como <, que
+// dentro de un literal de JS sigue siendo el mismo carácter.
+function comoLiteralSeguro(valor: unknown): string {
+  return JSON.stringify(valor).replace(/</g, '\\u003c')
+}
+
+export function construirSrcdoc(codigoEstudiante: string, datos: unknown): string {
   const codigoConFuente = codigoEstudiante + '\n//# sourceURL=estudiante.js'
   return `<!doctype html><html><head><meta charset="utf-8">
 <style>${ANDAMIAJE_CSS}</style>
 </head><body><div id="__raiz"></div><script>
-window.__DATOS__ = ${JSON.stringify(datos)};
+window.__DATOS__ = ${comoLiteralSeguro(datos)};
 ${RUNTIME}
 
 function __lineaDelError(e) {
@@ -133,7 +141,7 @@ window.onerror = function (mensaje, _url, lineno, _colno, error) {
 };
 
 try {
-  eval(${JSON.stringify(codigoConFuente)});
+  eval(${comoLiteralSeguro(codigoConFuente)});
   parent.postMessage({ tipo: 'preview-ok', html: document.getElementById('__raiz').innerHTML, logs: __logs }, '*');
 } catch (e) {
   parent.postMessage(
@@ -142,6 +150,27 @@ try {
   );
 }
 </script></body></html>`
+}
+
+/**
+ * Convierte el mensaje que manda el iframe en el resultado de la vista previa. Los href de
+ * crearEnlace() salen del iframe tal como los escribió el estudiante; aquí se normalizan una
+ * sola vez (lib/enlaces.ts), así la vista previa y la revisión ven las mismas direcciones.
+ * null si el mensaje no es del runtime.
+ */
+export function resultadoDelMensaje(d: unknown, parser: DOMParser): ResultadoPreview | null {
+  if (!d || typeof d !== 'object') return null
+  const m = d as { tipo?: unknown; html?: unknown; mensaje?: unknown; linea?: unknown; logs?: unknown }
+  const logs = Array.isArray(m.logs) ? m.logs.map(String) : []
+  if (m.tipo === 'preview-ok') {
+    const { html, avisos } = normalizarEnlacesDelHtml(String(m.html ?? ''), parser)
+    return { ok: true, html, logs: [...logs, ...avisos] }
+  }
+  if (m.tipo === 'preview-error') {
+    const linea = typeof m.linea === 'number' ? m.linea : undefined
+    return { ok: false, html: '', error: { mensaje: String(m.mensaje ?? 'error'), linea }, logs }
+  }
+  return null
 }
 
 /** Corre el código en un iframe efímero y resuelve con el HTML resultante. */
@@ -183,12 +212,14 @@ export function ejecutarPreview(
 
     const onMsg = (ev: MessageEvent) => {
       if (ev.source !== iframe.contentWindow) return
-      const d = ev.data
-      if (d?.tipo === 'preview-ok') {
-        terminar({ ok: true, html: d.html, logs: d.logs ?? [] })
-      } else if (d?.tipo === 'preview-error') {
-        terminar({ ok: false, html: '', error: { mensaje: d.mensaje, linea: d.linea }, logs: d.logs ?? [] })
+      let resultado: ResultadoPreview | null
+      try {
+        resultado = resultadoDelMensaje(ev.data, new DOMParser())
+      } catch {
+        // Nunca dejar al estudiante esperando el "no terminó a tiempo" por un fallo nuestro.
+        resultado = { ok: false, html: '', error: { mensaje: 'No se pudo mostrar el resultado.' }, logs: [] }
       }
+      if (resultado) terminar(resultado)
     }
 
     const temporizador = setTimeout(

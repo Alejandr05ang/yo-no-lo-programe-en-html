@@ -72,8 +72,13 @@ export function componerAndamiaje(numero: number, soluciones: Record<number, str
   const e = ENCARGOS[numero]
   if (!e) return ''
   if (e.heredaDe == null) return e.andamiajeNuevo
-  const previa = (soluciones[e.heredaDe] ?? e.fallbackHeredado).trim()
-  return `// ← Tu código del encargo ${e.heredaDe}\n${previa}\n\n${e.andamiajeNuevo}`
+  const propia = soluciones[e.heredaDe]?.trim()
+  // Si no hay código propio del encargo anterior (otro equipo, pestaña nueva, o nunca lo
+  // hizo) se arranca con un ejemplo, y el comentario lo dice: no es "tu código".
+  const encabezado = propia
+    ? `// ← Tu código del encargo ${e.heredaDe}`
+    : `// ← Código de ejemplo del encargo ${e.heredaDe} (no encontramos el tuyo): cámbialo por lo tuyo`
+  return `${encabezado}\n${propia || e.fallbackHeredado.trim()}\n\n${e.andamiajeNuevo}`
 }
 
 function meta(
@@ -126,6 +131,9 @@ const BASE = 'const titulo = crearTitulo("Ana Rivas")\nmostrar(titulo)'
 const BASE_CON_PARRAFOS =
   BASE +
   '\n\nconst p1 = crearParrafo("Aprendo a construir cosas para internet.")\nmostrar(p1)\nconst p2 = crearParrafo("Este sitio lo escribí yo, línea por línea.")\nmostrar(p2)'
+// Lo que deja E3 (un subtítulo de sección). E4 lo exige en su primer caso ("lo anterior
+// sigue ahí"), así que su arranque en frío tiene que traerlo o una solución correcta falla.
+const BASE_CON_SECCION = BASE_CON_PARRAFOS + '\n\nconst seccion = crearSubtitulo("Sobre mí")\nmostrar(seccion)'
 // Fallbacks de arranque en frío para E7 y E8 (§5.2) — aproximan lo que ya tendría un
 // estudiante que aceptó los encargos anteriores, no una réplica exacta de su código.
 const BASE_CON_HOBBIES =
@@ -234,7 +242,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       'Un portafolio sin forma de contactarte no sirve de mucho.',
       'Tus redes están en datos.redes. Cada una tiene un nombre y una dirección, pero algunas direcciones están vacías. Mostrá un enlace solo para las que tengan dirección.',
     ],
-    BASE_CON_PARRAFOS,
+    BASE_CON_SECCION,
     {},
     3,
     [

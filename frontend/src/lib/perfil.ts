@@ -7,6 +7,7 @@
 // que sí vivía ahí.
 
 import type { BackendUser } from './backendTypes'
+import { normalizarUrlDePerfil } from './enlaces.ts'
 
 export interface Perfil {
   nombre: string
@@ -98,4 +99,105 @@ export function perfilComoDatos(p: Perfil): Record<string, unknown> {
     { nombre: 'Correo', url: p.redes.correo },
   ]
   return { nombre: p.nombre, sobreMi: p.sobreMi, redes, hobbies: p.hobbies }
+}
+
+// ── Formulario "Mis datos" ─────────────────────────────────────────────────────
+//
+// Límites de PUT /api/profile (backend/app/profile/schemas.py). Se comprueban aquí,
+// campo por campo, para que un solo dato fuera de rango no haga fallar el guardado entero
+// con un "revisa el formulario" que no dice qué revisar.
+export const MAX_HOBBIES = 20
+export const MAX_LARGO_HOBBY = 80
+export const MAX_SOBRE_MI = 1000
+export const MAX_LARGO_URL = 2048
+
+// Pydantic cuenta caracteres (puntos de código), no unidades UTF-16 como .length: un emoji
+// es 1 para el backend y 2 para JS. Y Python recorta como espacio también \x1c-\x1f y \x85,
+// que el trim() de JS deja. Se imita al backend para que lo que pasa aquí pase allá.
+function largo(texto: string): number {
+  return [...texto].length
+}
+function recortar(texto: string): string {
+  return texto.replace(/^[\s\x1c-\x1f\x85]+|[\s\x1c-\x1f\x85]+$/gu, '')
+}
+function inicio(texto: string, caracteres: number): string {
+  return [...texto].slice(0, caracteres).join('')
+}
+
+/** Lo que se ve en el textarea de hobbies: uno por línea. */
+export function hobbiesComoTexto(hobbies: string[]): string {
+  return hobbies.join('\n')
+}
+
+/**
+ * El texto del textarea convertido en lista. Se llama SOLO al guardar: si se hiciera en
+ * cada tecla, el salto de línea recién escrito (una línea vacía) desaparecería antes de
+ * poder escribir el siguiente hobby.
+ */
+export function textoComoHobbies(texto: string): string[] {
+  return texto.split(/\r?\n/).map(recortar).filter((h) => h.length > 0)
+}
+
+export interface BorradorPerfil {
+  nombre: string
+  sobreMi: string
+  github: string
+  linkedin: string
+  correo: string
+  hobbiesTexto: string
+}
+
+export type CampoPerfil = 'nombre' | 'sobreMi' | 'github' | 'linkedin' | 'hobbies'
+export type ErroresPerfil = Partial<Record<CampoPerfil, string>>
+
+export function borradorDesdePerfil(p: Perfil): BorradorPerfil {
+  return {
+    nombre: p.nombre,
+    sobreMi: p.sobreMi,
+    github: p.redes.github,
+    linkedin: p.redes.linkedin,
+    correo: p.redes.correo,
+    hobbiesTexto: hobbiesComoTexto(p.hobbies),
+  }
+}
+
+/** Valida y normaliza el formulario. O devuelve el perfil listo para guardar, o los errores. */
+export function prepararPerfil(b: BorradorPerfil): { perfil: Perfil; errores: null } | { perfil: null; errores: ErroresPerfil } {
+  const errores: ErroresPerfil = {}
+  const nombre = recortar(b.nombre)
+  if (largo(nombre) < 2 || largo(nombre) > 80) errores.nombre = 'Escribe tu nombre (entre 2 y 80 caracteres).'
+  const sobreMi = recortar(b.sobreMi)
+  if (largo(sobreMi) > MAX_SOBRE_MI) errores.sobreMi = `"Sobre mí" admite hasta ${MAX_SOBRE_MI} caracteres.`
+
+  const github = normalizarUrlDePerfil(b.github)
+  if (github === null) errores.github = 'Escribe una dirección web, por ejemplo github.com/tu-usuario.'
+  else if (github.length > MAX_LARGO_URL) errores.github = 'Esa dirección es demasiado larga.'
+  const linkedin = normalizarUrlDePerfil(b.linkedin)
+  if (linkedin === null) errores.linkedin = 'Escribe una dirección web, por ejemplo linkedin.com/in/tu-usuario.'
+  else if (linkedin.length > MAX_LARGO_URL) errores.linkedin = 'Esa dirección es demasiado larga.'
+
+  const hobbies = textoComoHobbies(b.hobbiesTexto)
+  const demasiadoLargo = hobbies.find((h) => largo(h) > MAX_LARGO_HOBBY)
+  if (hobbies.length > MAX_HOBBIES) errores.hobbies = `Puedes guardar hasta ${MAX_HOBBIES} hobbies; tienes ${hobbies.length}.`
+  else if (demasiadoLargo) errores.hobbies = `Cada hobby admite hasta ${MAX_LARGO_HOBBY} caracteres: "${inicio(demasiadoLargo, 24)}…" es más largo.`
+
+  if (Object.keys(errores).length > 0) return { perfil: null, errores }
+  return {
+    perfil: {
+      nombre,
+      sobreMi,
+      redes: { github: github ?? '', linkedin: linkedin ?? '', correo: b.correo },
+      hobbies,
+    },
+    errores: null,
+  }
+}
+
+/** Los datos se guardaron en el servidor, pero no se pudo volver a leer la sesión para
+ *  mostrarlos: el formulario lo dice en vez de cerrar como si todo estuviera al día. */
+export class GuardadoSinRefrescar extends Error {
+  constructor() {
+    super('Tus datos se guardaron, pero no se pudo actualizar esta pantalla. Recarga la página para verlos.')
+    this.name = 'GuardadoSinRefrescar'
+  }
 }

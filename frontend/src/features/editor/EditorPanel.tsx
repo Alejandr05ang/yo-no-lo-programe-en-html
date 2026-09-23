@@ -9,6 +9,9 @@ interface Props {
   archivos: ArchivoEditor[] // [portafolio.js, datos.js, …]
   contenido: string // contenido actual del archivo editable
   onCambio: (valor: string) => void
+  /** true mientras se carga el borrador del encargo: el editor no acepta cambios, que se
+   *  perderían al llegar el borrador (o se guardarían bajo la clave equivocada). */
+  cargando?: boolean
   salida: SalidaEjecucion | null
   guardado: EstadoGuardado
   ejecutando?: boolean
@@ -132,6 +135,7 @@ export function EditorPanel({
   archivos,
   contenido,
   onCambio,
+  cargando = false,
   salida,
   guardado,
   ejecutando,
@@ -183,6 +187,8 @@ export function EditorPanel({
   // real del commit actual, sin depender del orden interno de la librería.
   const archivoRef = useRef(archivo)
   archivoRef.current = archivo
+  const cargandoRef = useRef(cargando)
+  cargandoRef.current = cargando
   useEffect(() => {
     return () => {
       const monaco = monacoRef.current
@@ -309,12 +315,12 @@ export function EditorPanel({
           beforeMount={definirTema}
           onMount={onMount}
           onChange={(v) => {
-            if (archivoRef.current.soloLectura) return
+            if (archivoRef.current.soloLectura || cargandoRef.current) return
             onCambio(v ?? '')
             marcarLineaDeError(undefined)
           }}
           options={{
-            readOnly: archivo.soloLectura,
+            readOnly: archivo.soloLectura || cargando,
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
             padding: { top: 18, bottom: 12 },
@@ -359,16 +365,16 @@ export function EditorPanel({
       </div>
 
       <div className="ed-acciones">
-        <button className="btn btn-primary" onClick={onEjecutar} disabled={ejecutando}>
+        <button className="btn btn-primary" onClick={onEjecutar} disabled={ejecutando || cargando}>
           {ejecutando ? 'Ejecutando…' : 'Ejecutar'}
         </button>
-        <button className="btn btn-secondary" onClick={onEntregar} disabled={entregando}>
+        <button className="btn btn-secondary" onClick={onEntregar} disabled={entregando || cargando}>
           {entregando ? 'Revisando…' : 'Entregar a revisión'}
         </button>
         <span className="mono ed-sello">
           {guardado.estado === 'dirty' && 'modificado sin guardar'}
           {guardado.estado === 'saving' && 'guardando...'}
-          {guardado.estado === 'saved' && 'guardado localmente'}
+          {cargando ? 'cargando tu borrador…' : guardado.estado === 'saved' && 'guardado'}
           {guardado.estado === 'error' && 'error al guardar'}
           {' · '}
           {guardado.intentos} intentos

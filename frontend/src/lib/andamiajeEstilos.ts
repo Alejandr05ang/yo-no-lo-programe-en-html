@@ -16,8 +16,22 @@ export function documentoPortafolio(html: string): string {
   return `<!doctype html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>${ANDAMIAJE_CSS}</style>
-</head><body>${html}</body></html>`
+</head><body>${html}${PUENTE_ENLACES}</body></html>`
 }
+
+// Un clic en un enlace de la vista previa no navega el iframe: se avisa a la ventana principal
+// (features/preview/useAbrirEnlaces.ts), que valida la dirección y la abre en otra pestaña. Las
+// anclas internas (#seccion) siguen funcionando dentro de la página.
+const PUENTE_ENLACES = `<script>
+document.addEventListener('click', function (e) {
+  var a = e.target && e.target.closest ? e.target.closest('a') : null;
+  if (!a) return;
+  var href = a.getAttribute('href');
+  if (href && href.charAt(0) === '#') return;
+  e.preventDefault();
+  if (href) parent.postMessage({ tipo: 'abrir-enlace', href: href }, '*');
+});
+</script>`
 
 export const ANDAMIAJE_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lora:wght@400;600&display=swap');

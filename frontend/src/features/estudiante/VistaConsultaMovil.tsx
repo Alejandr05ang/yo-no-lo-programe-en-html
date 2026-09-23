@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Nav } from '../../components/Nav'
 import { documentoPortafolio } from '../../lib/andamiajeEstilos'
+import { useAbrirEnlaces } from '../preview/useAbrirEnlaces'
 import { NUMEROS_DE_ENCARGO } from '../../lib/encargos'
 import type { Encargo } from '../../lib/tipos'
 import './vista-consulta.css'
@@ -19,6 +20,8 @@ interface Props {
 // vistas: el encargo del día (A) y el portafolio publicado, tal como lo ve un visitante (B).
 export function VistaConsultaMovil({ encargo, dia, previewHtml, urlPortafolio, onEditarDeTodosModos }: Props) {
   const [vista, setVista] = useState<'encargo' | 'portafolio'>('encargo')
+  const marcoRef = useRef<HTMLIFrameElement>(null)
+  useAbrirEnlaces(marcoRef)
   const numero = encargo?.numero ?? NUMEROS_DE_ENCARGO[0]
   const nuevasHoy = encargo?.herramientas.filter((h) => h.nuevaHoy) ?? []
 
@@ -109,6 +112,7 @@ export function VistaConsultaMovil({ encargo, dia, previewHtml, urlPortafolio, o
             <span className="tag tag-accent mono">en vivo</span>
           </div>
           <iframe
+            ref={marcoRef}
             className="vc-marco"
             title="Tu portafolio publicado"
             sandbox="allow-scripts"
