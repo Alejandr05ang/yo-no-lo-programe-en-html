@@ -173,15 +173,28 @@ function VistaEstudianteInterna() {
 
   const [estadoGuardado, setEstadoGuardado] = useState<EstadoGuardado>({ estado: 'saved', intentos: 0 })
   const getProgressReq = useRef(0)
+  const numeroRef = useRef(numero)
+  useEffect(() => { numeroRef.current = numero }, [numero])
+  const inFlightSaveRef = useRef<{ promise: Promise<any>; numero: number } | null>(null)
 
   const flushPendiente = async () => {
+    // Si hay un guardado en curso, lo esperamos (sea del challenge actual u otro).
+    if (inFlightSaveRef.current) {
+      await inFlightSaveRef.current.promise.catch(() => {})
+    }
+    // Si está sucio el actual, lo guardamos explícitamente y lo esperamos.
     if (user && contenidoRef.current && estadoGuardado.estado === 'dirty') {
       setEstadoGuardado(prev => ({ ...prev, estado: 'saving' }))
+      const numSave = numero
+      const req = api.autoguardar(clienteApi, numSave, contenidoRef.current)
+      inFlightSaveRef.current = { promise: req, numero: numSave }
       try {
-        await api.autoguardar(clienteApi, numero, contenidoRef.current)
-        setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
+        await req
+        if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
       } catch {
-        setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
+        if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
+      } finally {
+        if (inFlightSaveRef.current?.promise === req) inFlightSaveRef.current = null
       }
     }
   }
@@ -228,22 +241,36 @@ function VistaEstudianteInterna() {
       }
     }
 
+    let cancelled = false
     if (user) {
       const reqId = ++getProgressReq.current
       api.getProgress(clienteApi, numero).then(res => {
-         if (reqId !== getProgressReq.current) return
+         if (cancelled || reqId !== getProgressReq.current) return
+         if (res.status === 'accepted') {
+           setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
+           // Si accepted viene del backend, marcamos la revisión como superada
+           setRevision({ 
+             ok: true, 
+             casosPasados: res.cases_passed ?? 0, 
+             casosTotales: res.cases_total ?? 0, 
+             casos: [], 
+             htmlPreview: '', 
+             logs: [] 
+           })
+         }
          if (res.draft_code) {
              setInitialCode(res.draft_code)
          } else {
              setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
          }
       }).catch(() => {
-         if (reqId !== getProgressReq.current) return
+         if (cancelled || reqId !== getProgressReq.current) return
          setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
       })
     } else {
       setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
     }
+    return () => { cancelled = true }
   }, [numero, encargo, user, clienteApi])
 
   const ejecutar = useCallback(async () => {
@@ -287,6 +314,7 @@ function VistaEstudianteInterna() {
         })
       } catch (e) {
         console.error('Error al persistir accepted', e)
+        setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
       }
     }
   }, [contenido, datos, numero, clienteApi, user])
@@ -307,9 +335,19 @@ function VistaEstudianteInterna() {
     const t = setTimeout(() => {
       setEstadoGuardado(prev => ({ ...prev, estado: 'saving' }))
       if (user) {
-        api.autoguardar(clienteApi, numero, contenido)
-          .then(() => setEstadoGuardado(prev => ({ ...prev, estado: 'saved' })))
-          .catch(() => setEstadoGuardado(prev => ({ ...prev, estado: 'error' })))
+        const numSave = numero
+        const req = api.autoguardar(clienteApi, numSave, contenido)
+        inFlightSaveRef.current = { promise: req, numero: numSave }
+        req
+          .then(() => {
+             if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
+          })
+          .catch(() => {
+             if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
+          })
+          .finally(() => {
+             if (inFlightSaveRef.current?.promise === req) inFlightSaveRef.current = null
+          })
         localStorage.setItem(`tutorias:draft:${user.uid}:${challengeKeyFromNumero(numero)}`, contenido)
       } else {
         setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
@@ -318,6 +356,7 @@ function VistaEstudianteInterna() {
       persistir(CLAVE_BORRADORES, borradoresRef.current)
     }, 800)
     return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contenido, numero, user, clienteApi])
 
   const onChangeContenido = useCallback((v: string) => {
@@ -388,6 +427,7 @@ function VistaEstudianteInterna() {
         )}
 
         <EditorPanel
+          numero={numero}
           archivos={[{ nombre: 'portafolio.js', soloLectura: false, contenido }, archivoDatos]}
           contenido={contenido}
           onCambio={onChangeContenido}
@@ -400,7 +440,6 @@ function VistaEstudianteInterna() {
           abierto={editorAbierto}
           onToggle={() => setEditorAbierto((v) => !v)}
           onEditarDatos={() => setMisDatosAbierto(true)}
-          permitirPseudocodigo={numero >= 4 && numero <= 6}
         />
 
         <DivisorArrastrable gridRef={gridRef} />
@@ -412,7 +451,7 @@ function VistaEstudianteInterna() {
             expandido={previewExpandido}
             onToggleExpandir={() => setPreviewExpandido((v) => !v)}
           />
-          <PanelRevision resultado={revision} aceptado={aceptado} mensajeAceptado={mensajeAceptado} />
+          <PanelRevision resultado={revision} aceptado={aceptado} mensajeAceptado={mensajeAceptado} syncError={estadoGuardado.estado === 'error'} />
           {posicion && (
             <div className="ve-navegacion">
               {posicion.anterior ? (

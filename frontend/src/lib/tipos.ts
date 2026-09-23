@@ -35,7 +35,11 @@ export interface ResultadoRevision {
   casosPasados: number
   casosTotales: number
   /** El feedback dice QUÉ falla, nunca CÓMO arreglarlo. */
-  nota: string
+  nota?: string
+  ok?: boolean
+  error?: string
+  htmlPreview?: string
+  logs?: string[]
 }
 
 export interface EstadoGuardado {

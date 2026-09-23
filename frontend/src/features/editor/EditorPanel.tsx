@@ -3,8 +3,10 @@ import type { editor } from 'monaco-editor'
 import { useEffect, useRef, useState } from 'react'
 import { API_DOCS } from '../../lib/apiDocs'
 import type { ArchivoEditor, EstadoGuardado, SalidaEjecucion } from '../../lib/tipos'
+import { PanelPedagogico } from './PanelPedagogico'
 
 interface Props {
+  numero?: number
   archivos: ArchivoEditor[] // [portafolio.js, datos.js, …]
   contenido: string // contenido actual del archivo editable
   onCambio: (valor: string) => void
@@ -18,7 +20,6 @@ interface Props {
   onToggle: () => void
   /** Abrir el formulario "Mis datos" (se ofrece cuando la pestaña activa es de solo lectura). */
   onEditarDatos: () => void
-  permitirPseudocodigo?: boolean
 }
 
 // Hallazgo de beta (docs/decisiones.md, H3): la API curada (crearTitulo, mostrar, datos…)
@@ -126,22 +127,10 @@ const definirTema: BeforeMount = (monaco) => {
   })
 }
 
-function formatearAPseudocodigo(js: string): string {
-  if (!js) return ''
-  return js
-    .replace(/\bconst\b/g, 'definir')
-    .replace(/\blet\b/g, 'definir')
-    .replace(/ === /g, ' es igual a ')
-    .replace(/ !== /g, ' es distinto de ')
-    .replace(/ \+= /g, ' aumentar en ')
-    .replace(/ -= /g, ' disminuir en ')
-    .replace(/if \(/g, 'si (')
-    .replace(/else if \(/g, 'sino si (')
-    .replace(/else \{/g, 'sino {')
-    .replace(/for \(const (.*) of (.*)\)/g, 'para cada $1 en $2')
-}
+
 
 export function EditorPanel({
+  numero,
   archivos,
   contenido,
   onCambio,
@@ -154,19 +143,12 @@ export function EditorPanel({
   abierto,
   onToggle,
   onEditarDatos,
-  permitirPseudocodigo,
 }: Props) {
   const [activo, setActivo] = useState(0)
   const archivo = archivos[activo]
   const menuRef = useRef<HTMLDetailsElement>(null)
   const hayOverflow = archivos.length > 3
   const monacoRef = useRef<Monaco | null>(null)
-  const [vistaPseudocodigo, setVistaPseudocodigo] = useState(false)
-
-  // Desactivar pseudocódigo si se desactiva la prop
-  useEffect(() => {
-    if (!permitirPseudocodigo) setVistaPseudocodigo(false)
-  }, [permitirPseudocodigo])
 
   const onMount: OnMount = (editor, monaco) => {
     monacoRef.current = monaco
@@ -227,6 +209,7 @@ export function EditorPanel({
 
   return (
     <div className="ve-col-editor">
+      {numero !== undefined && <PanelPedagogico numero={numero} />}
       <div className="ed-tabs">
         <div className="ed-tabs-scroll" role="tablist">
           {archivos.map((a, i) => (
@@ -271,19 +254,11 @@ export function EditorPanel({
           </button>
         )}
 
-        {permitirPseudocodigo && !archivo.soloLectura && (
-          <div className="ed-pseudocodigo-toggle" style={{ marginLeft: 'auto', display: 'flex', gap: '4px', alignItems: 'center' }}>
-            <button className={`btn btn-outline ${!vistaPseudocodigo ? 'active' : ''}`} onClick={() => setVistaPseudocodigo(false)} style={{ padding: '2px 8px', fontSize: '11px' }}>JavaScript</button>
-            <button className={`btn btn-outline ${vistaPseudocodigo ? 'active' : ''}`} onClick={() => setVistaPseudocodigo(true)} style={{ padding: '2px 8px', fontSize: '11px' }}>Pseudocódigo</button>
-          </div>
-        )}
-
         <button
           className="ed-colapsar"
           onClick={onToggle}
           aria-label="Colapsar el editor"
           title="Colapsar el editor"
-          style={{ marginLeft: permitirPseudocodigo && !archivo.soloLectura ? '0' : 'auto' }}
         >
           ‹
         </button>
@@ -294,22 +269,16 @@ export function EditorPanel({
           height="100%"
           language="javascript"
           path={archivo.nombre}
-          value={
-            archivo.soloLectura
-              ? archivo.contenido
-              : vistaPseudocodigo
-                ? formatearAPseudocodigo(contenido)
-                : contenido
-          }
+          value={archivo.soloLectura ? archivo.contenido : contenido}
           beforeMount={definirTema}
           onMount={onMount}
           onChange={(v) => {
-            if (archivo.soloLectura || vistaPseudocodigo) return
+            if (archivo.soloLectura) return
             onCambio(v ?? '')
             marcarLineaDeError(undefined)
           }}
           options={{
-            readOnly: archivo.soloLectura || vistaPseudocodigo,
+            readOnly: archivo.soloLectura,
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
             padding: { top: 18, bottom: 12 },

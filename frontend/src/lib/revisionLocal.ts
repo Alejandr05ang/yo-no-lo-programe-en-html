@@ -327,6 +327,7 @@ export async function revisarLocalmente(
   numeroEncargo: number,
   codigo: string,
   datos: unknown,
+  overrideHtml?: string
 ): Promise<ResultadoRevision> {
   const casos = CASOS_POR_ENCARGO[numeroEncargo]
 
@@ -344,7 +345,7 @@ export async function revisarLocalmente(
     }
   }
 
-  const r = await ejecutarPreview(codigo, datos)
+  const r = overrideHtml === undefined ? await ejecutarPreview(codigo, datos) : { ok: true, html: overrideHtml, error: undefined }
   const doc = new DOMParser().parseFromString(
     `<body>${r.ok ? r.html : ''}</body>`,
     'text/html',
