@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { Nav } from '../../components/Nav'
 import { api } from '../../lib/api'
 import { useAuth } from '../auth/authContext'
@@ -8,10 +8,10 @@ import { challengeKeyFromNumero } from '../../lib/challengeIdentity'
 import { esVistaDeConsulta, habilitarEdicionForzada } from '../../lib/dispositivo'
 import { componerAndamiaje, diaDeEncargo, NUMEROS_DE_ENCARGO, ENCARGOS } from '../../lib/encargos'
 import { posicionEnDia, rutaDia, type ActividadDelDia } from '../../lib/navegacionActividades'
-import { datosComoTexto, guardadoEjemplo, portafolioEjemplo } from '../../lib/mockEncargo'
+import { datosComoTexto, portafolioEjemplo } from '../../lib/mockEncargo'
 import { leerPerfilLegado, olvidarPerfilLegado, perfilComoDatos, perfilDesdeBackend, perfilDelServidorEstaVacio, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
 import { ejecutarPreview } from '../../lib/sandbox'
-import type { ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
+import type { EstadoGuardado, ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
 import { PanelEncargo } from '../encargo/PanelEncargo'
 import { DivisorArrastrable } from './DivisorArrastrable'
 import { EditorPanel } from '../editor/EditorPanel'
@@ -65,6 +65,7 @@ export function VistaEstudiante() {
 
 function VistaEstudianteInterna() {
   const [params, setParams] = useSearchParams()
+  const navigate = useNavigate()
   const numero = clamp(Number(params.get('e')) || MIN_ENCARGO, MIN_ENCARGO, MAX_ENCARGO)
 
   const { data: encargo } = useQuery({
@@ -170,11 +171,28 @@ function VistaEstudianteInterna() {
     [datos],
   )
 
-  const irAEncargo = (n: number) =>
+  const [estadoGuardado, setEstadoGuardado] = useState<EstadoGuardado>({ estado: 'saved', intentos: 0 })
+  const getProgressReq = useRef(0)
+
+  const flushPendiente = async () => {
+    if (user && contenidoRef.current && estadoGuardado.estado === 'dirty') {
+      setEstadoGuardado(prev => ({ ...prev, estado: 'saving' }))
+      try {
+        await api.autoguardar(clienteApi, numero, contenidoRef.current)
+        setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
+      } catch {
+        setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
+      }
+    }
+  }
+
+  const irAEncargo = async (n: number) => {
+    await flushPendiente()
     setParams((p) => {
       p.set('e', String(n))
       return p
     })
+  }
 
   // Al cambiar de encargo: guardar el borrador del que se sale y cargar el que entra.
   useEffect(() => {
@@ -183,7 +201,7 @@ function VistaEstudianteInterna() {
     if (anterior != null && anterior !== numero) {
       borradoresRef.current[anterior] = contenidoRef.current
       persistir(CLAVE_BORRADORES, borradoresRef.current)
-      if (user && contenidoRef.current) {
+      if (user && contenidoRef.current && estadoGuardado.estado === 'dirty') {
          void api.autoguardar(clienteApi, anterior, contenidoRef.current)
       }
     }
@@ -197,6 +215,7 @@ function VistaEstudianteInterna() {
 
     const setInitialCode = (code: string) => {
       setContenido(code)
+      setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
       setSalida(null)
       setRevision(null)
       if (encargo.heredaDe != null) {
@@ -210,13 +229,16 @@ function VistaEstudianteInterna() {
     }
 
     if (user) {
+      const reqId = ++getProgressReq.current
       api.getProgress(clienteApi, numero).then(res => {
+         if (reqId !== getProgressReq.current) return
          if (res.draft_code) {
              setInitialCode(res.draft_code)
          } else {
              setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
          }
       }).catch(() => {
+         if (reqId !== getProgressReq.current) return
          setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
       })
     } else {
@@ -250,7 +272,24 @@ function VistaEstudianteInterna() {
     const r = await api.entregarARevision(clienteApi, numero, contenido, datos)
     setRevision(r)
     setEntregando(false)
-  }, [contenido, datos, numero, clienteApi])
+    setEstadoGuardado(prev => ({ ...prev, intentos: prev.intentos + 1 }))
+    
+    if (r.casosPasados === r.casosTotales && user && clienteApi) {
+      try {
+        await clienteApi.request(`/challenges/${challengeKeyFromNumero(numero)}/progress`, {
+          method: 'PUT',
+          json: { 
+            draft_code: contenido, 
+            status: 'accepted',
+            cases_passed: r.casosPasados,
+            cases_total: r.casosTotales
+          }
+        })
+      } catch (e) {
+        console.error('Error al persistir accepted', e)
+      }
+    }
+  }, [contenido, datos, numero, clienteApi, user])
 
   // Al guardar "Mis datos": refrescar la preview para que se vea el cambio de una.
   useEffect(() => {
@@ -261,16 +300,30 @@ function VistaEstudianteInterna() {
   // Autoguardado + cache del borrador del encargo actual.
   useEffect(() => {
     if (!contenido) return
+    if (estadoGuardado.estado === 'saved') {
+      // Evitar que el setInitialCode dispare un dirty
+      return
+    }
     const t = setTimeout(() => {
+      setEstadoGuardado(prev => ({ ...prev, estado: 'saving' }))
       if (user) {
-        void api.autoguardar(clienteApi, numero, contenido)
+        api.autoguardar(clienteApi, numero, contenido)
+          .then(() => setEstadoGuardado(prev => ({ ...prev, estado: 'saved' })))
+          .catch(() => setEstadoGuardado(prev => ({ ...prev, estado: 'error' })))
         localStorage.setItem(`tutorias:draft:${user.uid}:${challengeKeyFromNumero(numero)}`, contenido)
+      } else {
+        setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
       }
       borradoresRef.current[numero] = contenido
       persistir(CLAVE_BORRADORES, borradoresRef.current)
     }, 800)
     return () => clearTimeout(t)
   }, [contenido, numero, user, clienteApi])
+
+  const onChangeContenido = useCallback((v: string) => {
+    setContenido(v)
+    setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
+  }, [])
 
   const aceptado = !!revision && revision.casosPasados === revision.casosTotales
   const esUltimo = numero >= MAX_ENCARGO
@@ -337,9 +390,9 @@ function VistaEstudianteInterna() {
         <EditorPanel
           archivos={[{ nombre: 'portafolio.js', soloLectura: false, contenido }, archivoDatos]}
           contenido={contenido}
-          onCambio={setContenido}
+          onCambio={onChangeContenido}
           salida={salida}
-          guardado={guardadoEjemplo}
+          guardado={estadoGuardado}
           ejecutando={ejecutando}
           entregando={entregando}
           onEjecutar={ejecutar}
@@ -347,6 +400,7 @@ function VistaEstudianteInterna() {
           abierto={editorAbierto}
           onToggle={() => setEditorAbierto((v) => !v)}
           onEditarDatos={() => setMisDatosAbierto(true)}
+          permitirPseudocodigo={numero >= 4 && numero <= 6}
         />
 
         <DivisorArrastrable gridRef={gridRef} />
@@ -371,9 +425,15 @@ function VistaEstudianteInterna() {
                   Siguiente →
                 </button>
               ) : (
-                <Link className="btn btn-outline" to={rutaDia(diaDeEncargo(numero))}>
+                <button
+                  className="btn btn-outline"
+                  onClick={async () => {
+                    await flushPendiente()
+                    navigate(rutaDia(diaDeEncargo(numero)))
+                  }}
+                >
                   Ver actividades del día
-                </Link>
+                </button>
               )}
             </div>
           )}

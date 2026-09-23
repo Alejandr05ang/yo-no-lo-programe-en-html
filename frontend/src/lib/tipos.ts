@@ -39,8 +39,10 @@ export interface ResultadoRevision {
 }
 
 export interface EstadoGuardado {
-  guardadoHaceSegundos: number
+  estado: 'dirty' | 'saving' | 'saved' | 'error'
   intentos: number
+  /** Opcional: la última vez que se guardó exitosamente, para mostrar "hace X s" */
+  ultimoGuardado?: number
 }
 
 export interface ArchivoEditor {
