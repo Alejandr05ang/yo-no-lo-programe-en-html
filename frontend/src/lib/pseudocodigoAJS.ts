@@ -57,11 +57,13 @@ const RE_SINO_SI = /^(\s*)sino\s+si\s+(.+?)\s+entonces\s*(\/\/.*)?$/i
 const RE_SI = /^(\s*)si\s+(.+?)\s+entonces\s*(\/\/.*)?$/i
 const RE_SINO = /^(\s*)sino\s*(\/\/.*)?$/i
 const RE_FIN_SI = /^(\s*)fin\s*si\s*(\/\/.*)?$/i
-const RE_PARA = /^(\s*)para\s+cada\s+([a-zA-Z_$][\w$]*)\s+en\s+(.+?)\s+hacer\s*(\/\/.*)?$/i
+// Los nombres (la variable del PARA CADA, la función) pueden llevar tildes y ñ, como en JS:
+// "PARA CADA año EN años HACER" es tan válido como "for (const año of años)".
+const RE_PARA = /^(\s*)para\s+cada\s+([\p{ID_Start}$_][\p{ID_Continue}$\u200C\u200D]*)\s+en\s+(.+?)\s+hacer\s*(\/\/.*)?$/iu
 const RE_FIN_PARA = /^(\s*)fin\s*para\s*(\/\/.*)?$/i
 const RE_MIENTRAS = /^(\s*)mientras\s+(.+?)\s+hacer\s*(\/\/.*)?$/i
 const RE_FIN_MIENTRAS = /^(\s*)fin\s*mientras\s*(\/\/.*)?$/i
-const RE_FUNCION = /^(\s*)funci[oó]n\s+([a-zA-Z_$][\w$]*)\s*\(([^)]*)\)\s*(\/\/.*)?$/i
+const RE_FUNCION = /^(\s*)funci[oó]n\s+([\p{ID_Start}$_][\p{ID_Continue}$\u200C\u200D]*)\s*\(([^)]*)\)\s*(\/\/.*)?$/iu
 const RE_FIN_FUNCION = /^(\s*)fin\s*funci[oó]n\s*(\/\/.*)?$/i
 
 /** El comentario final de la línea (último grupo de la expresión), para copiarlo al JS. */
@@ -82,6 +84,17 @@ interface LineaTraducida {
 }
 
 function traducirLinea(linea: string): LineaTraducida {
+  // Un salto de línea de Windows (\r\n) deja un "\r" al final de cada línea: no es parte de
+  // lo escrito, así que se aparta para reconocer la línea (con su comentario final) y se
+  // devuelve tal cual.
+  if (linea.endsWith('\r')) {
+    const t = traducirContenido(linea.slice(0, -1))
+    return { js: `${t.js}\r`, marca: t.marca }
+  }
+  return traducirContenido(linea)
+}
+
+function traducirContenido(linea: string): LineaTraducida {
   let m: RegExpMatchArray | null
   if ((m = linea.match(RE_SINO_SI))) return { js: `${m[1]}} else if (${m[2]}) {${comentario(m)}`, marca: { tipo: 'rama', siTambien: true } }
   if ((m = linea.match(RE_SI))) return { js: `${m[1]}if (${m[2]}) {${comentario(m)}`, marca: { tipo: 'abre', bloque: 'si' } }
@@ -104,21 +117,37 @@ function traducirLinea(linea: string): LineaTraducida {
  * como "Unexpected identifier". Se explica la mezcla en su lugar.
  */
 function mezclaEnLaLinea(linea: string): string | null {
-  const t = linea.replace(/\s*\/\/.*$/, '').trim()
+  const t = linea.replace(/\r$/, '').replace(/\s*\/\/.*$/, '').trim()
+  // ¿Empieza la línea con esa palabra usada como PALABRA CLAVE? "si: 1", "sino = 2",
+  // "sino.push(x)", "mientras[0]" o "si + 1" usan el mismo texto como NOMBRE de variable o de
+  // propiedad (detrás viene un signo u operador): eso no es una mezcla, y señalarlo mandaría al
+  // estudiante a la línea equivocada cuando el error de verdad está en otra parte.
+  const clave = (re: RegExp): boolean => {
+    const m = re.exec(t)
+    return !!m && !COMO_NOMBRE.test(t.slice(m[0].length))
+  }
+  const entonces = /\bentonces\b/i.test(t)
+  const hacer = /\bhacer\b/i.test(t)
+  const llave = t.endsWith('{')
   // Pseudocódigo al que le falta su palabra de cierre (y no lleva llaves): es un olvido, no
-  // una mezcla. "si = 1" o "si.algo" no cuentan: son nombres de variable.
-  if (/^(sino\s+)?si\s+(?![=.:(\[])/i.test(t) && !/\bentonces\b/i.test(t) && !t.endsWith('{')) return 'Te falta "ENTONCES" al final de esta línea: SI condición ENTONCES.'
-  if (/^para\s+cada\s/i.test(t) && !/\bhacer\b/i.test(t) && !t.endsWith('{')) return 'Te falta "HACER" al final de esta línea: PARA CADA elemento EN lista HACER.'
-  if (/^mientras\s+(?![=.:(\[])/i.test(t) && !/\bhacer\b/i.test(t) && !t.endsWith('{')) return 'Te falta "HACER" al final de esta línea: MIENTRAS condición HACER.'
+  // una mezcla.
+  if (clave(/^(?:sino\s+)?si(?=\s+[^\s(\[])/iu) && !entonces && !llave) return 'Te falta "ENTONCES" al final de esta línea: SI condición ENTONCES.'
+  if (/^para\s+cada\s/i.test(t) && !hacer && !llave) return 'Te falta "HACER" al final de esta línea: PARA CADA elemento EN lista HACER.'
+  if (clave(/^mientras(?=\s+[^\s(\[])/iu) && !hacer && !llave) return 'Te falta "HACER" al final de esta línea: MIENTRAS condición HACER.'
   if (/^sino\s+si\b/i.test(t)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "SINO SI condición ENTONCES", sin llaves; o, en JavaScript, "} else if (condición) {".'
-  if (/^si\b/i.test(t) && (/\bentonces\b/i.test(t) || t.endsWith('{'))) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "SI condición ENTONCES", sin llaves ni paréntesis obligatorios; o, en JavaScript, "if (condición) {".'
+  if (clave(/^si(?![\p{ID_Continue}$])/iu) && (entonces || llave)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "SI condición ENTONCES", sin llaves ni paréntesis obligatorios; o, en JavaScript, "if (condición) {".'
   if (/^para\s+cada\b/i.test(t)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "PARA CADA elemento EN lista HACER", sin llaves; o, en JavaScript, "for (const elemento of lista) {".'
-  if (/^mientras\b/i.test(t) && (/\bhacer\b/i.test(t) || t.endsWith('{'))) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "MIENTRAS condición HACER", sin llaves; o, en JavaScript, "while (condición) {".'
-  if (/^funci[oó]n\s/i.test(t)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "FUNCIÓN nombre(entrada)", sin llaves; o, en JavaScript, "function nombre(entrada) {".'
-  if (/^fin\s*(si|para|mientras|funci[oó]n)\b/i.test(t)) return 'Esta línea mezcla pseudocódigo y JavaScript: un "FIN …" va solo en su línea, sin llaves ni nada más.'
-  if (/^sino\b/i.test(t)) return 'Esta línea mezcla pseudocódigo y JavaScript: "SINO" va solo en su línea; o, en JavaScript, "} else {".'
+  if (clave(/^mientras(?![\p{ID_Continue}$])/iu) && (hacer || llave)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "MIENTRAS condición HACER", sin llaves; o, en JavaScript, "while (condición) {".'
+  if (/^funci[oó]n\s+[\p{ID_Start}$_]/iu.test(t)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "FUNCIÓN nombre(entrada)", sin llaves; o, en JavaScript, "function nombre(entrada) {".'
+  if (clave(/^fin\s*(?:si|para|mientras|funci[oó]n)(?![\p{ID_Continue}$])/iu)) return 'Esta línea mezcla pseudocódigo y JavaScript: un "FIN …" va solo en su línea, sin llaves ni nada más.'
+  if (clave(/^sino(?![\p{ID_Continue}$])/iu)) return 'Esta línea mezcla pseudocódigo y JavaScript: "SINO" va solo en su línea; o, en JavaScript, "} else {".'
   return null
 }
+
+/** Lo que puede venir detrás de un NOMBRE (y no de una palabra clave): "=", ".", ":", ",",
+ *  "?", "[", "]" o un operador ("!=", "+=", "++", "&&", "+ 1"…). Una llave, un ";" o un ")"
+ *  no cuentan: "FIN SI }" o "SINO;" son mezclas de verdad. */
+const COMO_NOMBRE = /^\s*(?:[=.:,?[\]]|!=|[-+*/%&|^<>]=|\+\+|--|&&|\|\||[-+*/%<>&|^]\s)/u
 
 /** Cómo se llama, para el estudiante, el bloque de JS que abre una línea. */
 function aperturaJs(linea: string): string {
@@ -177,6 +206,42 @@ function lineasQueEmpiezanConNombre(js: string): { lineas: Set<number>; desde: n
     hasta = typeof (e as { pos?: unknown }).pos === 'number' ? (e as { pos: number }).pos : 0
   }
   return { lineas, desde: lineaDe(hasta) }
+}
+
+/**
+ * Las líneas que EMPIEZAN dentro de un comentario de bloque, una plantilla `…` o un texto
+ * partido en varias líneas. No son código: aunque parezcan pseudocódigo ("FIN SI" en un
+ * bloque comentado con /* … *\/, "SI te gusta, ENTONCES…" en una plantilla) no se traducen ni
+ * abren o cierran bloques. Si el tokenizador se detiene antes del final, lo que no llegó a
+ * leer se trata como código, igual que antes.
+ */
+function lineasDentroDeTextos(js: string): Set<number> {
+  const inicios = [0]
+  for (let k = 0; k < js.length; k++) if (js[k] === '\n') inicios.push(k + 1)
+  const tramos: [number, number][] = []
+  try {
+    const tokens = tokenizer(js, {
+      ecmaVersion: 'latest',
+      allowHashBang: true,
+      onComment: (bloque, _texto, inicio, fin) => {
+        if (bloque) tramos.push([inicio, fin])
+      },
+    })
+    for (const t of tokens) {
+      if (t.type === tokTypes.template || t.type === tokTypes.invalidTemplate || t.type === tokTypes.string) {
+        tramos.push([t.start, t.end])
+      }
+    }
+  } catch {
+    /* ver arriba: el resto se sigue tratando como código */
+  }
+  const dentro = new Set<number>()
+  for (const [inicio, fin] of tramos) {
+    for (let i = 1; i < inicios.length; i++) {
+      if (inicios[i] > inicio && inicios[i] < fin) dentro.add(i)
+    }
+  }
+  return dentro
 }
 
 /** Las llaves reales de cada línea del JS traducido (fuera de textos, comentarios y regex). */
@@ -314,6 +379,19 @@ function esJsValido(js: string): boolean {
 export function aJavaScript(pseudocodigo: string): ResultadoTraduccion {
   const original = pseudocodigo.split('\n')
   const traducidas = original.map(traducirLinea)
+  // Lo que queda dentro de un comentario de bloque o de un texto no se traduce. Deshacer una
+  // línea no cambia dónde empiezan o acaban los demás comentarios y textos (la traducción solo
+  // quita palabras clave y añade paréntesis y llaves), pero se repite hasta que nada cambie.
+  for (let vuelta = 0; vuelta < 3; vuelta++) {
+    let cambio = false
+    for (const i of lineasDentroDeTextos(traducidas.map((t) => t.js).join('\n'))) {
+      if (traducidas[i].marca) {
+        traducidas[i] = { js: original[i], marca: null }
+        cambio = true
+      }
+    }
+    if (!cambio) break
+  }
   const tienePseudo = traducidas.some((t) => t.marca)
   const js = traducidas.map((t) => t.js).join('\n')
   const valido = esJsValido(js)

@@ -135,6 +135,88 @@ test('JS válido nunca se toma por pseudocódigo: comentarios, textos, claves y 
   for (const codigo of validos) ok(codigo)
 })
 
+// Auditoría final: las frases de arriba no tienen la forma COMPLETA de una línea de
+// pseudocódigo ("… EN lista HACER"), así que no probaban el caso real: un alumno que comenta
+// con /* … */ una parte de su pseudocódigo, o que escribe una línea así dentro de un texto.
+test('una línea de pseudocódigo completa dentro de un comentario o un texto no se traduce', async () => {
+  const js = [
+    '/*\nPARA CADA h EN datos.hobbies HACER\n*/\nmostrar(crearTitulo("a"))',
+    '/*\n  FIN SI\n*/\nmostrar(crearTitulo("a"))',
+    '/*\nSINO\n*/',
+    'const t = `\nSI 1 > 0 ENTONCES\n`\nmostrar(crearParrafo(t))',
+    'const t = `hola\nFIN PARA\n`',
+    'const t = "a\\\nSINO"',
+  ]
+  for (const codigo of js) assert.equal(ok(codigo), codigo)
+
+  // Y mezclado con pseudocódigo de verdad: lo comentado queda comentado, lo demás se traduce.
+  const comentado = [
+    '/*',
+    'PARA CADA h EN datos.hobbies HACER',
+    '  mostrar(crearItem(h))',
+    '*/',
+    'SI datos.hobbies.length > 0 ENTONCES',
+    '  mostrar(crearParrafo(`Mis hobbies:',
+    'SINO',
+    'FIN SI`))',
+    '/*',
+    'SINO',
+    '*/',
+    'FIN SI',
+  ].join('\n')
+  const traducido = ok(comentado).split('\n')
+  assert.equal(traducido.length, 12)
+  assert.deepEqual(traducido.slice(0, 4), ['/*', 'PARA CADA h EN datos.hobbies HACER', '  mostrar(crearItem(h))', '*/'])
+  assert.equal(traducido[4], 'if (datos.hobbies.length > 0) {')
+  assert.deepEqual(traducido.slice(6, 11), ['SINO', 'FIN SI`))', '/*', 'SINO', '*/'])
+  assert.equal(traducido[11], '}')
+  const r = await ejecutarReal(comentado, datos)
+  assert.equal(r.ok, true, r.error)
+  assert.equal(r.html, '<p>Mis hobbies:\nSINO\nFIN SI</p>')
+})
+
+// Auditoría final: con un error de sintaxis en OTRA línea (aquí, falta un ")"), una variable o
+// clave llamada si/sino/mientras se acusaba de "mezcla" y el mensaje mandaba a la línea
+// equivocada. Ese error lo explica el motor al ejecutar, con su línea.
+test('un nombre si/sino/mientras no se toma por mezcla cuando el error está en otra línea', () => {
+  const faltaParentesis = '\nmostrar(crearParrafo("a")'
+  for (const codigo of [
+    'const o = {\n  sino: 1,\n}',
+    'const o = {\n  si: {\n    a: 1,\n  },\n}',
+    'const o = {\n  mientras: {\n  },\n}',
+    'const sino = []\nsino.push(1)',
+    'let sino = 1\nsino = 2',
+    'let si = 1\nsi + 1',
+    'let finSi = 0\nfinSi = 1',
+  ]) {
+    const r = aJavaScript(codigo + faltaParentesis)
+    assert.equal(r.ok, true, `${JSON.stringify(codigo)} → ${r.error?.mensaje} (línea ${r.error?.linea})`)
+  }
+  // Las mezclas de verdad se siguen señalando.
+  falla('SINO {\nmostrar(crearParrafo("a")', 1, /"SINO" va solo en su línea/)
+  falla('SI (1 > 0) {\n  mostrar(crearParrafo("a"))\n}', 1, /mezcla pseudocódigo y JavaScript/)
+  falla('MIENTRAS 1 > 2 {\n}', 1, /MIENTRAS condición HACER/)
+})
+
+test('los nombres con tilde o ñ valen en PARA CADA y FUNCIÓN, igual que en JavaScript', async () => {
+  const codigo = [
+    'FUNCIÓN mostrarAño(año)',
+    '  mostrar(crearParrafo(año))',
+    'FIN FUNCIÓN',
+    'PARA CADA opción EN datos.hobbies HACER',
+    '  mostrarAño(opción)',
+    'FIN PARA',
+  ].join('\n')
+  assert.equal(ok(codigo), 'function mostrarAño(año) {\n  mostrar(crearParrafo(año))\n}\nfor (const opción of datos.hobbies) {\n  mostrarAño(opción)\n}')
+  assert.equal((await ejecutarReal(codigo, datos)).html, '<p>Ajedrez</p><p>Fútbol</p>')
+})
+
+test('saltos de línea de Windows (\\r\\n): las líneas con comentario final se reconocen igual', () => {
+  const codigo = 'PARA CADA h EN datos.hobbies HACER // cada uno\r\n  mostrar(crearItem(h))\r\nFIN PARA // listo\r\n'
+  assert.equal(ok(codigo), 'for (const h of datos.hobbies) { // cada uno\r\n  mostrar(crearItem(h))\r\n} // listo\r\n')
+  falla('SI 1 > 0 ENTONCES\r\n  mostrar(crearParrafo("a"))\r\n}\r\n', 3, /ciérralo con "FIN SI", no con "}"/)
+})
+
 test('un salto de línea Unicode pegado en un texto no descoloca las líneas', () => {
   ok('const s = "a\u2028b"\nSI 1 > 0 ENTONCES\n  mostrar(crearParrafo(s))\nFIN SI')
   ok('const s = "a\u2029b"\nfor (const h of datos.hobbies) {\n  mostrar(crearParrafo(s))\n}')
