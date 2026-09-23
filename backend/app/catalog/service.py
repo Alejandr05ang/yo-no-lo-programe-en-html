@@ -74,11 +74,15 @@ class WorkshopAccess:
         self, item: SessionCatalog, override: ChallengeOverride | None
     ) -> bool:
         access = self.session_access(item)
-        if access == "paused":
+        # Un dia que no esta abierto bloquea TODOS sus retos, sin excepcion.
+        # Un override de reto solo puede cambiar el acceso dentro de un dia
+        # que ya esta abierto por la regla acumulativa. Nunca abre un dia
+        # futuro ni reabre uno pausado.
+        if access != "open":
             return False
         if override is not None and override.unlocked is not None:
             return override.unlocked
-        return access == "open"
+        return True
 
 
 async def workshop_access(

@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from fastapi import APIRouter
 from sqlalchemy import func, select
+from sqlalchemy.exc import IntegrityError
 
 from app.auth.dependencies import CurrentUser
 from app.catalog.service import require_challenge_access
@@ -124,8 +125,6 @@ async def submit_challenge(
     challenge_key: str, body: SubmitBody, user: CurrentUser, session: SessionDep
 ):
     cohort, challenge = await require_challenge_access(session, user, challenge_key)
-
-    from sqlalchemy.exc import IntegrityError
 
     for _ in range(3):
         attempt_number = await session.scalar(

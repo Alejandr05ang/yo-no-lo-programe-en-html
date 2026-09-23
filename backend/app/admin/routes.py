@@ -170,6 +170,10 @@ async def regenerate_cohort_code(cohort_id: UUID, user: CurrentUser, session: Se
 
 @router.get("/cohorts/{cohort_id}/students", response_model=list[CohortStudent])
 async def get_cohort_students(cohort_id: UUID, session: SessionDep):
+    cohort = await session.get(Cohort, cohort_id)
+    if not cohort:
+        raise ApiError(404, "NOT_FOUND", "Cohorte no encontrada.")
+
     rows = (
         await session.execute(
             select(User, CohortMembership.joined_at)

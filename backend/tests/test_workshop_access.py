@@ -386,6 +386,37 @@ async def test_on_an_open_day_a_challenge_override_still_rules_its_challenge(aut
     assert estados == {"e4": True, "e5": False, "e6": True}
 
 
+async def test_a_challenge_override_on_a_future_day_returns_locked(auth_harness):
+    h = auth_harness
+    d = await preparar(h)
+    await activar(h, d, "Ma1")
+    async with h.sessions.begin() as s:
+        s.add(
+            ChallengeOverride(cohort_id=d["cohort"], challenge_id=d["retos"]["e4"], unlocked=True)
+        )
+    r = await reto(h, "e4")
+    assert r.status_code == 403
+    assert codigo_error(r) == "CHALLENGE_LOCKED"
+
+
+async def test_instructor_activating_a_paused_day_reopens_it(auth_harness):
+    h = auth_harness
+    d = await preparar(h)
+    await activar(h, d, "Mi1")
+    await pausar(h, d, "Ma1")
+
+    r = await h.client.patch(
+        f"/api/instructor/cohorts/{d['cohort']}/active-session",
+        json={"active_session_id": str(d["sesiones"]["Ma1"])},
+        headers=bearer("instructor"),
+    )
+    assert r.status_code == 200, r.text
+
+    # Debe estar reabierto para el alumno
+    r_alumno = await dia(h, "Ma1")
+    assert r_alumno.status_code == 200
+
+
 # --- Permisos ------------------------------------------------------------------
 
 
