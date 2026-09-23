@@ -24,7 +24,8 @@ e2: 3/3
 e3: 3/3
 e4: 3/3
 e5: 3/3
-e6: 3/3
+E6 WITH HOBBIES: 3/3
+E6 EMPTY: 3/3
 e7: 3/3
 e8: 3/3
 e9: 4/4
@@ -32,13 +33,13 @@ e10: 3/3
 e11: 3/3
 
 PSEUDOCODE: PASS
-AUTOSAVE RACE: PASS
-ACCEPTED REHYDRATION: PASS
+AUTOSAVE SERIALIZATION: PASS
+ACCEPTED AFTER RELOAD: PASS
 
 ## 3. Estado de Pruebas (QA)
-- **Backend (Pytest):** 124 pasados, 1 skip.
+- **Backend (Pytest):** 124 passed / 1 skipped
 - **Backend (Ruff):** Clean (100% compliant).
-- **Frontend (Vitest):** Pasadas.
+- **Frontend tests:** 60 passed, 0 failed
 - **Frontend (Build):** Clean. Compilación completada con 0 fallos.
 - **Frontend (Oxlint/TypeScript):** 0 errores, warnings aceptables.
 

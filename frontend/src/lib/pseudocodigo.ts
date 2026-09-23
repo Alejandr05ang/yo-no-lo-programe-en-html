@@ -8,7 +8,7 @@ export const EJEMPLOS_PEDAGOGICOS: Record<number, EjemploCurado> = {
   4: {
     pseudocodigo: `definir lista = crearLista()
 
-Para cada red en redes Hacer
+Para cada red en datos.redes Hacer
   Si red.url tiene una dirección Entonces
     definir enlace = crearEnlace(red.nombre, red.url)
     definir item = crearItem("")
@@ -20,7 +20,7 @@ FinPara
 mostrar(lista)`,
     javascript: `const lista = crearLista()
 
-for (const red of redes) {
+for (const red of datos.redes) {
   if (red.url) {
     const enlace = crearEnlace(red.nombre, red.url)
     const item = crearItem("")
@@ -32,22 +32,20 @@ for (const red of redes) {
 mostrar(lista)`
   },
   
-  // e5: Proyectos con for..of
+  // e5: Proyectos con for..of -> Ahora es construcción manual para introducir a las listas generadas.
   5: {
     pseudocodigo: `definir lista = crearLista()
+mostrar(lista)
 
-Para cada proyecto en datos.proyectos Hacer
-  agregarA(lista, crearItem(proyecto.nombre))
-FinPara
-
-mostrar(lista)`,
+agregarA(lista, crearItem("Fútbol"))
+agregarA(lista, crearItem("Música"))
+agregarA(lista, crearItem("Programar"))`,
     javascript: `const lista = crearLista()
+mostrar(lista)
 
-for (const proyecto of datos.proyectos) {
-  agregarA(lista, crearItem(proyecto.nombre))
-}
-
-mostrar(lista)`
+agregarA(lista, crearItem("Fútbol"))
+agregarA(lista, crearItem("Música"))
+agregarA(lista, crearItem("Programar"))`
   },
   
   // e6: Hobbies

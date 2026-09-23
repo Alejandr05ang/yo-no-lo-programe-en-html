@@ -152,7 +152,7 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
       descripcion: 'Hay una lista para los hobbies que vienen en datos',
       verificar: (d, datos) => {
         const hobbies = comoLista(datos.hobbies).map((h) => comoTexto(h))
-        return hobbies.length > 0 && !!encontrarListaConItems(d, hobbies)
+        return !!encontrarListaConItems(d, hobbies)
       },
     },
     {
@@ -169,7 +169,7 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
         const hobbies = comoLista(datos.hobbies).map((h) => comoTexto(h))
         const lista = encontrarListaConItems(d, hobbies)
         const textos = lista ? [...lista.children].map((li) => (li.textContent ?? '').trim()) : []
-        return hobbies.length > 0 && hobbies.every((h) => textos.includes(h))
+        return hobbies.every((h) => textos.includes(h))
       },
     },
   ],

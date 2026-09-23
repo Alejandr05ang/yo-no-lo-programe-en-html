@@ -175,28 +175,29 @@ function VistaEstudianteInterna() {
   const getProgressReq = useRef(0)
   const numeroRef = useRef(numero)
   useEffect(() => { numeroRef.current = numero }, [numero])
-  const inFlightSaveRef = useRef<{ promise: Promise<any>; numero: number } | null>(null)
+
+  // Cola para serializar los guardados y evitar carreras de red.
+  const saveChainRef = useRef<Promise<void>>(Promise.resolve())
+
+  const [progressStatus, setProgressStatus] = useState<string>('not_started')
 
   const flushPendiente = async () => {
-    // Si hay un guardado en curso, lo esperamos (sea del challenge actual u otro).
-    if (inFlightSaveRef.current) {
-      await inFlightSaveRef.current.promise.catch(() => {})
-    }
-    // Si está sucio el actual, lo guardamos explícitamente y lo esperamos.
+    // Si está sucio el actual, lo encolamos para guardarlo.
     if (user && contenidoRef.current && estadoGuardado.estado === 'dirty') {
       setEstadoGuardado(prev => ({ ...prev, estado: 'saving' }))
       const numSave = numero
-      const req = api.autoguardar(clienteApi, numSave, contenidoRef.current)
-      inFlightSaveRef.current = { promise: req, numero: numSave }
-      try {
-        await req
-        if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
-      } catch {
-        if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
-      } finally {
-        if (inFlightSaveRef.current?.promise === req) inFlightSaveRef.current = null
-      }
+      const cont = contenidoRef.current
+      saveChainRef.current = saveChainRef.current.catch(() => {}).then(async () => {
+        try {
+          await api.autoguardar(clienteApi, numSave, cont)
+          if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
+        } catch {
+          if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
+        }
+      })
     }
+    // Esperamos a que todo lo encolado termine (incluyendo el posible dirty anterior)
+    await saveChainRef.current.catch(() => {})
   }
 
   const irAEncargo = async (n: number) => {
@@ -246,9 +247,17 @@ function VistaEstudianteInterna() {
       const reqId = ++getProgressReq.current
       api.getProgress(clienteApi, numero).then(res => {
          if (cancelled || reqId !== getProgressReq.current) return
+         setProgressStatus(res.status)
          if (res.status === 'accepted') {
            setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
-           // Si accepted viene del backend, marcamos la revisión como superada
+         }
+         if (res.draft_code) {
+             setInitialCode(res.draft_code)
+         } else {
+             setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
+         }
+         // Set revision after initial code because initial code clears it!
+         if (res.status === 'accepted') {
            setRevision({ 
              ok: true, 
              casosPasados: res.cases_passed ?? 0, 
@@ -257,11 +266,6 @@ function VistaEstudianteInterna() {
              htmlPreview: '', 
              logs: [] 
            })
-         }
-         if (res.draft_code) {
-             setInitialCode(res.draft_code)
-         } else {
-             setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
          }
       }).catch(() => {
          if (cancelled || reqId !== getProgressReq.current) return
@@ -312,6 +316,7 @@ function VistaEstudianteInterna() {
             cases_total: r.casosTotales
           }
         })
+        setProgressStatus('accepted')
       } catch (e) {
         console.error('Error al persistir accepted', e)
         setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
@@ -336,18 +341,15 @@ function VistaEstudianteInterna() {
       setEstadoGuardado(prev => ({ ...prev, estado: 'saving' }))
       if (user) {
         const numSave = numero
-        const req = api.autoguardar(clienteApi, numSave, contenido)
-        inFlightSaveRef.current = { promise: req, numero: numSave }
-        req
-          .then(() => {
-             if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
-          })
-          .catch(() => {
-             if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
-          })
-          .finally(() => {
-             if (inFlightSaveRef.current?.promise === req) inFlightSaveRef.current = null
-          })
+        const cont = contenido
+        saveChainRef.current = saveChainRef.current.catch(() => {}).then(async () => {
+          try {
+            await api.autoguardar(clienteApi, numSave, cont)
+            if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
+          } catch {
+            if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
+          }
+        })
         localStorage.setItem(`tutorias:draft:${user.uid}:${challengeKeyFromNumero(numero)}`, contenido)
       } else {
         setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
@@ -364,7 +366,7 @@ function VistaEstudianteInterna() {
     setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
   }, [])
 
-  const aceptado = !!revision && revision.casosPasados === revision.casosTotales
+  const aceptado = progressStatus === 'accepted' || (!!revision && revision.casosPasados === revision.casosTotales)
   const esUltimo = numero >= MAX_ENCARGO
 
   // Al aceptar: guardar la solución (para heredarla)

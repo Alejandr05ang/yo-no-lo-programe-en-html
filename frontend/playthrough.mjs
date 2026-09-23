@@ -13,10 +13,7 @@ import * as sandbox from './src/lib/sandbox.ts'
 
 async function run() {
   const datos = perfilComoDatos(PERFIL_DEFECTO)
-  // Ensure hobbies has some items, and test length 0 is OK if needed, but per default it has items
-  if (!datos.hobbies || !datos.hobbies.length) {
-    datos.hobbies = ["Hobby 1", "Hobby 2"]
-  }
+  datos.hobbies = ["Hobby 1", "Hobby 2"]
   datos.redes = [
     { nombre: "GitHub", url: "https://github.com" },
     { nombre: "LinkedIn", url: "https://linkedin.com" }
@@ -110,6 +107,36 @@ async function run() {
          console.error(`BLOCKER e${numero}: No pasan todos los casos en el scaffolding!`)
          console.error(res.casos)
          allPass = false
+      }
+
+      if (numero === 6) {
+        console.log(`\nProbando e6-empty...`)
+        const datosEmpty = { ...datos, hobbies: [] }
+        const DOM_e = new JSDOM(`<!DOCTYPE html><div id="__raiz"></div>`)
+        const d_e = DOM_e.window.document
+        const raiz_e = d_e.getElementById('__raiz')
+        const API_e = {
+          crearTitulo: (t) => { let el = d_e.createElement('h1'); el.textContent=t; return el; },
+          crearSubtitulo: (t) => { let el = d_e.createElement('h2'); el.textContent=t; return el; },
+          crearParrafo: (t) => { let el = d_e.createElement('p'); el.textContent=t; return el; },
+          crearLista: () => { return d_e.createElement('ul'); },
+          crearItem: (t) => { let el = d_e.createElement('li'); el.textContent=t; return el; },
+          crearEnlace: (t, u) => { let el = d_e.createElement('a'); el.textContent=t; el.href=u; return el; },
+          crearImagen: (u, t) => { let el = d_e.createElement('img'); el.src=u; el.alt=t; return el; },
+          crearCarrusel: () => { let el = d_e.createElement('section'); el.setAttribute('data-carrusel','true'); return el; },
+          mostrar: (el) => { raiz_e.appendChild(el); return el; },
+          agregarA: (p, el) => { p.appendChild(el); return el; },
+          proyectosDestacados: (l) => l.filter(p => p.destacado)
+        }
+        const fn_e = new Function('datos', ...Object.keys(API_e), code)
+        fn_e(datosEmpty, ...Object.values(API_e))
+        const res_e = await revisarLocalmente(numero, code, datosEmpty, raiz_e.innerHTML)
+        console.log(`Resultado: ${res_e.casosPasados}/${res_e.casosTotales}`)
+        if (res_e.casosPasados !== res_e.casosTotales) {
+           console.error(`BLOCKER e6-empty: No pasan todos los casos en el scaffolding!`)
+           console.error(res_e.casos)
+           allPass = false
+        }
       }
     } catch (e) {
       console.error(`BLOCKER e${numero} throw:`, e)

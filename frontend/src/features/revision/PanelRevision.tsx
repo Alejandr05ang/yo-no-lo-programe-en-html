@@ -22,7 +22,7 @@ export function PanelRevision({ resultado, aceptado, mensajeAceptado, syncError 
         </div>
         <p className="rev-nota">
           Cuando creas que está listo, pulsá <strong>Entregar a revisión</strong>. Si pasan todos
-          los casos, el encargo queda aceptado y pasás al siguiente.
+          los casos, la actividad queda completada. Puedes revisarla o continuar con la siguiente cuando quieras.
         </p>
       </div>
     )
