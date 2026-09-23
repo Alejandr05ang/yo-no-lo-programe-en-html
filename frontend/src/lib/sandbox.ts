@@ -1,4 +1,5 @@
 import { ANDAMIAJE_CSS } from './andamiajeEstilos'
+import { aJavaScript } from './pseudocodigoAJS.ts'
 
 // Ejecuta el código del estudiante en un iframe aislado y devuelve el HTML generado.
 //
@@ -11,8 +12,9 @@ import { ANDAMIAJE_CSS } from './andamiajeEstilos'
 //
 // La implementación de la API aquí sigue docs/encargos.md §3 (API revisada). Es PROVISIONAL
 // (pendiente D5 / EN2-EN4): debe terminar coincidiendo con la API del grader y el desbloqueo por día.
-// Las funciones tienen nombres descriptivos en español; el control de flujo (const/if/for/function)
-// es JavaScript real, así que no hace falta implementarlo.
+// Las funciones tienen nombres descriptivos en español. El control de flujo (si/para cada/
+// mientras/función) el estudiante lo escribe en pseudocódigo (lib/pseudocodigoAJS.ts) — acá
+// se traduce a JS real ANTES de ejecutar, así el resto de este archivo no cambia.
 
 export interface ResultadoPreview {
   ok: boolean
@@ -152,6 +154,15 @@ export function ejecutarPreview(
   datos: unknown,
   timeoutMs = 5000,
 ): Promise<ResultadoPreview> {
+  // Traducir el pseudocódigo (SI/PARA CADA/MIENTRAS/FUNCIÓN) a JS real antes de tocar el
+  // iframe — un pseudocódigo mal cerrado (falta un FIN SI, etc.) no es un error de
+  // "ejecución", así que se resuelve directo, sin timeout ni srcdoc de por medio.
+  const traduccion = aJavaScript(codigoEstudiante)
+  if (!traduccion.ok) {
+    return Promise.resolve({ ok: false, html: '', error: traduccion.error, logs: [] })
+  }
+  const codigoJs = traduccion.js
+
   return new Promise((resolve) => {
     const iframe = document.createElement('iframe')
     iframe.setAttribute('sandbox', 'allow-scripts')
@@ -192,7 +203,7 @@ export function ejecutarPreview(
     )
 
     window.addEventListener('message', onMsg)
-    iframe.srcdoc = construirSrcdoc(codigoEstudiante, datos)
+    iframe.srcdoc = construirSrcdoc(codigoJs, datos)
     document.body.appendChild(iframe)
   })
 }

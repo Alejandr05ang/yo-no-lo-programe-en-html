@@ -130,10 +130,10 @@ const BASE_CON_PARRAFOS =
 // estudiante que aceptó los encargos anteriores, no una réplica exacta de su código.
 const BASE_CON_HOBBIES =
   BASE_CON_PARRAFOS +
-  '\n\nconst lista = crearLista()\nmostrar(lista)\nfor (const hobby of datos.hobbies) {\n  agregarA(lista, crearItem(hobby))\n}'
+  '\n\nconst lista = crearLista()\nmostrar(lista)\nPARA CADA hobby EN datos.hobbies HACER\n  agregarA(lista, crearItem(hobby))\nFIN PARA'
 const BASE_CON_AVISO =
   BASE_CON_HOBBIES +
-  '\n\nconst bio = crearParrafo(datos.sobreMi)\nmostrar(bio)\nif (datos.sobreMi === "") {\n  mostrar(crearParrafo("Página en construcción — vuelve pronto."))\n}'
+  '\n\nconst bio = crearParrafo(datos.sobreMi)\nmostrar(bio)\nSI datos.sobreMi === "" ENTONCES\n  mostrar(crearParrafo("Página en construcción — vuelve pronto."))\nFIN SI'
 
 const PROYECTOS_PORTAFOLIO = [
   {
@@ -276,7 +276,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       'Tus hobbies ya no los escribís vos: vienen de datos.hobbies, y podés tener cualquier cantidad.',
       'La lista que ya hiciste sigue siendo la misma. Vaciála y dejá que se arme sola, sin importar si hay tres o catorce.',
     ],
-    'Primero vaciá tu lista anterior. Después, en vez de escribir agregarA() a mano por cada hobby, usá "por cada" (for...of) sobre datos.hobbies.',
+    'Primero vaciá tu lista anterior. Después, en vez de escribir agregarA() a mano por cada hobby, usá PARA CADA … EN … HACER sobre datos.hobbies.',
   ),
 
   7: stub(

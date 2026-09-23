@@ -1,14 +1,14 @@
 import { parse } from 'acorn'
+import { aJavaScript } from './pseudocodigoAJS.ts'
 
-// Traduce el código del estudiante (portafolio.js) a dos vistas de solo lectura de su flujo
-// de ejecución: un diagrama Mermaid (rombos de decisión, estilo PSeInt) y un pseudocódigo en
-// español ("SI … ENTONCES", "PARA CADA … HACER"). Es un puente pedagógico (ver EditorPanel y
-// FichaHerramienta): antes de leer if/for con su sintaxis real, el estudiante ve la misma
-// estructura en palabras.
+// Traduce el código del estudiante (portafolio.js, ya escrito en el pseudocódigo de
+// pseudocodigoAJS.ts) a dos vistas de solo lectura de su flujo de ejecución: un diagrama
+// Mermaid (rombos de decisión, estilo PSeInt) y un pseudocódigo en español con las llamadas
+// también traducidas a frases naturales ("Mostrar … en la página" en vez de "mostrar(…)").
 //
 // No es un intérprete ni cubre todo JS: traduce el subconjunto que enseña la API curada
-// (const, if/else, for…of, function, y las llamadas de lib/sandbox.ts — mismo vocabulario que
-// lib/apiDocs.ts). Lo que no reconoce lo muestra tal cual en vez de fallar, así que nunca
+// (const, si/sino, por cada, función, y las llamadas de lib/sandbox.ts — mismo vocabulario
+// que lib/apiDocs.ts). Lo que no reconoce lo muestra tal cual en vez de fallar, así que nunca
 // oculta información: en el peor caso no simplifica.
 
 export interface ResultadoFlujo {
@@ -295,12 +295,21 @@ function generarMermaid(programa: Nodo, codigo: string): string {
 }
 
 /** Analiza el código del estudiante y arma el diagrama + pseudocódigo. Nunca lanza: un error
- *  de sintaxis vuelve como `{ ok: false, error }` con un mensaje pensado para quien recién
- *  empieza a programar, no el mensaje crudo del parser. */
-export function analizarFlujo(codigo: string): ResultadoFlujo {
-  if (!codigo.trim()) {
+ *  vuelve como `{ ok: false, error }` con un mensaje pensado para quien recién empieza a
+ *  programar, no el mensaje crudo del parser. */
+export function analizarFlujo(codigoEstudiante: string): ResultadoFlujo {
+  if (!codigoEstudiante.trim()) {
     return { ok: false, mermaid: '', pseudocodigo: '', error: 'Escribí algo de código para ver acá su diagrama de flujo.' }
   }
+  // El estudiante escribe pseudocódigo (SI/PARA CADA/MIENTRAS/FUNCIÓN — pseudocodigoAJS.ts);
+  // acá hace falta JS real para poder parsearlo con acorn. Un pseudocódigo mal cerrado (falta
+  // un FIN SI, etc.) es el mismo tipo de error que un paréntesis sin cerrar en JS: se muestra
+  // igual, con su propio mensaje.
+  const traduccion = aJavaScript(codigoEstudiante)
+  if (!traduccion.ok) {
+    return { ok: false, mermaid: '', pseudocodigo: '', error: traduccion.error?.mensaje ?? 'Hay un error en tu código.' }
+  }
+  const codigo = traduccion.js
   let programa: Nodo
   try {
     programa = parse(codigo, { ecmaVersion: 2023, sourceType: 'script' }) as unknown as Nodo
@@ -309,7 +318,7 @@ export function analizarFlujo(codigo: string): ResultadoFlujo {
       ok: false,
       mermaid: '',
       pseudocodigo: '',
-      error: 'Tu código tiene un error de sintaxis (¿una llave o un paréntesis sin cerrar?). Corregilo para ver el diagrama.',
+      error: 'Tu código tiene un error de sintaxis. Corregilo para ver el diagrama.',
     }
   }
   if (programa.body.length === 0) {

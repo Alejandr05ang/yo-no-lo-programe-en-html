@@ -1,6 +1,5 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { API_DOCS } from '../../lib/apiDocs'
-import { analizarFlujo } from '../../lib/flujo'
 
 interface Props {
   /** Clave del catálogo (= texto del tag). */
@@ -71,10 +70,6 @@ export function FichaHerramienta({ nombre, anclaEl, onCerrar, onIrA }: Props) {
   }, [onCerrar, anclaEl])
 
   const doc = API_DOCS[nombre]
-  // El pseudocódigo se GENERA del `ejemplo` con el mismo motor que arma el diagrama de flujo
-  // (lib/flujo.ts) — no se escribe a mano, para que nunca diverja del estilo que el
-  // estudiante ve sobre su propio código.
-  const pseudo = useMemo(() => (doc?.puente ? analizarFlujo(doc.ejemplo) : null), [doc])
   if (!doc) return null
 
   return (
@@ -100,14 +95,7 @@ export function FichaHerramienta({ nombre, anclaEl, onCerrar, onIrA }: Props) {
         </p>
       )}
 
-      {pseudo?.ok && (
-        <>
-          <div className="enc-ficha-ejemplo-titulo">la idea, en palabras — esto NO es código</div>
-          <pre className="enc-ficha-pseudo">{pseudo.pseudocodigo}</pre>
-        </>
-      )}
-
-      <div className="enc-ficha-ejemplo-titulo">{pseudo?.ok ? 'así se escribe en código' : 'ejemplo'}</div>
+      <div className="enc-ficha-ejemplo-titulo">ejemplo</div>
       <pre className="enc-ficha-ejemplo">{doc.ejemplo}</pre>
 
       {doc.relacionadas && doc.relacionadas.length > 0 && (

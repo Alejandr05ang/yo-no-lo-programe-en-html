@@ -57,3 +57,21 @@ test('código vacío pide escribir algo, en vez de mostrar un diagrama vacío', 
   const r = analizarFlujo('   \n')
   assert.equal(r.ok, false)
 })
+
+// El código real de un estudiante llega en el pseudocódigo que escribe en el editor
+// (SI/PARA CADA/…, sin "()" ni "{}" — lib/pseudocodigoAJS.ts), no en JS con llaves: acá se
+// confirma que el diagrama funciona igual sobre ESE código, no solo sobre JS de juguete.
+test('el diagrama funciona sobre el pseudocódigo real que el estudiante escribe (sin llaves)', () => {
+  const r = analizarFlujo(
+    'const temperatura = 32\nSI temperatura > 30 ENTONCES\n    mostrar(crearParrafo("Hace calor"))\nSINO\n    mostrar(crearParrafo("Está fresco"))\nFIN SI',
+  )
+  assert.equal(r.ok, true)
+  assert.match(r.pseudocodigo, /SI temperatura > 30 ENTONCES/)
+  assert.match(r.mermaid, /-->\|Sí\|/)
+})
+
+test('un pseudocódigo mal cerrado (falta FIN SI) da el mismo tipo de error amigable', () => {
+  const r = analizarFlujo('SI a > 1 ENTONCES\n  mostrar(a)')
+  assert.equal(r.ok, false)
+  assert.match(r.error ?? '', /FIN SI/)
+})

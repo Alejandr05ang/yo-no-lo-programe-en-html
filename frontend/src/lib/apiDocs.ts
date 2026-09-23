@@ -12,18 +12,12 @@ export interface DocHerramienta {
   descripcion: string
   /** Qué devuelve o en qué se convierte. Vacío si no aplica. */
   devuelve?: string
-  /** Fragmento de ejemplo — contexto de juguete, no del portafolio. */
+  /** Fragmento de ejemplo — contexto de juguete, no del portafolio. Para condicionales,
+   *  bucles y función, esto YA es lo que el estudiante escribe en el editor (el pseudocódigo
+   *  de lib/pseudocodigoAJS.ts: "SI … ENTONCES", "PARA CADA … HACER" — sin "()" ni "{}"), no
+   *  una explicación aparte del código real: acá no hay dos variantes que puedan confundirse
+   *  entre sí, solo una. */
   ejemplo: string
-  /** true en condicionales, bucles y función: ahí la ficha antepone un puente pedagógico
-   *  (pseudocódigo español, estilo PSeInt — "SI … ENTONCES", "PARA CADA … HACER") antes de
-   *  este mismo `ejemplo`. Se GENERA con lib/flujo.ts —el mismo motor que arma el diagrama
-   *  de flujo del código real del estudiante— en vez de escribirse a mano acá: si el ejemplo
-   *  cambia, el pseudocódigo se actualiza solo, y nunca queda un estilo distinto al que el
-   *  estudiante ve sobre su propio código. Por eso estos ejemplos evitan anidar llamadas
-   *  (mostrar(crearParrafo(...))): el traductor no persigue una frase perfecta para cada
-   *  composición, así que el ejemplo se escribe en los mismos dos pasos que cualquier
-   *  encargo real (crear, guardar en una variable, mostrar esa variable). */
-  puente?: true
   /** Nombres (clave del catálogo) de herramientas relacionadas. */
   relacionadas?: string[]
 }
@@ -151,31 +145,41 @@ export const API_DOCS: Record<string, DocHerramienta> = {
   },
 
   'si / sino': {
-    firma: 'if (condición) { … } else { … }',
+    firma: 'SI condición ENTONCES … SINO SI condición ENTONCES … SINO … FIN SI',
     descripcion:
-      'Hace algo solo cuando se cumple una condición. Con "else", hace otra cosa cuando no se cumple.',
-    puente: true,
+      'Hace algo solo cuando se cumple una condición. "SINO SI" agrega otra condición para cuando la primera no se cumplió. "SINO" (opcional, sin condición) es lo que pasa si ninguna de las anteriores se cumplió. Un solo FIN SI cierra toda la cadena, sin importar cuántos SINO SI tenga en el medio.',
     ejemplo:
-      'const temperatura = 32\nif (temperatura > 30) {\n  const p = crearParrafo("Hace calor")\n  mostrar(p)\n} else {\n  const p = crearParrafo("Está fresco")\n  mostrar(p)\n}',
+      'const temperatura = 32\nSI temperatura > 30 ENTONCES\n    const p = crearParrafo("Hace calor")\n    mostrar(p)\nSINO SI temperatura > 15 ENTONCES\n    const p = crearParrafo("Templado")\n    mostrar(p)\nSINO\n    const p = crearParrafo("Está fresco")\n    mostrar(p)\nFIN SI',
   },
 
   'condición': {
-    firma: 'if (condición) { … } else { … }',
+    firma: 'SI condición ENTONCES … SINO SI condición ENTONCES … SINO … FIN SI',
     descripcion:
-      'Hace algo solo cuando se cumple una condición. Con "else", hace otra cosa cuando no se cumple.',
-    puente: true,
+      'Hace algo solo cuando se cumple una condición. "SINO SI" agrega otra condición para cuando la primera no se cumplió. "SINO" (opcional, sin condición) es lo que pasa si ninguna de las anteriores se cumplió. Un solo FIN SI cierra toda la cadena, sin importar cuántos SINO SI tenga en el medio.',
     ejemplo:
-      'const temperatura = 32\nif (temperatura > 30) {\n  const p = crearParrafo("Hace calor")\n  mostrar(p)\n} else {\n  const p = crearParrafo("Está fresco")\n  mostrar(p)\n}',
+      'const temperatura = 32\nSI temperatura > 30 ENTONCES\n    const p = crearParrafo("Hace calor")\n    mostrar(p)\nSINO SI temperatura > 15 ENTONCES\n    const p = crearParrafo("Templado")\n    mostrar(p)\nSINO\n    const p = crearParrafo("Está fresco")\n    mostrar(p)\nFIN SI',
   },
 
   'por cada': {
-    firma: 'for (const x of lista) { … }',
+    firma: 'PARA CADA x EN lista HACER … FIN PARA',
     descripcion:
       'Repite lo mismo por cada elemento de una lista, sin importar cuántos haya. En cada vuelta, "x" es un elemento.',
-    puente: true,
     ejemplo:
-      'const frutas = ["manzana", "pera", "uva"]\nfor (const fruta of frutas) {\n  const p = crearParrafo(fruta)\n  mostrar(p)\n}',
-    relacionadas: ['crearLista()', 'crearItem()', 'agregarA()'],
+      'const frutas = ["manzana", "pera", "uva"]\nPARA CADA fruta EN frutas HACER\n    const p = crearParrafo(fruta)\n    mostrar(p)\nFIN PARA',
+    relacionadas: ['crearLista()', 'crearItem()', 'agregarA()', 'mientras'],
+  },
+
+  // Todavía no la desbloquea ningún encargo (no hay tag en ninguna sesión de
+  // HERRAMIENTAS_POR_SESION en lib/encargos.ts) — el traductor de pseudocodigoAJS.ts ya la
+  // soporta, pero se accede a esta ficha solo desde "relacionadas" de otras (por cada, si/
+  // sino), no desde un tag propio en ningún encargo.
+  'mientras': {
+    firma: 'MIENTRAS condición HACER … FIN MIENTRAS',
+    descripcion:
+      'Repite lo que pongas adentro mientras la condición sea cierta. A diferencia de "por cada", no sabés de antemano cuántas vueltas va a dar — por eso algo adentro tiene que poder volver la condición falsa, o no termina nunca.',
+    ejemplo:
+      'let intentos = 0\nMIENTRAS intentos < 3 HACER\n    const p = crearParrafo("Intento " + intentos)\n    mostrar(p)\n    intentos = intentos + 1\nFIN MIENTRAS',
+    relacionadas: ['por cada'],
   },
 
   'cadaSegundo()': {
@@ -188,11 +192,10 @@ export const API_DOCS: Record<string, DocHerramienta> = {
   },
 
   'función': {
-    firma: 'function nombre(entrada) { … }',
+    firma: 'FUNCIÓN nombre(entrada) … FIN FUNCIÓN',
     descripcion:
       'Guarda una serie de pasos con un nombre para no repetirlos. Después la "llamás" por su nombre las veces que haga falta.',
-    puente: true,
     ejemplo:
-      'function saludar(quien) {\n  const p = crearParrafo("Hola, " + quien)\n  mostrar(p)\n}\n\nsaludar("Sofía")\nsaludar("Marcos")',
+      'FUNCIÓN saludar(quien)\n    const p = crearParrafo("Hola, " + quien)\n    mostrar(p)\nFIN FUNCIÓN\n\nsaludar("Sofía")\nsaludar("Marcos")',
   },
 }

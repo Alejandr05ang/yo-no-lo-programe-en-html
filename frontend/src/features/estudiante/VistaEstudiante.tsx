@@ -436,7 +436,6 @@ function VistaEstudianteInterna() {
         )}
 
         <EditorPanel
-          numero={numero}
           archivos={[{ nombre: 'portafolio.js', soloLectura: false, contenido }, archivoDatos]}
           contenido={contenido}
           onCambio={onChangeContenido}
