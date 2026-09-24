@@ -185,3 +185,42 @@ async def test_submission_concurrency(auth_harness):
         # Verify progress attempts_count is 2
         prog = await session.scalar(select(Progress))
         assert prog.attempts_count == 2
+
+
+@pytest.mark.asyncio
+async def test_accepted_is_sticky_and_can_be_saved_without_draft_code(auth_harness):
+    """Lo que hace el frontend (VistaEstudiante): autoguardado con in_progress, y el aceptado
+    por la misma cola SIN draft_code, para no pisar un borrador más nuevo. Un autoguardado
+    posterior nunca degrada el aceptado."""
+    h = auth_harness
+    data = await setup_test_data(h)
+    url = f"/api/challenges/{data['c1']}/progress"
+
+    r = await h.client.put(
+        url, json={"draft_code": "entregado", "status": "in_progress"}, headers=bearer("student")
+    )
+    assert r.status_code == 200
+
+    # accepted exige todos los casos.
+    r = await h.client.put(
+        url, json={"status": "accepted", "cases_passed": 2, "cases_total": 3}, headers=bearer("student")
+    )
+    assert r.status_code == 422
+
+    r = await h.client.put(
+        url, json={"status": "accepted", "cases_passed": 3, "cases_total": 3}, headers=bearer("student")
+    )
+    assert r.status_code == 200
+    assert r.json()["status"] == "accepted"
+    assert r.json()["draft_code"] == "entregado", "sin draft_code, el borrador no cambia"
+    assert r.json()["accepted_at"] is not None
+
+    # Seguir editando: el autoguardado manda in_progress y el reto sigue aceptado.
+    r = await h.client.put(
+        url, json={"draft_code": "repaso", "status": "in_progress"}, headers=bearer("student")
+    )
+    assert r.status_code == 200
+    vista = (await h.client.get(url, headers=bearer("student"))).json()
+    assert vista["status"] == "accepted"
+    assert vista["draft_code"] == "repaso"
+    assert vista["cases_passed"] == 3 and vista["cases_total"] == 3

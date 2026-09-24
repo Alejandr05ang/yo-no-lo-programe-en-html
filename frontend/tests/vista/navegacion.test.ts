@@ -66,6 +66,16 @@ test('fin de día con el siguiente bloqueado o pausado: se explica, sin botón a
   await pausado.desmontar()
 })
 
+test('"Ver actividades del día" lleva al día por su CÓDIGO (Mi1), no por su etiqueta', async () => {
+  const s = new ServidorFalso()
+  const p = await abrir(s, 6)
+  await hasta(() => !!p.boton('Ver actividades del día'), 'botón del día')
+  await p.pulsar('Ver actividades del día')
+  await hasta(() => p.ubicacion() === '/sesiones/Mi1', 'va a /sesiones/Mi1')
+  assert.match(p.texto(), /Sesión Mi1/)
+  await p.desmontar()
+})
+
 test('el enlace al mapa de la nota de fin de día guarda antes de salir', async () => {
   const s = new ServidorFalso()
   const p = await abrir(s, 6)
