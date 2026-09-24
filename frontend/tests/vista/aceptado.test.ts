@@ -36,8 +36,8 @@ test('una solución correcta queda aceptada en el servidor y no se degrada al se
   await p.pulsar('Entregar a revisión')
   await hasta(() => s.progreso.get('e4')?.status === 'accepted', 'aceptado en el servidor')
   const aceptado = s.llamadas.find(esAceptado)!
-  assert.equal(aceptado.cuerpo?.cases_passed, 3)
-  assert.equal(aceptado.cuerpo?.cases_total, 3)
+  assert.equal(aceptado.cuerpo?.cases_passed, 2)
+  assert.equal(aceptado.cuerpo?.cases_total, 2)
   assert.equal(s.entregas.length, 1)
   await hasta(() => p.texto().includes('encargo aceptado'), 'se ve aceptado')
 
@@ -95,7 +95,7 @@ test('una solución incorrecta no se marca aceptada', async () => {
   const p = await abrirE4(s)
   await p.escribir(`${componerAndamiaje(4, {})}\nmostrar(crearEnlace("GitHub", "https://github.com/otra-persona"))`)
   await p.pulsar('Entregar a revisión')
-  await hasta(() => /\d \/ 3 casos/.test(p.texto()), 'resultado de la revisión')
+  await hasta(() => /\d \/ 2 casos/.test(p.texto()), 'resultado de la revisión')
   await esperar(500)
   assert.equal(s.llamadas.some(esAceptado), false)
   assert.notEqual(s.progreso.get('e4')?.status, 'accepted')

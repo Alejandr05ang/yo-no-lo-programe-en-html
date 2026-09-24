@@ -88,10 +88,6 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
 
   2: [
     {
-      descripcion: 'El título sigue estando',
-      verificar: (d) => !!d.querySelector('h1')?.textContent?.trim(),
-    },
-    {
       descripcion: 'Hay al menos dos párrafos',
       verificar: (d) => d.querySelectorAll('p').length >= 2,
     },
@@ -106,10 +102,6 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
 
   3: [
     {
-      descripcion: 'El título y los párrafos siguen estando',
-      verificar: (d) => !!d.querySelector('h1') && d.querySelectorAll('p').length >= 2,
-    },
-    {
       descripcion: 'Hay un título de sección (subtítulo)',
       verificar: (d) => !!d.querySelector('h2')?.textContent?.trim(),
     },
@@ -120,10 +112,6 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
   ],
 
   4: [
-    {
-      descripcion: 'Lo anterior sigue ahí (título, párrafos, subtítulo)',
-      verificar: (d) => !!d.querySelector('h1') && d.querySelectorAll('p').length >= 2 && !!d.querySelector('h2'),
-    },
     {
       descripcion: 'Hay un enlace por cada red que tienes cargada',
       verificar: (d, datos) => {
@@ -193,10 +181,6 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
   ],
 
   7: [
-    {
-      descripcion: 'El título sigue estando',
-      verificar: (d) => !!d.querySelector('h1')?.textContent?.trim(),
-    },
     {
       descripcion: 'Aparece un aviso de "en construcción"',
       verificar: (d) =>
@@ -274,10 +258,6 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
         const texto = d.body.textContent ?? ''
         return terminados.every((n) => contarOcurrencias(texto, n) === 1)
       },
-    },
-    {
-      descripcion: 'El título y los párrafos de antes siguen estando',
-      verificar: (d) => !!d.querySelector('h1') && d.querySelectorAll('p').length >= 2,
     },
   ],
 

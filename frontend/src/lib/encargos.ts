@@ -131,8 +131,9 @@ const BASE = 'const titulo = crearTitulo("Ana Rivas")\nmostrar(titulo)'
 const BASE_CON_PARRAFOS =
   BASE +
   '\n\nconst p1 = crearParrafo("Aprendo a construir cosas para internet.")\nmostrar(p1)\nconst p2 = crearParrafo("Este sitio lo escribí yo, línea por línea.")\nmostrar(p2)'
-// Lo que deja E3 (un subtítulo de sección). E4 lo exige en su primer caso ("lo anterior
-// sigue ahí"), así que su arranque en frío tiene que traerlo o una solución correcta falla.
+// Lo que deja E3 (un subtítulo de sección). La revisión de E4 ya no exige que siga ahí
+// (docs/decisiones.md: el portafolio es del estudiante, no se penaliza que lo modifique o
+// lo saque al personalizar) — este arranque en frío solo mantiene la continuidad del ejemplo.
 const BASE_CON_SECCION = BASE_CON_PARRAFOS + '\n\nconst seccion = crearSubtitulo("Sobre mí")\nmostrar(seccion)'
 // Fallbacks de arranque en frío para E7 y E8 (§5.2) — aproximan lo que ya tendría un
 // estudiante que aceptó los encargos anteriores, no una réplica exacta de su código.
@@ -191,7 +192,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     heredaDe: 1,
     fallbackHeredado: BASE,
     datosOverride: {},
-    totalCasos: 3,
+    totalCasos: 2,
     andamiajeNuevo:
       '// Ahora escribí dos párrafos sobre vos, debajo del título.\n' +
       '// Pista: fijate cómo armaste el título arriba (una variable + mostrar())\n' +
@@ -215,7 +216,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     heredaDe: 2,
     fallbackHeredado: BASE_CON_PARRAFOS,
     datosOverride: {},
-    totalCasos: 3,
+    totalCasos: 2,
     andamiajeNuevo:
       '// Tu página es un montón de párrafos seguidos. Cuesta saber de qué va cada parte.\n' +
       '// Agregá un título de sección (por ejemplo, "Sobre mí") para que se entienda de qué tratan tus párrafos.\n' +
@@ -244,7 +245,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     ],
     BASE_CON_SECCION,
     {},
-    3,
+    2,
     [
       'Tus redes viven en datos.redes. Cada red tiene red.nombre y red.url.',
       'Por cada red, si red.url tiene una dirección, mostrá un enlace con crearEnlace(). Las que están vacías no aparecen.',
@@ -297,7 +298,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     ],
     BASE_CON_HOBBIES,
     { sobreMi: '' }, // este encargo quiere ver el estado vacío en la preview
-    3,
+    2,
     [
       'datos.sobreMi puede venir vacío. Cuando lo esté, mostrá un aviso de "en construcción".',
       'Cuando no lo esté, mostrá el texto normal — nunca los dos a la vez.',
@@ -336,7 +337,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     ],
     BASE_CON_PARRAFOS,
     { proyectos: PROYECTOS_PORTAFOLIO },
-    4,
+    3,
     [
       'Cada proyecto en datos.proyectos tiene un campo terminado. Los que no lo tienen en true no van todavía.',
     ],

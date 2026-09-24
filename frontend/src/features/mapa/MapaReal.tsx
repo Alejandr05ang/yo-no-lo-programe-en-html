@@ -17,7 +17,7 @@ import {
   type EstadoProgreso,
   type ProgresoDia,
 } from '../../lib/estadoTaller'
-import { rutaActividad, rutaDia } from '../../lib/navegacionActividades'
+import { rutaActividad, rutaEntradaDia } from '../../lib/navegacionActividades'
 import './mapa.css'
 
 interface ChallengeTeaser {
@@ -140,7 +140,7 @@ export function MapaReal() {
         {' — '}{textoProgreso(comoDia(hoy).progress)}
       </p>
       {hoyAbierto
-        ? <Link className="btn btn-primary" to={rutaDia(hoy.code)}>
+        ? <Link className="btn btn-primary" to={rutaEntradaDia(hoy.code)}>
             {{ Entrar: 'Entrar al día de hoy', Continuar: 'Continuar con el día de hoy', Revisar: 'Revisar el día de hoy' }[accionDelDia(comoDia(hoy)) ?? 'Entrar']}
           </Link>
         : <p className="text-muted">{motivoCerrado(comoDia(hoy))}</p>}
@@ -179,7 +179,7 @@ export function MapaReal() {
             />}
           </div>}
           {accion
-            ? <Link className="btn btn-primary mapa-entrar" to={rutaDia(session.code)}>
+            ? <Link className="btn btn-primary mapa-entrar" to={rutaEntradaDia(session.code)}>
                 {accion}<span className="sr-only"> · Día {session.day_number}, {session.title}</span>
               </Link>
             : <p className="mapa-entrar mapa-entrar--bloqueado">{motivo}</p>}

@@ -98,10 +98,12 @@ test('las rutas de día usan el código público, el mismo que acepta la API', (
   }
 })
 
-test('no hay auto-avance: el editor no navega con temporizadores ni usa la etiqueta del día como código', () => {
+// El salto automático al aceptar (docs/encargos.md §5.2) SÍ existe — ver
+// tests/vista/navegacion.test.ts ("salta solo" / "no salta si el siguiente no está disponible")
+// para la prueba de comportamiento real. Lo que este test sigue prohibiendo es el otro bug de
+// esta clase: usar la ETIQUETA del día ("Día 3 — Mi1") en vez de su código como si fuera una ruta.
+test('la navegación de fin de día usa el código del día, nunca su etiqueta', () => {
   const vista = readFileSync(new URL('../src/features/estudiante/VistaEstudiante.tsx', import.meta.url), 'utf8')
-  // Cualquier temporizador (con flecha, function o referencia) que termine navegando.
-  assert.doesNotMatch(vista, /setTimeout\([\s\S]{0,200}?(irAEncargo|irADia|navigate\(|setParams\()/)
   assert.doesNotMatch(vista, /rutaDia\(diaDeEncargo/)
   assert.doesNotMatch(vista, /\/map\/sessions\/\$\{encodeURIComponent\(diaDeEncargo/)
 })

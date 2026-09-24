@@ -248,6 +248,11 @@ function VistaEstudianteInterna() {
   const [revision, setRevision] = useState<ResultadoRevision | null>(null)
   const [ejecutando, setEjecutando] = useState(false)
   const [entregando, setEntregando] = useState(false)
+  const [celebrando, setCelebrando] = useState(false)
+  // Contador (no boolean): reentregar un encargo ya aceptado sin cambiar el código debe volver
+  // a saltar (docs/encargos.md §5.2 "también si volviste a repasar... pasa al siguiente igual"),
+  // y un booleano que ya estaba en `true` no dispararía el efecto de nuevo.
+  const [entregaExitosa, setEntregaExitosa] = useState(0)
 
   // `datos` de la preview = perfil del estudiante + override del encargo (donde este necesita
   // un estado concreto). Que sea propio hace que el portafolio se sienta suyo desde E1.
@@ -590,8 +595,31 @@ function VistaEstudianteInterna() {
     if (r.casosPasados === r.casosTotales && user && clienteApi) {
       guardarAceptado(numero, { casosPasados: r.casosPasados, casosTotales: r.casosTotales })
     }
+    // El salto automático (docs/encargos.md §5.2) es un evento, no un estado: si el encargo ya
+    // estaba aceptado y se reentrega igual, tiene que volver a saltar.
+    if (sigueAqui && r.casosPasados === r.casosTotales) {
+      setEntregaExitosa((n) => n + 1)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contenido, datos, numero, clienteApi, user])
+
+  // Al pasar todos los casos: el sello "encargo aceptado" se ve un instante (con el parpadeo de
+  // pantalla completa) y la plataforma salta sola al siguiente encargo — sin botón, siempre,
+  // salvo que sea el último o el siguiente esté bloqueado (docs/encargos.md §5.2). Los valores
+  // de esUltimo/siguienteDisponible que importan son los del momento en que se dispara el
+  // efecto, no los de cuando se creó `entregar`: por eso van fuera de sus deps y se leen acá.
+  useEffect(() => {
+    if (entregaExitosa === 0) return
+    setCelebrando(true)
+    const destino = siguienteDisponible
+    const esElUltimo = esUltimo
+    const t = setTimeout(() => {
+      setCelebrando(false)
+      if (!esElUltimo && destino) void irAEncargo(destino.numero)
+    }, 900)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entregaExitosa])
 
   // Al guardar "Mis datos": refrescar la preview para que se vea el cambio de una.
   useEffect(() => {
@@ -734,6 +762,7 @@ function VistaEstudianteInterna() {
 
   return (
     <div className="ve">
+      {celebrando && <div className="ve-flash-exito" aria-hidden="true" />}
       <Nav seccion="Portafolio" dia={diaDeEncargo(numero)} iniciales="AR" activo="portafolio" />
 
       <div

@@ -9,7 +9,7 @@ import {
   textoProgreso,
   type DiaParaEstado,
 } from '../src/lib/estadoTaller.ts'
-import { posicionEnDia, rutaActividad, rutaDia } from '../src/lib/navegacionActividades.ts'
+import { posicionEnDia, rutaActividad, rutaDia, rutaEntradaDia } from '../src/lib/navegacionActividades.ts'
 
 const dia = (parcial: Partial<DiaParaEstado> & { progress?: Partial<DiaParaEstado['progress']> } = {}): DiaParaEstado => ({
   access: parcial.access ?? 'open',
@@ -131,6 +131,11 @@ test('navigation does not require the current activity to be accepted', () => {
   // La posición depende solo del orden del día, no del progreso.
   const p = posicionEnDia(MI1, 'e4')
   assert.equal(p?.siguiente?.disponible, true)
+})
+
+test('entrar a L1 (diagnóstico, sin encargos) manda a la demo; cualquier otro día, a su sesión', () => {
+  assert.equal(rutaEntradaDia('L1'), '/demo')
+  assert.equal(rutaEntradaDia('Mi1'), '/sesiones/Mi1')
 })
 
 test('a locked neighbour is reported as unavailable instead of hidden', () => {

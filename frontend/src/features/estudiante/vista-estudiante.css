@@ -703,6 +703,33 @@
   gap: var(--space-2);
 }
 
+/* Parpadeo de pantalla completa al aceptar un encargo, justo antes del salto automático al
+ * siguiente (docs/encargos.md §5.2). `pointer-events: none` porque no debe bloquear nada durante
+ * el instante en que está encima de todo. Dos pulsos en 0.9s (~2.2/s) quedan bajo el umbral de
+ * fotosensibilidad (3/s); con `prefers-reduced-motion` es un único fundido, sin parpadeo. */
+.ve-flash-exito {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  background: var(--color-accent-300);
+  animation: ve-parpadeo 0.9s ease-in-out;
+}
+@keyframes ve-parpadeo {
+  0%, 100% { opacity: 0; }
+  20%, 60% { opacity: 0.55; }
+  40%, 80% { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ve-flash-exito {
+    animation: ve-parpadeo-suave 0.9s ease-in-out;
+  }
+  @keyframes ve-parpadeo-suave {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.35; }
+  }
+}
+
 .ve-navegacion {
   display: grid;
   gap: var(--space-2);

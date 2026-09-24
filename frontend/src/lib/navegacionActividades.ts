@@ -65,6 +65,13 @@ export function rutaDia(codigo: string): string {
   return `/sesiones/${encodeURIComponent(codigo)}`
 }
 
+/** A dónde manda "Entrar" en un día, desde el mapa. L1 es el diagnóstico inicial (docs/decisiones.md
+ *  P6): el equipo del taller lo da en clase, sin encargos propios en la plataforma — entrar a su
+ *  sesión solo mostraba "sin actividades", así que en vez de eso manda a la demo interactiva. */
+export function rutaEntradaDia(codigo: string): string {
+  return codigo === 'L1' ? '/demo' : rutaDia(codigo)
+}
+
 // ── Qué sigue, según el mapa del backend ───────────────────────────────────────
 //
 // El mapa (GET /api/map) es la autoridad sobre qué días están abiertos, pausados o

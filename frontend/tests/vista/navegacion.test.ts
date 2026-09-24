@@ -7,6 +7,14 @@ import { esGuardado, esLectura, ServidorFalso } from './servidorFalso.ts'
 
 const { montar, hasta, esperar } = await import('./montar.ts')
 const { onlineManager } = await import('@tanstack/react-query')
+const { componerAndamiaje } = await import('../../src/lib/encargos.ts')
+
+const SOLUCION_E4 = `${componerAndamiaje(4, {})}
+PARA CADA red EN datos.redes HACER
+  SI red.url !== "" ENTONCES
+    mostrar(crearEnlace(red.nombre, red.url))
+  FIN SI
+FIN PARA`
 
 beforeEach(() => {
   ventana.localStorage.clear()
@@ -123,6 +131,44 @@ test('recién abierto el día siguiente, entrar a su actividad no muestra un "bl
   await hasta(() => !!p.editor() && !p.editor()!.readOnly, 'E7 se abre', 5000)
   assert.equal(p.texto().includes('todavía no está abierta'), false)
   await p.desmontar()
+})
+
+test('al aceptar con la siguiente actividad disponible, la plataforma salta sola (docs/encargos.md §5.2)', async () => {
+  const s = new ServidorFalso()
+  const p = await abrir(s, 4)
+  await p.escribir(SOLUCION_E4)
+  await p.pulsar('Entregar a revisión')
+  await hasta(() => s.progreso.get('e4')?.status === 'accepted', 'aceptado en el servidor')
+  assert.equal(p.ubicacion(), '/portafolio?e=4', 'todavía no saltó')
+  await hasta(() => p.ubicacion() === '/portafolio?e=5', 'salta solo a e5', 3000)
+  await p.desmontar()
+})
+
+test('al aceptar con la siguiente actividad cerrada por el docente, no salta: se queda en "encargo aceptado"', async () => {
+  const s = new ServidorFalso()
+  s.retosCerrados.add('e5')
+  s.retosCerrados.add('e6')
+  const p = await abrir(s, 4)
+  await p.escribir(SOLUCION_E4)
+  await p.pulsar('Entregar a revisión')
+  await hasta(() => s.progreso.get('e4')?.status === 'accepted', 'aceptado en el servidor')
+  await hasta(() => p.texto().includes('encargo aceptado'), 'se ve aceptado')
+  await esperar(1500)
+  assert.equal(p.ubicacion(), '/portafolio?e=4', 'nunca navega solo sin destino disponible')
+  await p.desmontar()
+})
+
+test('reentregar un encargo ya aceptado, sin cambiar el código, vuelve a saltar', async () => {
+  const s = new ServidorFalso()
+  const p = await abrir(s, 4)
+  await p.escribir(SOLUCION_E4)
+  await p.pulsar('Entregar a revisión')
+  await hasta(() => p.ubicacion() === '/portafolio?e=5', 'salta a e5', 3000)
+
+  const q = await abrir(s, 4)
+  await q.pulsar('Entregar a revisión')
+  await hasta(() => q.ubicacion() === '/portafolio?e=5', 'vuelve a saltar a e5', 3000)
+  await q.desmontar()
 })
 
 test('sin conexión, "Siguiente actividad" abre la siguiente con lo que haya en este equipo', async () => {

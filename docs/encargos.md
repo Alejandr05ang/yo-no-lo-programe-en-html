@@ -157,7 +157,8 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
   a los párrafos— es el primer entrenamiento real de pensamiento computacional. Regalar
   `const p1 = crearParrafo(…)` ya escrito lo convierte en copiar/pegar en piloto automático.
 - **Entrega.** Título + 2 o más párrafos propios.
-- **Tests ocultos.** ≥2 párrafos · texto no vacío · el título de E1 sigue presente (acumulativo).
+- **Tests ocultos.** ≥2 párrafos · texto no vacío. No se exige que el título de E1 siga igual: el
+  portafolio es del estudiante y puede reescribirlo al personalizar (`docs/decisiones.md`).
 - **Concepto.** Repetir una acción a mano; variables distintas para cosas distintas.
 
 ### E3 — "Dale forma con secciones" · Ma1 · secciones · N2 · capa 1
@@ -173,8 +174,9 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
   // Poné un título de sección ("Sobre mí") ANTES de tus párrafos.
   // Pista: crearSubtitulo() funciona igual que crearParrafo(), pero hace un título más chico.
   ```
-- **Entrega.** Un subtítulo de sección antes de los párrafos; el título y los párrafos siguen.
-- **Tests ocultos.** Hay un `h2` con texto · el `h2` viene antes de los `p` · el contenido de E1–E2 sigue.
+- **Entrega.** Un subtítulo de sección antes de los párrafos.
+- **Tests ocultos.** Hay un `h2` con texto · el `h2` viene antes de los `p`. No se exige que el
+  contenido de E1–E2 siga igual: el estudiante puede modificarlo al personalizar.
 - **Concepto.** Un segundo nivel de encabezado; empezar a estructurar la página, no solo llenarla.
   Es el paso previo a mover cosas por el espacio, cuadrículas y color (más adelante, fuera de este taller).
 

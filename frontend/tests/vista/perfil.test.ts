@@ -68,7 +68,7 @@ PARA CADA red EN datos.redes HACER
 FIN PARA`)
   await p.pulsar('Entregar a revisión')
   await hasta(() => s.progreso.get('e4')?.status === 'accepted', 'E4 aceptado')
-  assert.match(p.texto(), /3 \/ 3 casos/)
+  assert.match(p.texto(), /2 \/ 2 casos/)
   // Y en la vista previa (al ejecutar) los enlaces llevan fuera de la plataforma.
   const vista = () => p.contenedor.querySelector('iframe.pv-marco')?.getAttribute('srcdoc') ?? ''
   await p.pulsar('Ejecutar')
