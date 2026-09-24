@@ -341,6 +341,19 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
   ],
 }
 
+/**
+ * Datos con los que se revisa ADEMÁS un encargo cuando los del estudiante no bastan para
+ * distinguir una solución de verdad. E6 sin hobbies (el caso de quien todavía no llenó "Mis
+ * datos"): cualquier lista vacía —incluso sin recorrer nada— pasaba los tres casos.
+ */
+const HOBBIES_DE_PRUEBA = ['Ajedrez', 'Fútbol', 'Música']
+const DATOS_EXTRA: Partial<Record<number, { datos: (d: DatosLike) => DatosLike | null; nota: string }>> = {
+  6: {
+    datos: (d) => (comoLista(d.hobbies).length === 0 ? { ...d, hobbies: HOBBIES_DE_PRUEBA } : null),
+    nota: `Como todavía no tienes hobbies en "Mis datos", tu código también se probó con tres de ejemplo (${HOBBIES_DE_PRUEBA.join(', ')}).`,
+  },
+}
+
 export async function revisarLocalmente(
   numeroEncargo: number,
   codigo: string,
@@ -370,19 +383,28 @@ export async function revisarLocalmente(
   )
 
   const datosObj = comoObjeto(datos)
+  // Con `overrideHtml` (quien llama ya ejecutó el código) no se puede volver a ejecutar.
+  const extra = overrideHtml === undefined ? DATOS_EXTRA[numeroEncargo] : undefined
+  const datosExtra = extra?.datos(datosObj) ?? null
+  const docExtra = r.ok && datosExtra
+    ? await ejecutarPreview(codigo, datosExtra).then((r2) => new DOMParser().parseFromString(`<body>${r2.ok ? r2.html : ''}</body>`, 'text/html'))
+    : null
+  const pasa = (c: CasoLocal) =>
+    r.ok && safe(() => c.verificar(doc, datosObj)) && (!datosExtra || (!!docExtra && safe(() => c.verificar(docExtra, datosExtra))))
   const evaluados = casos.map((c) => ({
     descripcion: c.descripcion,
-    estado: (r.ok && safe(() => c.verificar(doc, datosObj)) ? 'pasa' : 'falla') as 'pasa' | 'falla',
+    estado: (pasa(c) ? 'pasa' : 'falla') as 'pasa' | 'falla',
   }))
   const pasados = evaluados.filter((c) => c.estado === 'pasa').length
 
+  const nota = r.ok
+    ? 'Esta revisión mira el resultado visible al ejecutar. Ningún caso te dice cómo arreglarlo.'
+    : `El código no llegó a ejecutarse: ${r.error?.mensaje ?? 'error'}.`
   return {
     casos: evaluados,
     casosPasados: pasados,
     casosTotales: evaluados.length,
-    nota: r.ok
-      ? 'Esta revisión mira el resultado visible al ejecutar. Ningún caso te dice cómo arreglarlo.'
-      : `El código no llegó a ejecutarse: ${r.error?.mensaje ?? 'error'}.`,
+    nota: datosExtra && extra ? `${nota} ${extra.nota}` : nota,
   }
 }
 

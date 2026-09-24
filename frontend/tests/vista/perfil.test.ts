@@ -100,6 +100,19 @@ mostrar(lista)`
   }
 })
 
+test('E6 sin hobbies guardados no se acepta sin recorrer la lista: se prueba también con hobbies de ejemplo', async () => {
+  const s = new ServidorFalso() // perfil sin hobbies: lo normal si nunca se abrió "Mis datos"
+  const p = await montar(s, '/portafolio?e=6')
+  await hasta(() => !!p.editor() && !p.editor()!.readOnly, 'carga e6')
+  const base = p.editor()!.value
+  await p.escribir(`${base}\nvaciar(lista)`) // deja la lista vacía, sin PARA CADA
+  await p.pulsar('Entregar a revisión')
+  await hasta(() => /\d \/ 3 casos/.test(p.texto()), 'resultado')
+  assert.notEqual(s.progreso.get('e6')?.status, 'accepted')
+  assert.match(p.texto(), /también se probó con tres de ejemplo/)
+  await p.desmontar()
+})
+
 test('los datos de "Mis datos" guardados en el navegador de antes no pisan el nombre real ni meten datos de ejemplo', async () => {
   // Formulario viejo (localStorage 've:perfil'): empezaba con los datos de ejemplo de Ana Rivas
   // y el estudiante solo cambió sus hobbies y escribió su GitHub sin https.
