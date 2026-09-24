@@ -144,6 +144,12 @@ test('redes: LinkedIn vacío en el perfil también es válido', async () => {
   assert.deepEqual(enlaces(html).map((e) => e.texto), ['GitHub', 'Correo'])
 })
 
+test('redes: un correo con "%" también cuenta: normalizar dos veces da el mismo enlace', async () => {
+  const datos = perfilComoDatos(perfilDesdeBackend({ ...USUARIO, email: 'ana%x@ejemplo.com' }))
+  const { revision } = await revisarE4(datos)
+  assert.equal(revision.casosPasados, revision.casosTotales, JSON.stringify(revision.casos))
+})
+
 test('redes: una dirección sin esquema en datos cuenta como la misma que su enlace normalizado', async () => {
   const datos = { ...perfilComoDatos(perfilDesdeBackend(USUARIO)), redes: [{ nombre: 'Blog', url: 'miblog.com' }] }
   const { revision } = await revisarE4(datos)

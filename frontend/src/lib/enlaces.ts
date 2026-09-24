@@ -49,7 +49,13 @@ export function normalizarEnlace(valor: unknown): string | null {
   if (texto.startsWith('//')) return normalizarEnlace(`https:${texto}`)
 
   const esquema = ESQUEMA.exec(texto)?.[1].toLowerCase()
-  if (esquema === 'https' || esquema === 'http') return urlValida(texto) ? texto : null
+  if (esquema === 'https' || esquema === 'http') {
+    if (!urlValida(texto)) return null
+    // "https:/wikipedia.com", "https:wikipedia.com" o "https:\wikipedia.com" (una barra de
+    // menos, o invertida): el navegador los resuelve RELATIVOS a la página donde están y
+    // llevaban otra vez a la plataforma. Se devuelven en su forma completa.
+    return /^https?:\/\//i.test(texto) ? texto : new URL(texto).href
+  }
   if (esquema === 'mailto') {
     const destinatario = texto.slice('mailto:'.length).split('?')[0]
     let decodificado: string
@@ -62,7 +68,9 @@ export function normalizarEnlace(valor: unknown): string | null {
   }
   if (esquema) return null
 
-  if (EMAIL.test(texto)) return `mailto:${texto}`
+  // Un "%" en la dirección se escribe %25 dentro del mailto: así el mailto se lee de vuelta
+  // como la misma dirección y normalizar dos veces da lo mismo (la revisión lo hace).
+  if (EMAIL.test(texto)) return `mailto:${texto.replace(/%/g, '%25')}`
   return null
 }
 
@@ -85,8 +93,11 @@ export function normalizarUrlDePerfil(valor: string): string | null {
   const url = new URL(destino)
   url.protocol = 'https:'
   if (['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) return null
-  // Sin usuario/contraseña ni fragmento: el backend los rechaza.
-  if (url.username || url.password || url.hash) return null
+  // Sin usuario ni contraseña: el backend los rechaza.
+  if (url.username || url.password) return null
+  // El fragmento (#readme) también lo rechaza el backend, pero es la misma página: se quita
+  // en vez de pedirle al estudiante "una dirección web" que ya escribió.
+  url.hash = ''
   return url.toString()
 }
 
