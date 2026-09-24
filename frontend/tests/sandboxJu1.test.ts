@@ -103,6 +103,56 @@ test('un error en el main se reporta con portafolio.js', async () => {
   assert.equal(r.archivo, 'portafolio.js')
 })
 
+test('cambiarColorFondo(color) desde una sección pinta ESA sección, no toda la página', async () => {
+  const doc0 = crearDocumentoJu1Inicial()
+  const encabezado = crearSeccion(doc0, 0, 0, 0, 0, 'Encabezado')
+  assert.equal(encabezado.ok, true)
+  if (!encabezado.ok) return
+  let d = { ...encabezado.valor, estructura: agregarColumna(encabezado.valor.estructura) } // 1x2
+  const pie = crearSeccion(d, 0, 1, 0, 1, 'Pie')
+  assert.equal(pie.ok, true)
+  if (!pie.ok) return
+  d = pie.valor
+
+  const documento: DocumentoJu1 = {
+    ...d,
+    secciones: [
+      { nombre: 'encabezado', contenido: 'cambiarColorFondo("#eef1e6")\nmostrar(crearTitulo("hola"))' },
+      { nombre: 'pie', contenido: 'mostrar(crearParrafo("pie"))' },
+    ],
+    main: 'mostrar(encabezado)\nmostrar(pie)',
+  }
+  const r = await ejecutarJu1Real(documento, {})
+  assert.equal(r.ok, true, r.error)
+  const html = doc(r.html)
+  // Sin <style> de por medio: el fondo quedó puesto directo en el div de ESA sección.
+  assert.equal(html.querySelector('style'), null)
+  const pintados = [...html.querySelectorAll('div')].filter((d) => (d as HTMLElement).style.backgroundColor !== '') as HTMLElement[]
+  assert.equal(pintados.length, 1, 'solo un div quedó pintado — el pie no se contagió')
+  assert.equal(pintados[0].style.backgroundColor, 'rgb(238, 241, 230)')
+  assert.ok(pintados[0].textContent?.includes('hola'), 'el div pintado es el del encabezado, no el del pie')
+})
+
+test('cambiarColorFondo(color) desde el main pinta toda la página compuesta', async () => {
+  const doc0 = crearDocumentoJu1Inicial()
+  const a = crearSeccion(doc0, 0, 0, 0, 0, 'Encabezado')
+  assert.equal(a.ok, true)
+  if (!a.ok) return
+  const documento: DocumentoJu1 = {
+    ...a.valor,
+    secciones: [{ nombre: 'encabezado', contenido: 'mostrar(crearTitulo("hola"))' }],
+    main: 'cambiarColorFondo("#f2ece0")\nmostrar(encabezado)',
+  }
+  const r = await ejecutarJu1Real(documento, {})
+  assert.equal(r.ok, true, r.error)
+  const html = doc(r.html)
+  assert.equal(html.querySelector('style'), null)
+  // El contenedor grid (el primer div, el que envuelve todas las secciones) es "pagina" en el
+  // main — ahí es donde queda el fondo con un solo argumento.
+  const grid = html.querySelector('body > div') as HTMLElement
+  assert.equal(grid.style.backgroundColor, 'rgb(242, 236, 224)')
+})
+
 test('una sección con crearSeccion() adentro puede subdividirse a sí misma', async () => {
   const doc0 = crearDocumentoJu1Inicial()
   const a = crearSeccion(doc0, 0, 0, 0, 0, 'Cuerpo')

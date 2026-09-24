@@ -30,6 +30,7 @@ import {
   crearSeccion,
   eliminarColumna,
   eliminarFila,
+  extenderSeccion,
   parsearDocumentoJu1,
   separarCeldaDelDocumento,
   serializarDocumentoJu1,
@@ -139,6 +140,9 @@ function VistaEstudianteInterna() {
 
   const [encargoAbierto, setEncargoAbierto] = useState(leerEncargoAbierto)
   const [editorAbierto, setEditorAbierto] = useState(true)
+  // Independiente de editorAbierto: la cuadrícula (Ju1) puede colapsarse sola para hacerle
+  // lugar al código sin cerrar el editor entero.
+  const [estructuraAbierta, setEstructuraAbierta] = useState(true)
   const [previewExpandido, setPreviewExpandido] = useState(false)
   const [misDatosAbierto, setMisDatosAbierto] = useState(false)
   const gridRef = useRef<HTMLDivElement>(null)
@@ -898,11 +902,20 @@ function VistaEstudianteInterna() {
                 setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
                 return null
               }}
+              onExtenderSeccion={(celdaId, fi, ci, ff, cf) => {
+                const r = extenderSeccion(documento, celdaId, fi, ci, ff, cf)
+                if (!r.ok) return r.error
+                setContenido(serializarDocumentoJu1(r.valor))
+                setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
+                return null
+              }}
               onSepararCelda={(celdaId) => {
                 setContenido(serializarDocumentoJu1(separarCeldaDelDocumento(documento, celdaId)))
                 setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
               }}
               onAbrirSeccion={(nombre) => setArchivoSolicitado({ nombre: `seccion-${nombre}.js`, token: Date.now() })}
+              abierto={estructuraAbierta}
+              onToggle={() => setEstructuraAbierta((v) => !v)}
             />
           )}
           <EditorPanel

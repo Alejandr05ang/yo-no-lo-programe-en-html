@@ -257,10 +257,10 @@ export const API_DOCS: Record<string, DocHerramienta> = {
   'cambiarColorFondo()': {
     firma: 'cambiarColorFondo(color) — o cambiarColorFondo(elemento, color)',
     descripcion:
-      'Con un solo color, cambia el fondo de TODA la página. Pasándole un elemento antes del color (un título, una sección con crearSeccion()…), cambia el fondo de ESE elemento nada más. El color se escribe como en CSS, igual que en cambiarColorTexto().',
+      'Con un solo color, pinta el fondo de tu pestaña actual entera: la sección donde estás escribiendo, o toda la página si estás en portafolio.js. Pasándole un elemento antes del color (un título, un párrafo, una sub-sección con crearSeccion()…), pinta SOLO ese elemento, sin tocar el resto. El color se escribe como en CSS, igual que en cambiarColorTexto().',
     devuelve: 'con elemento: el mismo elemento, ya con el fondo puesto. Sin elemento: nada.',
     ejemplo:
-      'cambiarColorFondo("#f2ece0")\n\nconst recuadro = crearSeccion("cuerpo")\nmostrar(recuadro)\ncambiarColorFondo(recuadro, "#eef1e6")',
+      'cambiarColorFondo("#eef1e6") // pinta toda esta sección\n\nconst aviso = crearParrafo("¡Nuevo!")\nmostrar(aviso)\ncambiarColorFondo(aviso, "#f2ece0") // pinta solo este párrafo',
     relacionadas: ['cambiarColorTexto()', 'crearSeccion()'],
     previsualizacion:
       '<div style="width:100%;height:28px;border-radius:6px;border:1px solid #cfc6b8;background:#f2ece0"></div>',

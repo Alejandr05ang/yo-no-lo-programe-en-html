@@ -119,17 +119,25 @@ const RUNTIME = String.raw`
     elemento.style.textAlign = __ALINEACIONES[alineacion] || __ALINEACIONES.izquierda;
     return elemento;
   }
-  // Un solo argumento (color): fondo de TODA la página. Con dos (elemento, color): fondo de
-  // ESE elemento nada más — mismo truco de "según cuántos argumentos llegan" que cadaSegundo().
-  // El de toda la página no puede ir en document.documentElement.style como antes: esto es un
-  // ENSAYO que se descarta apenas termina de correr (ver ejecutarPreview más abajo), y de acá
-  // solo sobrevive el innerHTML de #__raiz — cualquier cambio fuera de esa rama se perdía sin
-  // que ni el estudiante ni la vista previa lo vieran nunca. Un <style> DENTRO de #__raiz sí
-  // viaja con ese innerHTML, así que el color llega también a la vista previa y al portafolio
-  // publicado (documentoPortafolio la vuelve a incluir en el <body>, donde un <style> aplica
-  // igual que en el <head>).
+  // Con dos argumentos (elemento, color): fondo de ESE elemento nada más — sin sorpresas, un
+  // estilo puesto directo. Con uno solo, pinta "pagina" — la que esté puesta AHORA, así que el
+  // resultado depende de dónde se llama, no es siempre "toda la página":
+  // - En una sección de Ju1 (o en el main), "pagina" YA es un contenedor propio (nunca la raíz
+  //   compartida — ver construirSrcdocJu1) y termina siendo un descendiente normal de #__raiz,
+  //   así que ponerle el fondo directo alcanza y sobrevive: pinta ESA pestaña nada más — la
+  //   sección donde se llama, o toda la página compuesta si se llama desde portafolio.js.
+  // - En un encargo de un solo archivo (o una pestaña de prueba), "pagina" ES #__raiz, y de acá
+  //   solo sobrevive su innerHTML cuando termina de correr (ver ejecutarPreview más abajo) — un
+  //   fondo puesto directo en la raíz se perdía sin que nadie lo viera nunca. Un <style> CON
+  //   variable :root, escrito como hijo DENTRO de #__raiz, sí viaja con ese innerHTML (y de ahí
+  //   sale la única lectura de --color-fondo, en el body de andamiajeEstilos.ts), así que el
+  //   color llega también a la vista previa y al portafolio publicado.
   function cambiarColorFondo(elementoOColor, color) {
     if (color === undefined) {
+      if (pagina !== document.getElementById('__raiz')) {
+        pagina.style.backgroundColor = String(elementoOColor);
+        return;
+      }
       let estilo = document.getElementById('__fondo_pagina');
       if (!estilo) {
         estilo = document.createElement('style');

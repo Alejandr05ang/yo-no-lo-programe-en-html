@@ -10,6 +10,7 @@ import {
   eliminarColumna,
   eliminarFila,
   etiquetarCelda,
+  extenderSeccion,
   parsearDocumentoJu1,
   sanearNombreDeSeccion,
   separarCelda,
@@ -210,6 +211,54 @@ test('crearSeccion: una selección inválida no cambia nada y avisa por qué', (
   if (!combinado.ok) return
   const invalido = crearSeccion(combinado.valor, 0, 0, 0, 1, 'Otra') // corta la sección anterior
   assert.equal(invalido.ok, false)
+})
+
+test('extenderSeccion: agranda una sección ya nombrada SIN tocar su contenido', () => {
+  let doc = crearDocumentoJu1Inicial()
+  doc = { ...doc, estructura: agregarColumna(doc.estructura) } // 1x2
+  const celdaId = doc.estructura.celdas[0].id
+  doc = etiquetarCelda(doc, celdaId, 'Encabezado')
+  doc = { ...doc, secciones: doc.secciones.map((s) => ({ ...s, contenido: 'mostrar(crearTitulo("hola"))' })) }
+
+  const r = extenderSeccion(doc, celdaId, 0, 0, 0, 1) // agrandarla para que ocupe también la columna 1
+  assert.equal(r.ok, true)
+  if (!r.ok) return
+  assert.equal(r.valor.estructura.celdas.length, 1)
+  assert.equal(r.valor.estructura.celdas[0].expandeColumnas, 2)
+  assert.equal(r.valor.estructura.celdas[0].seccion, 'encabezado')
+  // El contenido de la sección sigue siendo el mismo — no se creó ni se borró nada en secciones.
+  assert.deepEqual(r.valor.secciones, [{ nombre: 'encabezado', contenido: 'mostrar(crearTitulo("hola"))' }])
+})
+
+test('extenderSeccion: rechaza juntar dos secciones ya nombradas y distintas', () => {
+  let doc = crearDocumentoJu1Inicial()
+  doc = { ...doc, estructura: agregarColumna(doc.estructura) } // 1x2
+  const [a, b] = doc.estructura.celdas
+  doc = etiquetarCelda(doc, a.id, 'Encabezado')
+  doc = etiquetarCelda(doc, b.id, 'Pie')
+  const r = extenderSeccion(doc, a.id, 0, 0, 0, 1)
+  assert.equal(r.ok, false)
+})
+
+test('extenderSeccion: rechaza una selección que corta otra celda combinada a la mitad', () => {
+  let doc = crearDocumentoJu1Inicial()
+  doc = { ...doc, estructura: agregarColumna(doc.estructura) }
+  doc = { ...doc, estructura: agregarColumna(doc.estructura) } // 1x3
+  const combinada = combinarCeldas(doc.estructura, 0, 1, 0, 2) // combina las columnas 1-2 en una
+  assert.equal(combinada.ok, true)
+  if (!combinada.ok) return
+  doc = { ...doc, estructura: combinada.valor }
+  const celdaOrigen = doc.estructura.celdas.find((c) => c.columna === 0)!
+  doc = etiquetarCelda(doc, celdaOrigen.id, 'Angosta')
+  // Pedir agrandarla hasta la columna 1 nada más corta a la mitad la celda de columnas 1-2.
+  const r = extenderSeccion(doc, celdaOrigen.id, 0, 0, 0, 1)
+  assert.equal(r.ok, false)
+})
+
+test('extenderSeccion: una celdaId que ya no existe se rechaza en vez de romper', () => {
+  const doc = crearDocumentoJu1Inicial()
+  const r = extenderSeccion(doc, 'no-existe', 0, 0, 0, 0)
+  assert.equal(r.ok, false)
 })
 
 test('parsearDocumentoJu1: un borrador viejo (texto plano, de antes de este cambio) se migra sin perderlo', () => {

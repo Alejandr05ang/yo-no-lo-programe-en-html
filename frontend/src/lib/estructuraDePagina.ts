@@ -62,9 +62,55 @@ export function eliminarColumna(estructura: EstructuraDePagina): Resultado<Estru
   }
 }
 
+/** Las celdas que ocupan el rectángulo (filaMin..filaMax, columnaMin..columnaMax) — cada una
+ *  ENTERA adentro, nunca una que se salga (eso es lo que corta una sección ya combinada más
+ *  grande que la selección). Lo comparten combinarCeldas() y extenderSeccion(): la única
+ *  diferencia entre "crear una sección nueva" y "agrandar una que ya existe" es qué celdas con
+ *  `seccion` ya puesto se aceptan, no cómo se valida el rectángulo en sí. */
+function celdasDelRectangulo(
+  estructura: EstructuraDePagina,
+  filaMin: number,
+  filaMax: number,
+  columnaMin: number,
+  columnaMax: number,
+): Resultado<Celda[]> {
+  const cubiertas: Celda[] = []
+  for (const c of estructura.celdas) {
+    const cFilaMax = c.fila + c.expandeFilas - 1
+    const cColumnaMax = c.columna + c.expandeColumnas - 1
+    const seSuperpone = c.fila <= filaMax && cFilaMax >= filaMin && c.columna <= columnaMax && cColumnaMax >= columnaMin
+    if (!seSuperpone) continue
+    const contenidaDelTodo = c.fila >= filaMin && cFilaMax <= filaMax && c.columna >= columnaMin && cColumnaMax <= columnaMax
+    if (!contenidaDelTodo) {
+      return { ok: false, error: 'La selección corta una sección ya combinada — elegí un rectángulo completo.' }
+    }
+    cubiertas.push(c)
+  }
+  // Defensivo: por el invariante del módulo esto siempre debería dar exacto, sin huecos.
+  const areaSeleccion = (filaMax - filaMin + 1) * (columnaMax - columnaMin + 1)
+  const areaCubierta = cubiertas.reduce((total, c) => total + c.expandeFilas * c.expandeColumnas, 0)
+  if (areaCubierta !== areaSeleccion) {
+    return { ok: false, error: 'La selección no forma un rectángulo completo.' }
+  }
+  return { ok: true, valor: cubiertas }
+}
+
+function celdaCombinada(filaMin: number, columnaMin: number, filaMax: number, columnaMax: number, seccion: string | null): Celda {
+  return {
+    id: nuevoId(),
+    fila: filaMin,
+    columna: columnaMin,
+    expandeFilas: filaMax - filaMin + 1,
+    expandeColumnas: columnaMax - columnaMin + 1,
+    seccion,
+  }
+}
+
 /** Combina el rectángulo entre (filaInicio, columnaInicio) y (filaFin, columnaFin), inclusive,
- *  en una sola celda — como "combinar celdas" en una planilla: rechaza cualquier selección que
- *  no sea un rectángulo completo, así nunca se llega a una cuadrícula inválida. */
+ *  en una sola celda VACÍA — como "combinar celdas" en una planilla: rechaza cualquier
+ *  selección que no sea un rectángulo completo, así nunca se llega a una cuadrícula inválida.
+ *  Si alguna celda de la selección ya tiene sección, rechaza (para eso está extenderSeccion:
+ *  agrandar una sección ya nombrada es un caso distinto de crear una nueva). */
 export function combinarCeldas(
   estructura: EstructuraDePagina,
   filaInicio: number,
@@ -81,41 +127,54 @@ export function combinarCeldas(
     return { ok: false, error: 'Seleccioná más de una celda para combinar.' }
   }
 
-  const cubiertas: Celda[] = []
-  for (const c of estructura.celdas) {
-    const cFilaMax = c.fila + c.expandeFilas - 1
-    const cColumnaMax = c.columna + c.expandeColumnas - 1
-    const seSuperpone = c.fila <= filaMax && cFilaMax >= filaMin && c.columna <= columnaMax && cColumnaMax >= columnaMin
-    if (!seSuperpone) continue
-    const contenidaDelTodo = c.fila >= filaMin && cFilaMax <= filaMax && c.columna >= columnaMin && cColumnaMax <= columnaMax
-    if (!contenidaDelTodo) {
-      return { ok: false, error: 'La selección corta una sección ya combinada — elegí un rectángulo completo.' }
-    }
-    if (c.seccion !== null) {
-      return { ok: false, error: 'Separá primero las secciones ya nombradas antes de combinarlas de nuevo.' }
-    }
-    cubiertas.push(c)
+  const r = celdasDelRectangulo(estructura, filaMin, filaMax, columnaMin, columnaMax)
+  if (!r.ok) return r
+  if (r.valor.some((c) => c.seccion !== null)) {
+    return { ok: false, error: 'Separá primero las secciones ya nombradas antes de combinarlas de nuevo.' }
   }
 
-  // Defensivo: por el invariante del módulo esto siempre debería dar exacto, sin huecos.
-  const areaSeleccion = (filaMax - filaMin + 1) * (columnaMax - columnaMin + 1)
-  const areaCubierta = cubiertas.reduce((total, c) => total + c.expandeFilas * c.expandeColumnas, 0)
-  if (areaCubierta !== areaSeleccion) {
-    return { ok: false, error: 'La selección no forma un rectángulo completo.' }
-  }
-
-  const idsCubiertas = new Set(cubiertas.map((c) => c.id))
-  const combinada: Celda = {
-    id: nuevoId(),
-    fila: filaMin,
-    columna: columnaMin,
-    expandeFilas: filaMax - filaMin + 1,
-    expandeColumnas: columnaMax - columnaMin + 1,
-    seccion: null,
-  }
+  const idsCubiertas = new Set(r.valor.map((c) => c.id))
+  const combinada = celdaCombinada(filaMin, columnaMin, filaMax, columnaMax, null)
   return {
     ok: true,
     valor: { ...estructura, celdas: [...estructura.celdas.filter((c) => !idsCubiertas.has(c.id)), combinada] },
+  }
+}
+
+/** Agranda una sección YA nombrada (`celdaId`) para que también ocupe el resto del rectángulo —
+ *  a diferencia de combinarCeldas()/crearSeccion(), conserva el nombre de la sección (y por lo
+ *  tanto su pestaña y su código) tal cual: no hace falta separar y volver a escribir nada para
+ *  agrandar algo que ya se armó, solo para cambiarle la forma desde cero. */
+export function extenderSeccion(
+  doc: DocumentoJu1,
+  celdaId: string,
+  filaInicio: number,
+  columnaInicio: number,
+  filaFin: number,
+  columnaFin: number,
+): Resultado<DocumentoJu1> {
+  const celda = doc.estructura.celdas.find((c) => c.id === celdaId)
+  if (!celda || celda.seccion === null) return { ok: false, error: 'Esa sección ya no existe.' }
+
+  const filaMin = Math.min(filaInicio, filaFin)
+  const filaMax = Math.max(filaInicio, filaFin)
+  const columnaMin = Math.min(columnaInicio, columnaFin)
+  const columnaMax = Math.max(columnaInicio, columnaFin)
+
+  const r = celdasDelRectangulo(doc.estructura, filaMin, filaMax, columnaMin, columnaMax)
+  if (!r.ok) return r
+  if (r.valor.some((c) => c.id !== celdaId && c.seccion !== null)) {
+    return { ok: false, error: 'No se pueden juntar dos secciones ya nombradas — separá una primero.' }
+  }
+
+  const idsCubiertas = new Set(r.valor.map((c) => c.id))
+  const combinada = celdaCombinada(filaMin, columnaMin, filaMax, columnaMax, celda.seccion)
+  return {
+    ok: true,
+    valor: {
+      ...doc,
+      estructura: { ...doc.estructura, celdas: [...doc.estructura.celdas.filter((c) => !idsCubiertas.has(c.id)), combinada] },
+    },
   }
 }
 

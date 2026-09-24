@@ -9,6 +9,58 @@
   background: #191816;
   border: 1px solid #2d2b2b;
   border-radius: var(--radius-lg);
+  /* Sin esto, un contenido más ancho que la columna (muchas columnas en la cuadrícula) no se
+     achica: empuja todo lo de al lado en vez de scrollear adentro (mismo motivo por el que
+     .ve-col-editor-conjunto también lo necesita). */
+  min-width: 0;
+}
+
+.ee-cab {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+.ee-cab-titulo {
+  font: 11px/1 ui-monospace, Menlo, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #605d5d;
+}
+.ee-colapsar {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  line-height: 1;
+  color: #9b9797;
+  background: transparent;
+  border: 1px solid #2d2b2b;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.ee-colapsar:hover {
+  color: var(--color-accent-300);
+  border-color: var(--color-accent-400);
+}
+
+/* Colapsada: una barra angosta, para devolverle el espacio al editor de código de abajo sin
+   perder de vista que la cuadrícula sigue ahí (y cuántas secciones ya tiene). */
+.ee-rail {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 6px var(--space-3);
+  background: #191816;
+  border: 1px solid #2d2b2b;
+  border-radius: var(--radius-lg);
+}
+.ee-rail-label {
+  font: 11px/1 ui-monospace, Menlo, monospace;
+  color: #605d5d;
 }
 
 .ee-acciones {
@@ -39,10 +91,26 @@
   border-color: var(--color-accent-300);
 }
 
+.ee-ayuda {
+  margin: 0;
+  font: 11px/1.4 ui-monospace, Menlo, monospace;
+  color: #605d5d;
+}
+
 .ee-grid {
   display: grid;
   gap: 6px;
   min-height: 160px;
+  min-width: 0;
+  /* Muchas filas o columnas scrollean ACÁ ADENTRO en vez de empujar el editor de código (abajo)
+     fuera de la pantalla, o de desbordarse sobre la vista previa (al lado): un techo de altura
+     y ancho, con scroll propio — la cuadrícula nunca le saca espacio a nada más. */
+  max-height: 38vh;
+  max-width: 100%;
+  overflow: auto;
+  /* Arrastrar sobre los botones de las celdas no debe seleccionar su texto como si fuera una
+     página normal — se siente como un bug de arrastre, no como una selección de texto. */
+  user-select: none;
 }
 
 .ee-celda-envoltorio {
