@@ -39,19 +39,18 @@ test('dentro de la vista previa, un clic en un enlace avisa al padre en vez de n
   vista.window.close()
 })
 
-function Marco({ onRef }: { onRef: (el: HTMLIFrameElement | null) => void }) {
+function Marco() {
   const ref = useRef<HTMLIFrameElement>(null)
   useAbrirEnlaces(ref)
-  return createElement('iframe', { ref: (el: HTMLIFrameElement | null) => { ref.current = el; onRef(el) } })
+  return createElement('iframe', { ref })
 }
 
 async function montarMarco() {
-  let marco: HTMLIFrameElement | null = null
   const contenedor = document.createElement('div')
   document.body.appendChild(contenedor)
   const raiz = createRoot(contenedor)
-  await act(async () => { raiz.render(createElement(Marco, { onRef: (el) => { marco = el } })) })
-  return { marco: marco!, desmontar: () => act(() => raiz.unmount()) }
+  await act(async () => { raiz.render(createElement(Marco)) })
+  return { marco: contenedor.querySelector('iframe')!, desmontar: () => act(() => raiz.unmount()) }
 }
 
 function avisar(source: unknown, data: unknown) {

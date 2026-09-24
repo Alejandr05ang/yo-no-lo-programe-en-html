@@ -105,3 +105,11 @@ test('no hay auto-avance: el editor no navega con temporizadores ni usa la etiqu
   assert.doesNotMatch(vista, /rutaDia\(diaDeEncargo/)
   assert.doesNotMatch(vista, /\/map\/sessions\/\$\{encodeURIComponent\(diaDeEncargo/)
 })
+
+test('"Anterior" lleva a la anterior que se puede abrir: salta las cerradas y lo que no es un encargo', () => {
+  const dias = mapa({ L1: 'open', Ma1: 'open', Mi1: 'open' })
+  dias[2].challenges = [reto(4), { key: 'p1', title: 'Platino', unlocked: true, progress_status: 'not_started' }, reto(5, false), reto(6)]
+  assert.equal(posicionEnDia(dias[2].challenges, 'e6')?.anterior?.numero, 4)
+  dias[2].challenges[0].unlocked = false
+  assert.equal(posicionEnDia(dias[2].challenges, 'e6')?.anterior, null)
+})

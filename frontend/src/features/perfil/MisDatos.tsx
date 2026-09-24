@@ -52,9 +52,11 @@ export function MisDatos({ perfil, onGuardar, onCerrar }: Props) {
     return () => previo?.focus()
   }, [])
   const guardandoRef = useRef(guardando)
-  guardandoRef.current = guardando
   const onCerrarRef = useRef(onCerrar)
-  onCerrarRef.current = onCerrar
+  useEffect(() => {
+    guardandoRef.current = guardando
+    onCerrarRef.current = onCerrar
+  })
   useEffect(() => {
     const teclas = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !guardandoRef.current) onCerrarRef.current()

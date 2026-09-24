@@ -19,7 +19,7 @@ import {
 import { ApiError } from '../../lib/http'
 import { clavePendiente, crearColaDeGuardado, elegirBorrador, sePuedeGuardar } from '../../lib/colaGuardado'
 import { datosComoTexto, pareceContenidoDeDatos, portafolioEjemplo } from '../../lib/mockEncargo'
-import { GuardadoSinRefrescar, leerPerfilLegado, olvidarPerfilLegado, perfilComoDatos, perfilDesdeBackend, perfilDelServidorEstaVacio, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
+import { GuardadoSinRefrescar, leerPerfilLegado, olvidarPerfilLegado, perfilComoDatos, perfilDesdeBackend, perfilDelServidorEstaVacio, perfilLegadoParaSubir, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
 import { ejecutarPreview } from '../../lib/sandbox'
 import type { EstadoGuardado, ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
 import { PanelEncargo } from '../encargo/PanelEncargo'
@@ -65,12 +65,33 @@ function persistir(clave: string, obj: unknown) {
   }
 }
 
+/** Las copias por pestaña llevan el uid: en un equipo compartido, quien entra después en la
+ *  misma pestaña no ve ni hereda el código de quien salió. Sin cuenta (modo local de
+ *  ejercicios) se usa la clave de siempre, la que lee lib/progreso.ts. */
+function claveDeCuenta(base: string, uid: string | undefined): string {
+  return uid ? `${base}:${uid}` : base
+}
+
 function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n))
 }
 
+type Casos = { casosPasados: number; casosTotales: number }
+
+function sinEncargo<T>(mapa: Record<number, T>, n: number): Record<number, T> {
+  const copia = { ...mapa }
+  delete copia[n]
+  return copia
+}
+
+// Un guardado que no llegó (sin red) se reintenta solo, cada vez más espaciado.
+const REINTENTO_MIN_MS = 3000
+const REINTENTO_MAX_MS = 30_000
+
 export function VistaEstudiante() {
-  return <VistaEstudianteInterna />
+  // Otra cuenta es otra pantalla: nada del estado de la anterior pasa a la siguiente.
+  const { user } = useAuth()
+  return <VistaEstudianteInterna key={user?.uid ?? 'sin-cuenta'} />
 }
 
 function VistaEstudianteInterna() {
@@ -81,6 +102,9 @@ function VistaEstudianteInterna() {
   const { data: encargo } = useQuery({
     queryKey: ['encargo', numero],
     queryFn: () => api.encargo(numero),
+    // El encargo viene en el bundle: sin red no hay que esperar a nada (si no, el editor se
+    // quedaba en "cargando" hasta que volviera la conexión).
+    networkMode: 'always',
   })
 
   const [encargoAbierto, setEncargoAbierto] = useState(leerEncargoAbierto)
@@ -113,11 +137,20 @@ function VistaEstudianteInterna() {
     // Sin red, React Query deja la consulta en pausa indefinidamente y la actividad se
     // quedaba en "Comprobando…". Así falla, y se trabaja con lo local.
     networkMode: 'always',
+    // Siempre fresco al entrar: el mapa guardado en memoria puede tener unos segundos y decir
+    // "bloqueado" de un día que el docente acaba de abrir (el mapa de la clase ya lo muestra
+    // abierto y el editor no dejaba entrar).
+    staleTime: 0,
+    refetchOnMount: 'always',
     refetchInterval: 45_000,
     refetchOnWindowFocus: true,
     retry: 1,
   })
-  const dias = mapaQuery.data?.sessions ?? null
+  const esEstudiante = session?.user.role === 'student'
+  // Para la navegación de un docente o admin (vista previa) manda el orden del curso, no los
+  // bloqueos de su clase: si no, en un día aún cerrado no había "Siguiente" y "Ver
+  // actividades del día" llevaba a un "todavía no está abierto".
+  const dias = esEstudiante ? mapaQuery.data?.sessions ?? null : null
 
   // Sin mapa (sin conexión, o un docente que no está matriculado en la clase) se navega con
   // el orden del bundle, que es el mismo del seed del backend.
@@ -148,12 +181,15 @@ function VistaEstudianteInterna() {
   // evita además mostrarle el editor de una actividad a la que se llegó por URL directa. Un
   // docente sin matrícula la ve en vista previa, y sin conexión se trabaja con lo local.
   const errorMapa = mapaQuery.error instanceof ApiError ? mapaQuery.error.code : null
-  const esEstudiante = session?.user.role === 'student'
+  const veredicto = dias ? accesoActividad(dias, key) : null
+  // Un "cerrado" que viene del mapa guardado en memoria se confirma con el mapa nuevo antes de
+  // mostrarse: puede ser de antes de que el docente abriera el día.
+  const confirmando = mapaQuery.isFetching && !mapaQuery.isFetchedAfterMount
   const acceso = !esEstudiante
     ? 'abierta'
-    : dias
-    ? accesoActividad(dias, key)
-    : clienteApi && mapaQuery.isPending
+    : veredicto && (veredicto === 'abierta' || !confirmando)
+    ? veredicto
+    : clienteApi && (mapaQuery.isPending || confirmando)
       ? 'verificando'
     : errorMapa === 'NOT_COHORT_MEMBER'
       ? 'sin-clase'
@@ -169,32 +205,38 @@ function VistaEstudianteInterna() {
   perfilRef.current = perfil
 
   // Migración de una sola vez para quien guardó su perfil cuando vivía en el
-  // navegador: se sube, y solo cuando el servidor confirma se borra la copia local.
+  // navegador: se sube, y solo cuando el servidor confirma se borra la copia local. Un solo
+  // intento por visita (antes se repetía en cada lectura de la sesión si fallaba).
   const migradoRef = useRef(false)
   useEffect(() => {
     if (migradoRef.current || !session || !clienteApi) return
     const legado = leerPerfilLegado()
     if (!legado) return
     migradoRef.current = true
-    if (!perfilDelServidorEstaVacio(session.user)) {
-      // El servidor ya tiene perfil propio: manda él y lo heredado se descarta.
+    // El servidor ya tiene perfil propio: manda él y lo heredado se descarta.
+    const cuerpo = perfilDelServidorEstaVacio(session.user) ? perfilLegadoParaSubir(legado, session.user) : null
+    if (!cuerpo) {
       olvidarPerfilLegado()
       return
     }
     void (async () => {
       try {
-        await clienteApi.request('/profile', { method: 'PUT', json: perfilParaBackend(legado, session.user) })
+        await clienteApi.request('/profile', { method: 'PUT', json: cuerpo })
         olvidarPerfilLegado()
-        await refresh()
+        // Silencioso: sin desmontar el editor que el estudiante tiene abierto.
+        await refresh({ silencioso: true })
       } catch (e) {
+        // Datos que el servidor nunca va a aceptar no se reintentan en cada visita.
+        if (e instanceof ApiError && e.code === 'VALIDATION_ERROR') olvidarPerfilLegado()
         console.error('No se pudo migrar el perfil guardado en este navegador', e)
-        migradoRef.current = false
       }
     })()
   }, [session, clienteApi, refresh])
 
-  const solucionesRef = useRef<Record<number, string>>(leerMapa(CLAVE_SOLUCIONES))
-  const borradoresRef = useRef<Record<number, string>>(leerMapa(CLAVE_BORRADORES))
+  const claveSoluciones = claveDeCuenta(CLAVE_SOLUCIONES, user?.uid)
+  const claveBorradores = claveDeCuenta(CLAVE_BORRADORES, user?.uid)
+  const solucionesRef = useRef<Record<number, string>>(leerMapa(claveSoluciones))
+  const borradoresRef = useRef<Record<number, string>>(leerMapa(claveBorradores))
   const numeroAnteriorRef = useRef<number | null>(null)
 
   const [contenido, setContenido] = useState('')
@@ -240,11 +282,17 @@ function VistaEstudianteInterna() {
   // deja una marca en este equipo: al volver al encargo la copia local manda y se vuelve a
   // subir. Y solo se da por "guardado" si mientras tanto no se escribió nada más; si no,
   // lo escrito durante el envío quedaba marcado como guardado sin haberse enviado.
+  const marcarPendiente = (n: number) => {
+    if (!user) return
+    try { localStorage.setItem(clavePendiente(user.uid, challengeKeyFromNumero(n)), '1') } catch { /* sin almacenamiento */ }
+  }
+  const reintentosRef = useRef(0)
   const guardarEnServidor = (numSave: number, cont: string) => {
     const marca = user ? clavePendiente(user.uid, challengeKeyFromNumero(numSave)) : null
     colaRef.current.encolar(async () => {
       try {
         await api.autoguardar(clienteApi, numSave, cont)
+        reintentosRef.current = 0
         if (marca) try { localStorage.removeItem(marca) } catch { /* sin almacenamiento */ }
         if (numSave === numeroRef.current) {
           setEstadoGuardado(prev => (contenidoRef.current === cont ? { ...prev, estado: 'saved' } : prev))
@@ -254,6 +302,39 @@ function VistaEstudianteInterna() {
         if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
       }
     })
+  }
+
+  // Aceptados que pasaron la revisión pero todavía no llegaron al servidor (sin red): se
+  // reintentan solos y, mientras tanto, se avisa "Pendiente de sincronizar".
+  const [aceptadosPendientes, setAceptadosPendientes] = useState<Record<number, Casos>>({})
+  // El aceptado va por la MISMA cola que el autoguardado, así que nunca se cruza con él, y no
+  // lleva el código: el borrador lo guarda el autoguardado. Antes mandaba el código entregado
+  // y, si mientras se revisaba el estudiante seguía escribiendo, pisaba en el servidor lo más
+  // nuevo con lo entregado.
+  const guardarAceptado = (numSave: number, casos: Casos) => {
+    colaRef.current.encolar(async () => {
+      try {
+        await exigirCliente().request(`/challenges/${challengeKeyFromNumero(numSave)}/progress`, {
+          method: 'PUT',
+          json: { status: 'accepted', cases_passed: casos.casosPasados, cases_total: casos.casosTotales },
+        })
+        reintentosRef.current = 0
+        setAceptadosPendientes(prev => sinEncargo(prev, numSave))
+        if (numSave === numeroRef.current) setProgressStatus('accepted')
+        // El mapa cuenta las actividades completadas del día: que se entere ya.
+        void queryClient.invalidateQueries({ queryKey: ['mapa'] })
+      } catch (e) {
+        console.error('No se pudo guardar el aceptado; se vuelve a intentar', e)
+        // Un rechazo del servidor (día pausado, reto cerrado…) no se arregla reintentando.
+        const reintentable = !(e instanceof ApiError) || e.code === 'NETWORK_ERROR' || e.code === 'SERVICE_UNAVAILABLE' || e.code === 'REQUEST_CANCELLED'
+        setAceptadosPendientes(prev => (reintentable ? { ...prev, [numSave]: casos } : sinEncargo(prev, numSave)))
+        if (!reintentable && numSave === numeroRef.current) setErrorEntrega(e instanceof ApiError ? e.message : 'No se pudo guardar la entrega.')
+      }
+    })
+  }
+  function exigirCliente() {
+    if (!clienteApi) throw new ApiError('AUTH_REQUIRED', 401)
+    return clienteApi
   }
 
   const [progressStatus, setProgressStatus] = useState<string>('not_started')
@@ -292,6 +373,54 @@ function VistaEstudianteInterna() {
     navigate(rutaDia(codigo))
   }
 
+  // Lo que no llegó al servidor (el borrador o un aceptado) se reintenta solo, cada vez más
+  // espaciado, sin esperar a que el estudiante vuelva a escribir o a navegar: si no, la última
+  // versión solo existía en este equipo.
+  useEffect(() => {
+    const borrador = estadoGuardado.estado === 'error' && !!user && numeroCargado === numero && contenidoRef.current.length > 0
+    const aceptados = Object.entries(aceptadosPendientes)
+    if (!borrador && aceptados.length === 0) return
+    const espera = Math.min(REINTENTO_MIN_MS * 2 ** reintentosRef.current, REINTENTO_MAX_MS)
+    const t = setTimeout(() => {
+      reintentosRef.current++
+      if (borrador) {
+        setEstadoGuardado(prev => ({ ...prev, estado: 'saving' }))
+        guardarCopiaLocal(numero, contenidoRef.current)
+        guardarEnServidor(numero, contenidoRef.current)
+      }
+      for (const [n, casos] of aceptados) guardarAceptado(Number(n), casos)
+    }, espera)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estadoGuardado.estado, aceptadosPendientes, numero, numeroCargado, user])
+
+  // Salir de la pantalla por cualquier camino (un enlace, el menú, Atrás) o cerrar/recargar la
+  // pestaña no puede perder lo escrito durante la pausa del autoguardado: la copia de este
+  // equipo queda marcada como pendiente (al volver, manda y se sube) y se intenta subir ya.
+  const estadoGuardadoRef = useRef(estadoGuardado.estado)
+  const alSalirRef = useRef<(cerrandoPestana: boolean) => void>(() => {})
+  useEffect(() => {
+    estadoGuardadoRef.current = estadoGuardado.estado
+    alSalirRef.current = (cerrandoPestana) => {
+      const n = numeroRef.current
+      if (!user || numeroCargadoRef.current !== n || !contenidoRef.current) return
+      const estado = estadoGuardadoRef.current
+      // Al cerrar la pestaña, un envío en curso puede no llegar: también cuenta como pendiente.
+      if (estado !== 'dirty' && estado !== 'error' && !(cerrandoPestana && estado === 'saving')) return
+      guardarCopiaLocal(n, contenidoRef.current)
+      marcarPendiente(n)
+      if (estado !== 'saving') guardarEnServidor(n, contenidoRef.current)
+    }
+  })
+  useEffect(() => {
+    const alOcultar = () => alSalirRef.current(true)
+    window.addEventListener('pagehide', alOcultar)
+    return () => {
+      window.removeEventListener('pagehide', alOcultar)
+      alSalirRef.current(false)
+    }
+  }, [])
+
   // Al cambiar de encargo: guardar el borrador del que se sale y cargar el que entra.
   useEffect(() => {
     if (!encargo) return
@@ -299,7 +428,7 @@ function VistaEstudianteInterna() {
     // Solo si lo que hay en el editor ES el borrador del encargo del que se sale.
     if (anterior != null && anterior !== numero && numeroCargadoRef.current === anterior) {
       borradoresRef.current[anterior] = contenidoRef.current
-      persistir(CLAVE_BORRADORES, borradoresRef.current)
+      persistir(claveBorradores, borradoresRef.current)
       if (user && contenidoRef.current && (estadoGuardado.estado === 'dirty' || estadoGuardado.estado === 'error')) {
         guardarCopiaLocal(anterior, contenidoRef.current)
         guardarEnServidor(anterior, contenidoRef.current)
@@ -401,7 +530,7 @@ function VistaEstudianteInterna() {
       setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
     }
     return () => { cancelled = true }
-  }, [numero, encargo, user, clienteApi])
+  }, [numero, encargo, user, clienteApi, claveBorradores])
 
   const ejecutar = useCallback(async () => {
     setEjecutando(true)
@@ -448,25 +577,10 @@ function VistaEstudianteInterna() {
     }
 
     if (r.casosPasados === r.casosTotales && user && clienteApi) {
-      try {
-        await clienteApi.request(`/challenges/${challengeKeyFromNumero(numero)}/progress`, {
-          method: 'PUT',
-          json: {
-            draft_code: contenido,
-            status: 'accepted',
-            cases_passed: r.casosPasados,
-            cases_total: r.casosTotales
-          }
-        })
-        if (sigueAqui) setProgressStatus('accepted')
-        // El mapa cuenta las actividades completadas del día: que se entere ya.
-        void queryClient.invalidateQueries({ queryKey: ['mapa'] })
-      } catch (e) {
-        console.error('Error al persistir accepted', e)
-        if (sigueAqui) setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
-      }
+      guardarAceptado(numero, { casosPasados: r.casosPasados, casosTotales: r.casosTotales })
     }
-  }, [contenido, datos, numero, clienteApi, user, queryClient])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contenido, datos, numero, clienteApi, user])
 
   // Al guardar "Mis datos": refrescar la preview para que se vea el cambio de una.
   useEffect(() => {
@@ -495,7 +609,7 @@ function VistaEstudianteInterna() {
         setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
       }
       borradoresRef.current[numero] = contenido
-      persistir(CLAVE_BORRADORES, borradoresRef.current)
+      persistir(claveBorradores, borradoresRef.current)
     }, 800)
     return () => clearTimeout(t)
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -517,27 +631,33 @@ function VistaEstudianteInterna() {
     if (!aceptado || numeroCargadoRef.current !== numero) return
     solucionesRef.current[numero] = contenidoRef.current
     borradoresRef.current[numero] = contenidoRef.current
-    persistir(CLAVE_SOLUCIONES, solucionesRef.current)
-    persistir(CLAVE_BORRADORES, borradoresRef.current)
-  }, [aceptado, numero])
+    persistir(claveSoluciones, solucionesRef.current)
+    persistir(claveBorradores, borradoresRef.current)
+  }, [aceptado, numero, claveSoluciones, claveBorradores])
 
   const mensajeAceptado =
     aceptado && esUltimo ? 'Terminaste el último encargo. Tu portafolio está completo.' : ''
 
-  if (vistaConsulta) {
-    return (
-      <VistaConsultaMovil
-        encargo={encargo?.meta ?? null}
-        dia={diaDeEncargo(numero)}
-        previewHtml={previewHtml}
-        urlPortafolio={portafolioEjemplo.url}
-        onEditarDeTodosModos={() => {
-          habilitarEdicionForzada()
-          setVistaConsulta(false)
-        }}
-      />
-    )
-  }
+  // "Mis datos" es el mismo diálogo en todas las pantallas de aquí abajo (misma key): si el
+  // docente pausa el día mientras el estudiante lo está llenando, no se pierde lo escrito.
+  const dialogoMisDatos = misDatosAbierto && (
+    <MisDatos
+      key="mis-datos"
+      perfil={perfil}
+      onGuardar={async (p) => {
+        if (!clienteApi || !session) return
+        await clienteApi.request('/profile', { method: 'PUT', json: perfilParaBackend(p, session.user) })
+        // Silencioso: la sesión se relee sin desmontar el editor; `perfil` y datos.js se
+        // actualizan en cuanto llega la respuesta.
+        try {
+          await refresh({ silencioso: true })
+        } catch {
+          throw new GuardadoSinRefrescar()
+        }
+      }}
+      onCerrar={() => setMisDatosAbierto(false)}
+    />
+  )
 
   // Una actividad que el mapa dice cerrada no se abre, aunque se llegue por URL directa:
   // ni instrucciones, ni editor. Se explica por qué y se ofrece la salida.
@@ -546,6 +666,7 @@ function VistaEstudianteInterna() {
       <div className="ve">
         <Nav seccion="Portafolio" dia={diaDeEncargo(numero)} iniciales="AR" activo="portafolio" />
         <main className="ve-bloqueo"><p role="status">Comprobando la actividad…</p></main>
+        {dialogoMisDatos}
       </div>
     )
   }
@@ -577,9 +698,28 @@ function VistaEstudianteInterna() {
           <p>{textos.cuerpo}</p>
           <Link className="btn btn-primary" to="/mapa">Volver al mapa</Link>
         </main>
+        {dialogoMisDatos}
       </div>
     )
   }
+
+  // La vista de consulta del teléfono va DESPUÉS de comprobar el acceso: una actividad cerrada
+  // tampoco muestra sus instrucciones en el teléfono.
+  if (vistaConsulta) {
+    return (
+      <VistaConsultaMovil
+        encargo={encargo?.meta ?? null}
+        dia={diaDeEncargo(numero)}
+        previewHtml={previewHtml}
+        urlPortafolio={portafolioEjemplo.url}
+        onEditarDeTodosModos={() => {
+          habilitarEdicionForzada()
+          setVistaConsulta(false)
+        }}
+      />
+    )
+  }
+
 
   return (
     <div className="ve">
@@ -639,7 +779,7 @@ function VistaEstudianteInterna() {
             onToggleExpandir={() => setPreviewExpandido((v) => !v)}
           />
           {errorEntrega && <p className="auth-message ve-error-entrega" role="alert">{errorEntrega}</p>}
-          <PanelRevision resultado={revision} aceptado={aceptado} mensajeAceptado={mensajeAceptado} syncError={estadoGuardado.estado === 'error'} />
+          <PanelRevision resultado={revision} aceptado={aceptado} mensajeAceptado={mensajeAceptado} syncError={estadoGuardado.estado === 'error' || numero in aceptadosPendientes} />
           {posicion && (
             <nav className="ve-navegacion" aria-label="Actividades del día">
               <div className="ve-nav-fila">
@@ -701,23 +841,7 @@ function VistaEstudianteInterna() {
         </div>
       </div>
 
-      {misDatosAbierto && (
-        <MisDatos
-          perfil={perfil}
-          onGuardar={async (p) => {
-            if (!clienteApi || !session) return
-            await clienteApi.request('/profile', { method: 'PUT', json: perfilParaBackend(p, session.user) })
-            // Silencioso: la sesión se relee sin desmontar el editor; `perfil` y datos.js se
-            // actualizan en cuanto llega la respuesta.
-            try {
-              await refresh({ silencioso: true })
-            } catch {
-              throw new GuardadoSinRefrescar()
-            }
-          }}
-          onCerrar={() => setMisDatosAbierto(false)}
-        />
-      )}
+      {dialogoMisDatos}
     </div>
   )
 }

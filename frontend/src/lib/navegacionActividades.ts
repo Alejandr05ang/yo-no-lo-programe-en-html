@@ -43,10 +43,16 @@ function destino(actividad: ActividadDelDia | undefined): DestinoActividad | nul
 export function posicionEnDia(actividades: ActividadDelDia[], key: string): PosicionActividad | null {
   const indice = actividades.findIndex((a) => a.key === key)
   if (indice === -1) return null
+  // "Anterior" lleva a la actividad anterior que se puede abrir (como "Siguiente", que salta
+  // las cerradas): la inmediata puede estar cerrada por el docente o no ser un encargo.
+  const anterior = actividades
+    .slice(0, indice)
+    .reverse()
+    .find((a) => a.unlocked && numeroFromChallengeKey(a.key) !== null)
   return {
     posicion: indice + 1,
     total: actividades.length,
-    anterior: destino(actividades[indice - 1]),
+    anterior: destino(anterior),
     siguiente: destino(actividades[indice + 1]),
   }
 }

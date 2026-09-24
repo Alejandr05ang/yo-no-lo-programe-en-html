@@ -59,16 +59,56 @@ export function perfilParaBackend(p: Perfil, user: BackendUser) {
   }
 }
 
-export function leerPerfilLegado(): Perfil | null {
+/** Lo guardado por el formulario viejo, tal cual (sin rellenar con los datos de ejemplo). */
+export function leerPerfilLegado(): Partial<Perfil> | null {
   try {
     const guardado = localStorage.getItem(CLAVE_LEGADA)
     if (!guardado) return null
     const crudo = JSON.parse(guardado) as Partial<Perfil>
     if (!crudo || typeof crudo !== 'object') return null
-    return { ...PERFIL_DEFECTO, ...crudo }
+    return crudo
   } catch {
     return null
   }
+}
+
+/**
+ * Lo que se puede subir del perfil viejo, o null si no queda nada que valga la pena.
+ *
+ * El formulario viejo EMPEZABA con los datos de ejemplo de PERFIL_DEFECTO ("Ana Rivas", su
+ * GitHub, su "Sobre mí"…) y quien solo cambiaba los hobbies los guardaba igual. Así que:
+ * - el nombre nunca viene de ahí: manda el que el estudiante dio al registrarse;
+ * - lo que sigue siendo el dato de ejemplo se descarta;
+ * - los enlaces se normalizan como en el formulario ("github.com/ana" → https://…) y lo que no
+ *   pasaría la validación del servidor se descarta, en vez de hacer fallar todo el guardado.
+ */
+export function perfilLegadoParaSubir(legado: Partial<Perfil>, user: BackendUser): ReturnType<typeof perfilParaBackend> | null {
+  const nombre = recortar(user.display_name || user.full_name || '')
+  if (largo(nombre) < 2 || largo(nombre) > 80) return null
+
+  const texto = (v: unknown) => (typeof v === 'string' ? recortar(v) : '')
+  const sobreMi = texto(legado.sobreMi)
+  const descripcion = sobreMi && sobreMi !== PERFIL_DEFECTO.sobreMi && largo(sobreMi) <= MAX_SOBRE_MI ? sobreMi : ''
+
+  const enlace = (v: unknown, ejemplo: string) => {
+    const t = texto(v)
+    if (!t || t === ejemplo) return ''
+    const url = normalizarUrlDePerfil(t)
+    return url && url !== ejemplo && url.length <= MAX_LARGO_URL ? url : ''
+  }
+  const redes = (legado.redes && typeof legado.redes === 'object' ? legado.redes : {}) as Partial<Perfil['redes']>
+  const github = enlace(redes.github, PERFIL_DEFECTO.redes.github)
+  const linkedin = enlace(redes.linkedin, PERFIL_DEFECTO.redes.linkedin)
+
+  const listaVieja = Array.isArray(legado.hobbies) ? legado.hobbies.map(texto).filter((h) => h.length > 0) : []
+  const esEjemplo = listaVieja.length === PERFIL_DEFECTO.hobbies.length && listaVieja.every((h, i) => h === PERFIL_DEFECTO.hobbies[i])
+  const hobbies = esEjemplo ? [] : listaVieja.filter((h) => largo(h) <= MAX_LARGO_HOBBY).slice(0, MAX_HOBBIES)
+
+  if (!descripcion && !github && !linkedin && hobbies.length === 0) return null
+  return perfilParaBackend(
+    { nombre, sobreMi: descripcion, redes: { github, linkedin, correo: user.email ?? '' }, hobbies },
+    user,
+  )
 }
 
 export function olvidarPerfilLegado(): void {
@@ -112,12 +152,14 @@ export const MAX_SOBRE_MI = 1000
 export const MAX_LARGO_URL = 2048
 
 // Pydantic cuenta caracteres (puntos de código), no unidades UTF-16 como .length: un emoji
-// es 1 para el backend y 2 para JS. Y Python recorta como espacio también \x1c-\x1f y \x85,
-// que el trim() de JS deja. Se imita al backend para que lo que pasa aquí pase allá.
+// es 1 para el backend y 2 para JS. Al recortar, el backend quita también \x85, que el trim()
+// de JS deja; aquí se quitan además los separadores invisibles \x1c-\x1f. Recortar un poco MÁS
+// que el backend es seguro: lo que pasa aquí nunca lo rechaza el servidor por espacios.
 function largo(texto: string): number {
   return [...texto].length
 }
 function recortar(texto: string): string {
+  // eslint-disable-next-line no-control-regex -- a propósito: caracteres invisibles en los extremos
   return texto.replace(/^[\s\x1c-\x1f\x85]+|[\s\x1c-\x1f\x85]+$/gu, '')
 }
 function inicio(texto: string, caracteres: number): string {
