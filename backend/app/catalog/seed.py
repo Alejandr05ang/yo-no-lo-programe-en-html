@@ -64,16 +64,23 @@ CHALLENGES = [
         "Vacía la lista y recorre los datos con un bucle.",
     ),
     (
-        # Clave "e12" (no "e7"): e1..e11 ya estaban sembrados en producción antes de agregar
-        # este reto. Renumerar las claves existentes haría upsert por clave y les cambiaría
-        # el contenido a alumnos que ya tengan progreso ahí (ver frontend/src/lib/encargos.ts).
-        # El orden real en /api/map sale de esta posición en la lista (sort_order), no de la
-        # clave: por eso puede ir acá, entre e6 y e7, con una clave más alta.
+        # Claves "e12"/"e13" (no "e7"/"e8"): e1..e11 ya estaban sembrados en producción antes
+        # de agregar estos retos. Renumerar las claves existentes haría upsert por clave y les
+        # cambiaría el contenido a alumnos que ya tengan progreso ahí (ver
+        # frontend/src/lib/encargos.ts). El orden real en /api/map sale de esta posición en la
+        # lista (sort_order), no de la clave: por eso pueden ir acá, entre e6 y e7.
         "e12",
         "Ju1",
+        "Organiza tu página",
+        "Agrupa contenido en secciones antes de personalizarlo.",
+        "Agrupa alguna parte de tu portafolio con crearSeccion().",
+    ),
+    (
+        "e13",
+        "Ju1",
         "Dale tu estilo",
-        "Personaliza colores, tipografía y estructura visual.",
-        "Aplica al menos una herramienta de estilo nueva sobre tu portafolio.",
+        "Personaliza colores, tipografía y fondo.",
+        "Aplica al menos una herramienta de color o tipografía sobre tu portafolio.",
     ),
     (
         "e7",

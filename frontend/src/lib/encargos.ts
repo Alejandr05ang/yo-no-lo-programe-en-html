@@ -2,13 +2,13 @@ import type { Encargo, HerramientaAPI } from './tipos'
 
 // Mock de los encargos (docs/encargos.md §4). Sin backend todavía.
 // E1–E3 detallados; E4–E11 con enunciado, herramientas y andamiaje mínimo.
-// E12 es Ju1 ("Dale tu estilo"), agregado después: el número queda fuera de orden cronológico
-// (Ju1 va entre E6 y E7) a propósito — backend/app/catalog/seed.py ya tenía e1..e11 sembrados
-// en producción, y correrlo de nuevo hace upsert POR CLAVE ("e7", "e8"...); renumerar esas
-// claves les cambiaría el contenido a retos que alumnos reales ya pueden tener en progreso.
-// Ju1 no tenía clave previa, así que e12 es la única adición segura sin tocar las existentes.
-// El orden real para navegar sale de sort_order en el backend, no del número (ver heredaDe
-// explícito de E12 más abajo, en vez del automático numero-1 de stub()).
+// E12 y E13 son Ju1 ("Organiza tu página" / "Dale tu estilo"), agregados después: los números
+// quedan fuera de orden cronológico (Ju1 va entre E6 y E7) a propósito — backend/app/catalog/
+// seed.py ya tenía e1..e11 sembrados en producción, y correrlo de nuevo hace upsert POR CLAVE
+// ("e7", "e8"...); renumerar esas claves les cambiaría el contenido a retos que alumnos reales
+// ya pueden tener en progreso. Ju1 no tenía claves previas, así que e12/e13 son adiciones
+// seguras sin tocar las existentes. El orden real para navegar sale de sort_order en el
+// backend, no del número (ver heredaDe explícito de E12 más abajo).
 //
 // Rampa (docs/encargos.md §2.1 y §5.2): el andamiaje arranca con la solución que el
 // estudiante ACEPTÓ en el encargo anterior — nunca código ajeno — y no regala la
@@ -404,12 +404,15 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     'Un condicional (o varios encadenados) que mire el campo tipo de cada proyecto antes de decidir qué crear.',
   ),
 
-  // Día de personalización visual (docs/decisiones.md, reorganización del 19-sep). Número
-  // fuera de orden cronológico (Ju1 va entre E6 y E7) — ver el comentario grande al principio
-  // del archivo sobre por qué no se renumeró E7–E11. heredaDe es EXPLÍCITO (6), no el
-  // numero-1 automático de stub() (que daría 11, el encargo equivocado).
-  // Sin CASOS_POR_ENCARGO en revisionLocal.ts a propósito — "correcto" acá es una decisión
-  // visual del estudiante, la revisa el instructor en clase, no un caso de prueba automático.
+  // Día de personalización visual (docs/decisiones.md, reorganización del 19-sep), en DOS
+  // encargos — todas las herramientas de estilo juntas en uno solo era demasiada carga de
+  // una vez. Números fuera de orden cronológico (Ju1 va entre E6 y E7) — ver el comentario
+  // grande al principio del archivo sobre por qué no se renumeró E7–E11.
+  // Sin CASOS_POR_ENCARGO en revisionLocal.ts a propósito, en los dos — "correcto" acá es una
+  // decisión visual del estudiante, la revisa el instructor en clase, no un caso de prueba.
+
+  // heredaDe EXPLÍCITO (6), no el numero-1 automático de stub() (que daría 11, el encargo
+  // equivocado).
   12: {
     sesion: 'Ju1',
     heredaDe: 6,
@@ -418,23 +421,44 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     totalCasos: 0,
     andamiajeNuevo:
       '// Hoy no hay un resultado único: tu docente va a mirar cómo quedó tu portafolio, no un caso de prueba automático.\n' +
-      '// Mirá las fichas de cada herramienta nueva (a la izquierda): muestran los valores que aceptan y cómo se ven.\n' +
-      '// Probá cambiarColorTexto(), cambiarTamano() y cambiarFuente() sobre algún título o párrafo; cambiarColorFondo() para el fondo de toda la página; y crearSeccion() para agrupar cosas en fila, en un recuadro, o en columnas.\n' +
-      '// Pista: Anda probando de a una herramienta por vez, sobre un solo párrafo, antes de aplicarla a toda la página.\n' +
+      '// Mirá la ficha de crearSeccion() (a la izquierda): muestra los cuatro tipos y cómo se ve cada uno.\n' +
+      '// Probá agrupar alguna parte de tu portafolio con crearSeccion("encabezado"), "cuerpo", "cuadricula-2" o "cuadricula-3".\n' +
+      '// Pista: creá la sección, mostrala, y recién después agregale contenido con agregarA() — igual que con crearLista().\n' +
       '// Escribí tu código acá abajo:\n',
     meta: meta(
       12,
-      'Dale tu estilo',
+      'Organiza tu página',
       'Ju1',
       DIA_DE_SESION.Ju1.toLowerCase(),
       [
-        'Hasta ahora tu portafolio se ve igual que el de cualquier compañero: mismo color, mismo tamaño de letra, mismo fondo.',
-        'Hoy es tu turno de darle tu propio estilo. No hay una única forma correcta — probá las herramientas nuevas sobre lo que ya construiste y quedate con lo que más te guste.',
+        'Hasta ahora todo tu contenido es una fila de títulos y párrafos, uno debajo del otro.',
+        'Agrupá alguna parte en una sección: en fila, en un recuadro, o en columnas — la que tenga más sentido para lo que ya tenés.',
       ],
-      'Anda probando de a una herramienta por vez, sobre un solo párrafo, antes de aplicarla a toda la página.',
+      'Creá la sección con crearSeccion(), mostrala, y agregale lo que ya tenías con agregarA().',
       true,
     ),
   },
+
+  // heredaDe SÍ coincide con el numero-1 automático de stub() acá (13-1=12), así que se puede
+  // usar el helper normal.
+  13: stub(
+    13,
+    'Dale tu estilo',
+    'Ju1',
+    [
+      'Hasta ahora tu portafolio se ve igual que el de cualquier compañero: mismo color, mismo tamaño de letra, mismo fondo.',
+      'Ahora es tu turno de darle tu propio estilo. No hay una única forma correcta — probá las herramientas nuevas sobre lo que ya construiste y quedate con lo que más te guste.',
+    ],
+    BASE_CON_HOBBIES,
+    {},
+    0,
+    [
+      'Hoy no hay un resultado único: tu docente va a mirar cómo quedó tu portafolio, no un caso de prueba automático.',
+      'Mirá las fichas de cada herramienta nueva (a la izquierda): muestran los valores que aceptan y cómo se ven.',
+      'Probá cambiarColorTexto(), cambiarTamano() y cambiarFuente() sobre algún título o párrafo; cambiarColorFondo() para el fondo de toda la página.',
+    ],
+    'Anda probando de a una herramienta por vez, sobre un solo párrafo, antes de aplicarla a toda la página.',
+  ),
 }
 
 export const NUMEROS_DE_ENCARGO = Object.keys(ENCARGOS).map(Number).sort((a, b) => a - b)

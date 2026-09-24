@@ -741,6 +741,10 @@
   display: grid;
   gap: var(--space-2);
   padding: var(--space-3);
+  /* La insignia "Powered by Netlify" del plan gratis es fija, bottom-right del viewport, y no
+   * se puede quitar por código — este padding extra deja el botón de "Siguiente actividad"
+   * (el elemento clickeable más cercano a esa esquina) arriba de donde ella se dibuja. */
+  padding-bottom: calc(var(--space-3) + 56px);
   border-top: 1px solid var(--color-divider);
   background: var(--color-surface);
 }
