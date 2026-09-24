@@ -4,7 +4,7 @@
 // herramientas de estilo sueltas; acá lo que importa es la composición de varias pestañas.
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { agregarColumna, crearDocumentoJu1Inicial, crearSeccion } from '../src/lib/estructuraDePagina.ts'
+import { agregarColumna, agregarFila, crearDocumentoJu1Inicial, crearSeccion } from '../src/lib/estructuraDePagina.ts'
 import type { DocumentoJu1 } from '../src/lib/tipos.ts'
 import { ejecutarJu1Real, parser } from './helpers/runtimeReal.ts'
 
@@ -125,8 +125,10 @@ test('cambiarColorFondo(color) desde una sección pinta ESA sección, no toda la
   const r = await ejecutarJu1Real(documento, {})
   assert.equal(r.ok, true, r.error)
   const html = doc(r.html)
-  // Sin <style> de por medio: el fondo quedó puesto directo en el div de ESA sección.
-  assert.equal(html.querySelector('style'), null)
+  // Hay un <style> siempre (el que resetea el padding del body para que las secciones lleguen
+  // al borde) pero NINGUNO con --color-fondo — el fondo quedó puesto directo en el div de ESA
+  // sección, no en la variable global de toda la página.
+  assert.ok(![...html.querySelectorAll('style')].some((e) => e.textContent?.includes('--color-fondo')))
   const pintados = [...html.querySelectorAll('div')].filter((d) => (d as HTMLElement).style.backgroundColor !== '') as HTMLElement[]
   assert.equal(pintados.length, 1, 'solo un div quedó pintado — el pie no se contagió')
   assert.equal(pintados[0].style.backgroundColor, 'rgb(238, 241, 230)')
@@ -154,11 +156,59 @@ test('cambiarColorFondo(color) desde el main pinta toda la página compuesta', a
   const r = await ejecutarJu1Real(documento, {})
   assert.equal(r.ok, true, r.error)
   const html = doc(r.html)
-  assert.equal(html.querySelector('style'), null)
-  // El contenedor grid (el primer div, el que envuelve todas las secciones) es "pagina" en el
-  // main — ahí es donde queda el fondo con un solo argumento.
-  const grid = html.querySelector('body > div') as HTMLElement
+  assert.ok(![...html.querySelectorAll('style')].some((e) => e.textContent?.includes('--color-fondo')))
+  // El contenedor grid (el div, hermano del <style> de reseteo) es "pagina" en el main — ahí es
+  // donde queda el fondo con un solo argumento.
+  const grid = html.querySelector('body > div[style*="grid"]') as HTMLElement
   assert.equal(grid.style.backgroundColor, 'rgb(242, 236, 224)')
+})
+
+test('sin gap entre celdas, sin padding del body, y la última fila llega hasta abajo', async () => {
+  let d = crearDocumentoJu1Inicial()
+  const encabezado = crearSeccion(d, 0, 0, 0, 0, 'Encabezado')
+  assert.equal(encabezado.ok, true)
+  if (!encabezado.ok) return
+  d = { ...encabezado.valor, estructura: agregarFila(encabezado.valor.estructura) } // 2x1
+  const pie = crearSeccion(d, 1, 0, 1, 0, 'Pie')
+  assert.equal(pie.ok, true)
+  if (!pie.ok) return
+  d = pie.valor
+
+  const documento: DocumentoJu1 = {
+    ...d,
+    secciones: [
+      { nombre: 'encabezado', contenido: 'mostrar(crearTitulo("hola"))' },
+      { nombre: 'pie', contenido: 'mostrar(crearParrafo("chau"))' },
+    ],
+    main: 'mostrar(encabezado)\nmostrar(pie)',
+  }
+  const r = await ejecutarJu1Real(documento, {})
+  assert.equal(r.ok, true, r.error)
+  const html = doc(r.html)
+
+  const estiloReseteo = [...html.querySelectorAll('style')].find((e) => e.textContent?.includes('padding: 0'))
+  assert.ok(estiloReseteo, 'debe resetear el padding del body — si no, queda un margen alrededor de todo')
+
+  const grid = html.querySelector('body > div[style*="grid"]') as HTMLElement
+  assert.equal(grid.style.gap, '0px', 'sin espacio entre secciones — quedan pegadas')
+  assert.match(grid.style.minHeight, /100vh/, 'el grid llega al menos a la altura de la pantalla')
+  assert.match(grid.style.gridTemplateRows, /1fr/, 'la última fila (el pie) absorbe el espacio que sobra')
+})
+
+test('con una sola fila, la plantilla de filas no queda como "repeat(0, ...)" (CSS inválido)', async () => {
+  const doc0 = crearDocumentoJu1Inicial()
+  const a = crearSeccion(doc0, 0, 0, 0, 0, 'Encabezado')
+  assert.equal(a.ok, true)
+  if (!a.ok) return
+  const documento: DocumentoJu1 = {
+    ...a.valor,
+    secciones: [{ nombre: 'encabezado', contenido: 'mostrar(crearTitulo("hola"))' }],
+    main: 'mostrar(encabezado)',
+  }
+  const r = await ejecutarJu1Real(documento, {})
+  assert.equal(r.ok, true, r.error)
+  const grid = doc(r.html).querySelector('body > div[style*="grid"]') as HTMLElement
+  assert.doesNotMatch(grid.style.gridTemplateRows, /repeat\(0/)
 })
 
 test('una sección con crearSeccion() adentro puede subdividirse a sí misma', async () => {

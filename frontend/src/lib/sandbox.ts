@@ -366,6 +366,16 @@ export function construirSrcdocJu1(doc: DocumentoJu1, datos: unknown): string {
   const archivoMain = 'portafolio.js'
   const mainConFuente = doc.main + `\n//# sourceURL=${archivoMain}`
 
+  // Todas las filas menos la última se miden por su contenido ("auto"); la última reparte lo
+  // que sobre (repeat(0, ...) no es válido CSS, así que con una sola fila queda solo "1fr").
+  // Junto con min-height: 100vh en el grid, esto hace que la última fila (normalmente el pie
+  // de página) llegue hasta abajo del todo cuando el contenido no alcanza a llenar la
+  // pantalla — un pie de página de verdad, no una franja que corta a la mitad de la hoja.
+  const filasSinLaUltima = doc.estructura.filas - 1
+  const templateFilas = filasSinLaUltima > 0
+    ? `repeat(${filasSinLaUltima}, auto) minmax(auto, 1fr)`
+    : 'minmax(auto, 1fr)'
+
   return `<!doctype html><html><head><meta charset="utf-8">
 <style>${ANDAMIAJE_CSS}</style>
 </head><body><div id="__raiz"></div><script>
@@ -407,11 +417,21 @@ window.onerror = function (mensaje, _url, lineno, _colno, error) {
 try {
 ${bloquesDeSecciones}
 
+  // El body de andamiajeEstilos.ts trae un padding (--espaciado) pensado para un portafolio de
+  // un solo bloque de texto — en Ju1 las secciones tienen que llegar hasta el borde, pegadas
+  // entre sí, así que ese padding y cualquier separación entre celdas del grid se anulan acá.
+  // Un <style> DENTRO de #__raiz (no en <head>, que no sobrevive) viaja con el innerHTML
+  // capturado — mismo truco que ya usa cambiarColorFondo() para el fondo de toda la página.
+  var __estiloJu1 = document.createElement('style');
+  __estiloJu1.textContent = 'body { margin: 0; padding: 0; } html, body { height: 100%; }';
+  __raizReal.appendChild(__estiloJu1);
+
   var __grid = document.createElement('div');
   __grid.style.display = 'grid';
-  __grid.style.gridTemplateRows = 'repeat(${doc.estructura.filas}, auto)';
+  __grid.style.gridTemplateRows = '${templateFilas}';
   __grid.style.gridTemplateColumns = 'repeat(${doc.estructura.columnas}, 1fr)';
-  __grid.style.gap = 'var(--espaciado)';
+  __grid.style.gap = '0';
+  __grid.style.minHeight = '100vh';
   __raizReal.appendChild(__grid);
   pagina = __grid;
 ${declaracionesDeSecciones}
