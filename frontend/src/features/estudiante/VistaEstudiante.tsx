@@ -17,7 +17,7 @@ import {
   type DiaDelMapa,
 } from '../../lib/navegacionActividades'
 import { ApiError } from '../../lib/http'
-import { clavePendiente, crearColaDeGuardado, elegirBorrador, sePuedeGuardar } from '../../lib/colaGuardado'
+import { clavePendiente, crearColaDeGuardado, elegirBorrador, sePuedeGuardar, valorPendiente } from '../../lib/colaGuardado'
 import { datosComoTexto, pareceContenidoDeDatos, portafolioEjemplo } from '../../lib/mockEncargo'
 import { GuardadoSinRefrescar, leerPerfilLegado, olvidarPerfilLegado, perfilComoDatos, perfilDesdeBackend, perfilDelServidorEstaVacio, perfilLegadoParaSubir, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
 import { ejecutarPreview } from '../../lib/sandbox'
@@ -282,9 +282,16 @@ function VistaEstudianteInterna() {
   // deja una marca en este equipo: al volver al encargo la copia local manda y se vuelve a
   // subir. Y solo se da por "guardado" si mientras tanto no se escribió nada más; si no,
   // lo escrito durante el envío quedaba marcado como guardado sin haberse enviado.
+  // Lo último que este equipo SABE que está en el servidor, por encargo (undefined: no se sabe,
+  // p. ej. se abrió sin red). Va en la marca de pendiente: al volver, la copia local solo manda
+  // si el servidor no cambió desde entonces (lib/colaGuardado.ts, elegirBorrador).
+  const enServidorRef = useRef<Record<number, string>>({})
   const marcarPendiente = (n: number) => {
     if (!user) return
-    try { localStorage.setItem(clavePendiente(user.uid, challengeKeyFromNumero(n)), '1') } catch { /* sin almacenamiento */ }
+    const base = enServidorRef.current[n]
+    try {
+      localStorage.setItem(clavePendiente(user.uid, challengeKeyFromNumero(n)), base === undefined ? '1' : valorPendiente(base))
+    } catch { /* sin almacenamiento */ }
   }
   const reintentosRef = useRef(0)
   const guardarEnServidor = (numSave: number, cont: string) => {
@@ -293,12 +300,13 @@ function VistaEstudianteInterna() {
       try {
         await api.autoguardar(clienteApi, numSave, cont)
         reintentosRef.current = 0
+        enServidorRef.current[numSave] = cont
         if (marca) try { localStorage.removeItem(marca) } catch { /* sin almacenamiento */ }
         if (numSave === numeroRef.current) {
           setEstadoGuardado(prev => (contenidoRef.current === cont ? { ...prev, estado: 'saved' } : prev))
         }
       } catch {
-        if (marca) try { localStorage.setItem(marca, '1') } catch { /* sin almacenamiento */ }
+        marcarPendiente(numSave)
         if (numSave === numeroRef.current) setEstadoGuardado(prev => ({ ...prev, estado: 'error' }))
       }
     })
@@ -437,12 +445,12 @@ function VistaEstudianteInterna() {
     numeroAnteriorRef.current = numero
 
     let fallbackLocal: string | undefined = borradoresRef.current[numero]
-    let localPendiente = false
+    let pendiente: string | null = null
     if (user) {
       let fallbackExt: string | null = null
       try {
         fallbackExt = localStorage.getItem(`tutorias:draft:${user.uid}:${challengeKeyFromNumero(numero)}`)
-        localPendiente = localStorage.getItem(clavePendiente(user.uid, challengeKeyFromNumero(numero))) === '1'
+        pendiente = localStorage.getItem(clavePendiente(user.uid, challengeKeyFromNumero(numero)))
       } catch {
         /* sin almacenamiento local */
       }
@@ -503,11 +511,14 @@ function VistaEstudianteInterna() {
         // Un bug de Monaco (arreglado en EditorPanel.tsx) podía autoguardar el contenido de
         // datos.js como si fuera el borrador de portafolio.js — lo que ya haya quedado
         // guardado así en el backend se descarta acá en vez de mostrárselo al estudiante.
-        const elegido = elegirBorrador({
-          servidor: res.draft_code && !pareceContenidoDeDatos(res.draft_code) ? res.draft_code : '',
-          local: fallbackLocal ?? null,
-          localPendiente,
-        })
+        const servidor = res.draft_code && !pareceContenidoDeDatos(res.draft_code) ? res.draft_code : ''
+        if (!res.sinRespuesta) enServidorRef.current[numero] = servidor
+        const elegido = elegirBorrador({ servidor, local: fallbackLocal ?? null, pendiente })
+        // Una marca que ya no manda (lo local ya está en el servidor, o el servidor cambió
+        // después en otro equipo) se borra: si no, volvería a decidir en la próxima visita.
+        if (pendiente && !elegido?.subir && !res.sinRespuesta && user) {
+          try { localStorage.removeItem(clavePendiente(user.uid, challengeKeyFromNumero(numero))) } catch { /* sin almacenamiento */ }
+        }
         const codigo = elegido ? elegido.codigo : await componerInicial()
         if (!vigente()) return
         setInitialCode(codigo)

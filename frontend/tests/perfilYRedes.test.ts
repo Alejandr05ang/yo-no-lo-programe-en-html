@@ -12,6 +12,7 @@ import {
   prepararPerfil,
   textoComoHobbies,
   type BorradorPerfil,
+  perfilLegadoParaSubir,
 } from '../src/lib/perfil.ts'
 import { revisarLocalmente } from '../src/lib/revisionLocal.ts'
 import { enlaces, ejecutarReal } from './helpers/runtimeReal.ts'
@@ -195,4 +196,12 @@ test('perfil: un error de un campo se dice en ese campo, no como un fallo genér
   assert.equal(r.perfil, null)
   assert.match(r.errores?.github ?? '', /dirección web/)
   assert.match(r.errores?.nombre ?? '', /entre 2 y 80/)
+})
+
+test('perfil viejo del navegador: lo que pasa de un límite se recorta, no se pierde', () => {
+  const cuerpo = perfilLegadoParaSubir({ sobreMi: 'Me encanta programar. '.repeat(50), hobbies: ['h'.repeat(90), 'Ajedrez'] }, USUARIO)
+  assert.ok(cuerpo)
+  assert.equal([...cuerpo.description].length, 1000)
+  assert.deepEqual(cuerpo.hobbies, ['h'.repeat(80), 'Ajedrez'])
+  assert.equal(cuerpo.display_name, USUARIO.display_name, 'el nombre nunca viene del perfil viejo')
 })

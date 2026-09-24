@@ -88,7 +88,9 @@ export function perfilLegadoParaSubir(legado: Partial<Perfil>, user: BackendUser
 
   const texto = (v: unknown) => (typeof v === 'string' ? recortar(v) : '')
   const sobreMi = texto(legado.sobreMi)
-  const descripcion = sobreMi && sobreMi !== PERFIL_DEFECTO.sobreMi && largo(sobreMi) <= MAX_SOBRE_MI ? sobreMi : ''
+  // Lo que pasa de un límite se recorta (el formulario viejo no tenía límites): es texto del
+  // estudiante y no se tira.
+  const descripcion = sobreMi && sobreMi !== PERFIL_DEFECTO.sobreMi ? recortar(inicio(sobreMi, MAX_SOBRE_MI)) : ''
 
   const enlace = (v: unknown, ejemplo: string) => {
     const t = texto(v)
@@ -102,7 +104,7 @@ export function perfilLegadoParaSubir(legado: Partial<Perfil>, user: BackendUser
 
   const listaVieja = Array.isArray(legado.hobbies) ? legado.hobbies.map(texto).filter((h) => h.length > 0) : []
   const esEjemplo = listaVieja.length === PERFIL_DEFECTO.hobbies.length && listaVieja.every((h, i) => h === PERFIL_DEFECTO.hobbies[i])
-  const hobbies = esEjemplo ? [] : listaVieja.filter((h) => largo(h) <= MAX_LARGO_HOBBY).slice(0, MAX_HOBBIES)
+  const hobbies = esEjemplo ? [] : listaVieja.map((h) => recortar(inicio(h, MAX_LARGO_HOBBY))).filter((h) => h.length > 0).slice(0, MAX_HOBBIES)
 
   if (!descripcion && !github && !linkedin && hobbies.length === 0) return null
   return perfilParaBackend(

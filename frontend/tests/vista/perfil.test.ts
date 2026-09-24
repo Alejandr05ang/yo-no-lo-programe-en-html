@@ -156,3 +156,14 @@ test('si el docente pausa el día con "Mis datos" abierto, lo que se estaba escr
   assert.equal(bioDespues?.value, 'Me gusta programar')
   await p.desmontar()
 })
+
+test('E6 con 0 hobbies: si el bucle falla con los hobbies de ejemplo, la nota dice dónde; si no corrió, no dice que se probó', async () => {
+  const { revisarLocalmente } = await import('../../src/lib/revisionLocal.ts')
+  const base = componerAndamiaje(6, {})
+  const conError = `${base}\nvaciar(lista)\nPARA CADA hobby EN datos.hobbies HACER\n  agregarA(lista, crearItem(hobbie))\nFIN PARA`
+  const r = await revisarLocalmente(6, conError, { hobbies: [] })
+  assert.ok(r.casosPasados < r.casosTotales)
+  assert.match(r.nota ?? '', /Con esos datos tu código falló: .*hobbie.*\(línea \d+\)/)
+  const roto = await revisarLocalmente(6, `${base}\nSI 1 > 0 ENTONCES`, { hobbies: [] })
+  assert.doesNotMatch(roto.nota ?? '', /también se probó/)
+})

@@ -143,7 +143,7 @@ test('un guardado que falla sin red se reintenta solo, sin volver a escribir', a
   s.fallar(esGuardado('e4'), 1)
   await p.escribir('const escrito = "sin red"')
   await hasta(() => p.sello().startsWith('error al guardar'), 'se ve el error')
-  assert.equal(pendiente('e4'), '1', 'queda marcado como pendiente en este equipo')
+  assert.notEqual(pendiente('e4'), null, 'queda marcado como pendiente en este equipo')
 
   await hasta(() => s.progreso.get('e4')?.draft_code === 'const escrito = "sin red"', 'reintento automático', 12_000)
   await hasta(() => p.sello().startsWith('guardado'), 'sello tras el reintento')
@@ -210,13 +210,38 @@ test('recargar la página justo después de escribir no pierde lo escrito', asyn
   // Al cerrar o recargar la pestaña no hay desmontaje de React: lo tiene que dejar escrito el
   // propio aviso de "pagehide", en ese instante.
   assert.equal(ventana.localStorage.getItem('tutorias:draft:alumno-1:e4'), 'const ultimo = "antes de recargar"')
-  assert.equal(pendiente('e4'), '1')
+  assert.notEqual(pendiente('e4'), null)
   await p.desmontar()
 
   s.restablecerRed()
   p = await montar(s)
   await hasta(() => p.editor()?.value === 'const ultimo = "antes de recargar"', 'vuelve lo escrito')
   await hasta(() => s.progreso.get('e4')?.draft_code === 'const ultimo = "antes de recargar"', 'y se sube')
+  await p.desmontar()
+})
+
+test('cerrar la pestaña con el guardado en camino y seguir en otro equipo: la copia vieja no pisa lo nuevo', async () => {
+  const s = new ServidorFalso()
+  s.borrador('e4', D4)
+  let p = await montar(s)
+  await hasta(() => p.editor()?.value === D4, 'carga e4')
+  s.colgar(esGuardado('e4')) // el guardado llega, pero la pestaña ya no se entera
+  await p.escribir('const v = "A: lo último de clase"')
+  await hasta(() => s.progreso.get('e4')?.draft_code === 'const v = "A: lo último de clase"', 'llegó al servidor')
+  ventana.dispatchEvent(new ventana.Event('pagehide'))
+  await p.desmontar()
+  assert.equal(pendiente('e4') !== null, true, 'queda marcado en este equipo')
+
+  // En casa (otro equipo) sigue trabajando y se guarda.
+  s.restablecerRed()
+  s.borrador('e4', 'const v = "B: trabajo de casa, más nuevo"')
+
+  // De vuelta en el equipo A: manda el servidor y la marca se limpia.
+  p = await montar(s)
+  await hasta(() => p.editor()?.value === 'const v = "B: trabajo de casa, más nuevo"', 'gana lo más nuevo')
+  await esperar(1200)
+  assert.equal(s.progreso.get('e4')?.draft_code, 'const v = "B: trabajo de casa, más nuevo"')
+  assert.equal(pendiente('e4'), null)
   await p.desmontar()
 })
 

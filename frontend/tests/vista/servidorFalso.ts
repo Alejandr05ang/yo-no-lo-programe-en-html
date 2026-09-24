@@ -99,7 +99,15 @@ export class ServidorFalso {
   /** Vuelve la conexión: se olvidan los fallos pendientes. */
   restablecerRed() {
     this.fallos = []
+    this.colgados = []
   }
+
+  /** Las peticiones que cumplan el criterio LLEGAN (el servidor las aplica) pero la respuesta
+   *  nunca vuelve: como una pestaña que se cerró con el guardado en camino. */
+  colgar(criterio: Criterio) {
+    this.colgados.push(criterio)
+  }
+  private colgados: Criterio[] = []
 
   borrador(key: string, codigo: string, status: Progreso['status'] = 'in_progress') {
     this.progreso.set(key, { status, draft_code: codigo, cases_passed: 0, cases_total: 0 })
@@ -209,7 +217,9 @@ export class ServidorFalso {
     }
     this.llamadas.push(llamada)
     await new Promise((r) => setTimeout(r, 5))
-    return this.responder(llamada)
+    const respuesta = this.responder(llamada)
+    if (this.colgados.some((c) => c(llamada))) return new Promise<Response>(() => {})
+    return respuesta
   }
 }
 

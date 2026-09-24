@@ -386,9 +386,8 @@ export async function revisarLocalmente(
   // Con `overrideHtml` (quien llama ya ejecutó el código) no se puede volver a ejecutar.
   const extra = overrideHtml === undefined ? DATOS_EXTRA[numeroEncargo] : undefined
   const datosExtra = extra?.datos(datosObj) ?? null
-  const docExtra = r.ok && datosExtra
-    ? await ejecutarPreview(codigo, datosExtra).then((r2) => new DOMParser().parseFromString(`<body>${r2.ok ? r2.html : ''}</body>`, 'text/html'))
-    : null
+  const r2 = r.ok && datosExtra ? await ejecutarPreview(codigo, datosExtra) : null
+  const docExtra = r2?.ok ? new DOMParser().parseFromString(`<body>${r2.html}</body>`, 'text/html') : null
   const pasa = (c: CasoLocal) =>
     r.ok && safe(() => c.verificar(doc, datosObj)) && (!datosExtra || (!!docExtra && safe(() => c.verificar(docExtra, datosExtra))))
   const evaluados = casos.map((c) => ({
@@ -404,7 +403,13 @@ export async function revisarLocalmente(
     casos: evaluados,
     casosPasados: pasados,
     casosTotales: evaluados.length,
-    nota: datosExtra && extra ? `${nota} ${extra.nota}` : nota,
+    // La nota extra solo si de verdad se probó; y si con los datos de ejemplo el código falló
+    // (p. ej. un error dentro del bucle, que con la lista vacía nunca corre), dónde.
+    nota: !r2 || !extra
+      ? nota
+      : r2.ok
+        ? `${nota} ${extra.nota}`
+        : `${nota} ${extra.nota} Con esos datos tu código falló: ${r2.error?.mensaje ?? 'error'}${r2.error?.linea ? ` (línea ${r2.error.linea})` : ''}.`,
   }
 }
 

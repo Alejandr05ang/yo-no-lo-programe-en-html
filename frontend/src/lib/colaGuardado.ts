@@ -46,20 +46,49 @@ export function clavePendiente(uid: string, key: string): string {
   return `tutorias:draft-pendiente:${uid}:${key}`
 }
 
+/** Huella corta de un texto (FNV-1a de 32 bits): para comparar sin guardar el texto entero. */
+export function huella(texto: string): string {
+  let h = 0x811c9dc5
+  for (let i = 0; i < texto.length; i++) {
+    h ^= texto.charCodeAt(i)
+    h = Math.imul(h, 0x01000193)
+  }
+  return (h >>> 0).toString(36)
+}
+
+/**
+ * El valor de la marca de pendiente: la huella de lo último que este equipo SABE que está en
+ * el servidor. Al volver sirve para saber si el servidor cambió desde entonces (otro equipo, o
+ * un guardado que llegó aunque la pestaña se cerró antes de enterarse).
+ */
+export function valorPendiente(ultimoEnServidor: string): string {
+  return JSON.stringify({ base: huella(ultimoEnServidor) })
+}
+
 /**
  * Qué borrador mostrar al abrir un encargo.
  *
  * El del servidor, salvo que la copia de este equipo tenga cambios que NO llegaron (un
- * guardado falló sin red): esa copia es la más reciente y se vuelve a subir. Sin la marca,
- * volver al encargo mostraba la versión vieja del servidor y el siguiente autoguardado la
- * dejaba como definitiva.
+ * guardado falló sin red, o se cerró la pestaña a medio escribir): esa copia es la más
+ * reciente y se vuelve a subir. Pero solo si el servidor sigue teniendo lo mismo que cuando
+ * se hizo la copia; si cambió después (el estudiante siguió en otro equipo) manda el servidor:
+ * si no, una copia vieja de este equipo pisaba el trabajo más nuevo. `pendiente` es el valor
+ * de la marca (valorPendiente), '1' en las marcas sin huella, o null si no hay marca.
  */
 export function elegirBorrador(p: {
   servidor: string
   local: string | null
-  localPendiente: boolean
+  pendiente: string | null
 }): { codigo: string; subir: boolean } | null {
-  if (p.localPendiente && p.local && p.local !== p.servidor) return { codigo: p.local, subir: true }
+  if (p.pendiente && p.local && p.local !== p.servidor) {
+    let base: unknown = null
+    try {
+      base = (JSON.parse(p.pendiente) as { base?: unknown })?.base ?? null
+    } catch {
+      base = null
+    }
+    if (base === null || base === huella(p.servidor)) return { codigo: p.local, subir: true }
+  }
   if (p.servidor) return { codigo: p.servidor, subir: false }
   return null
 }

@@ -144,3 +144,9 @@ test('un programa larguísimo o anidadísimo no tumba la pantalla: vuelve un err
   assert.doesNotThrow(() => { r = analizarFlujo(cadena) })
   assert.ok(r)
 })
+
+test('un "#" del propio texto no se lee como código de Mermaid ("Canal #1;")', () => {
+  const r = analizarFlujo('mostrar(crearParrafo("Canal #1; y #lt; literal"))')
+  assert.equal(r.ok, true, r.error)
+  assert.ok(r.mermaid.includes("Canal #35;1; y #35;lt; literal"), r.mermaid)
+})

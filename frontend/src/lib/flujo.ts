@@ -227,7 +227,8 @@ function generarMermaid(programa: Nodo, codigo: string): string {
   // se tomaba por el inicio de una etiqueta y la condición del rombo se cortaba. Se escriben
   // con los códigos de Mermaid (#lt; …), que se ven como el carácter.
   function escaparTexto(t: string): string {
-    return acortar(t).replace(/&/g, '#amp;').replace(/</g, '#lt;').replace(/>/g, '#gt;').replace(/"/g, "'")
+    // "#" primero: Mermaid también lee "#algo;" del propio texto como un código ("Canal #1;").
+    return acortar(t).replace(/#/g, '#35;').replace(/&/g, '#amp;').replace(/</g, '#lt;').replace(/>/g, '#gt;').replace(/"/g, "'")
   }
 
   function nodo(id: string, texto: string, forma: 'accion' | 'decision' | 'terminal') {

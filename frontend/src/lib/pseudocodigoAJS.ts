@@ -135,9 +135,11 @@ function mezclaEnLaLinea(linea: string): string | null {
   if (/^para\s+cada\s/i.test(t) && !hacer && !llave) return 'Te falta "HACER" al final de esta línea: PARA CADA elemento EN lista HACER.'
   if (clave(/^mientras(?=\s+[^\s([])/iu) && !hacer && !llave) return 'Te falta "HACER" al final de esta línea: MIENTRAS condición HACER.'
   if (/^sino\s+si\b/i.test(t)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "SINO SI condición ENTONCES", sin llaves; o, en JavaScript, "} else if (condición) {".'
-  if (clave(/^si(?![\p{ID_Continue}$])/iu) && (entonces || llave)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "SI condición ENTONCES", sin llaves ni paréntesis obligatorios; o, en JavaScript, "if (condición) {".'
+  // Con ENTONCES/HACER en la línea es la palabra clave aunque detrás venga "[", "++"…
+  // ("SI [a, b].includes(x) ENTONCES {"): la excepción de los nombres es para "si[0] = 1".
+  if (((/^si(?![\p{ID_Continue}$])/iu.test(t) && entonces) || (clave(/^si(?![\p{ID_Continue}$])/iu) && llave))) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "SI condición ENTONCES", sin llaves ni paréntesis obligatorios; o, en JavaScript, "if (condición) {".'
   if (/^para\s+cada\b/i.test(t)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "PARA CADA elemento EN lista HACER", sin llaves; o, en JavaScript, "for (const elemento of lista) {".'
-  if (clave(/^mientras(?![\p{ID_Continue}$])/iu) && (hacer || llave)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "MIENTRAS condición HACER", sin llaves; o, en JavaScript, "while (condición) {".'
+  if (((/^mientras(?![\p{ID_Continue}$])/iu.test(t) && hacer) || (clave(/^mientras(?![\p{ID_Continue}$])/iu) && llave))) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "MIENTRAS condición HACER", sin llaves; o, en JavaScript, "while (condición) {".'
   if (/^funci[oó]n\s+[\p{ID_Start}$_]/iu.test(t)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "FUNCIÓN nombre(entrada)", sin llaves; o, en JavaScript, "function nombre(entrada) {".'
   if (clave(/^fin\s*(?:si|para|mientras|funci[oó]n)(?![\p{ID_Continue}$])/iu)) return 'Esta línea mezcla pseudocódigo y JavaScript: un "FIN …" va solo en su línea, sin llaves ni nada más.'
   if (clave(/^sino(?![\p{ID_Continue}$])/iu)) return 'Esta línea mezcla pseudocódigo y JavaScript: "SINO" va solo en su línea; o, en JavaScript, "} else {".'

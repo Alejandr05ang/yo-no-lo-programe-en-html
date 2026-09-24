@@ -243,3 +243,9 @@ test('"</script>" en los datos o en el código no rompe la vista previa', async 
   assert.equal(r.ok, true, r.error)
   assert.match(r.html, /<h1>Ana&lt;\/script&gt;<\/h1>/)
 })
+
+test('"SI [..] ENTONCES {" o "SI ++x … ENTONCES {" se explican como mezcla en su línea', () => {
+  falla('SI [datos.nombre, "Ana"].includes("Ana") ENTONCES {\n  mostrar(crearParrafo("a"))\nFIN SI', 1, /mezcla pseudocódigo y JavaScript/)
+  falla('let contador = 0\nSI ++contador > 3 ENTONCES {\n  mostrar(crearParrafo("a"))\n}', 2, /mezcla pseudocódigo y JavaScript/)
+  falla('MIENTRAS [1].length > 5 HACER {\n}', 1, /MIENTRAS condición HACER/)
+})

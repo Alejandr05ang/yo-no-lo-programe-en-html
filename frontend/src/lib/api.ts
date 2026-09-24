@@ -22,14 +22,15 @@ export const api = {
     return ENCARGOS[numero] ?? ENCARGOS[1]
   },
 
-  async getProgress(cliente: ApiClient | null, numero: number): Promise<{ draft_code: string, status: string, cases_passed?: number, cases_total?: number }> {
+  async getProgress(cliente: ApiClient | null, numero: number): Promise<{ draft_code: string, status: string, cases_passed?: number, cases_total?: number, sinRespuesta?: boolean }> {
     const key = challengeKeyFromNumero(numero)
     try {
       return await exigirCliente(cliente).request(`/challenges/${key}/progress`)
     } catch {
       // Sin sesión, sin red o con el reto todavía bloqueado: se empieza en blanco
       // y el respaldo local de quien llama decide si hay algo que restaurar.
-      return { draft_code: '', status: 'not_started' }
+      // `sinRespuesta`: no se sabe qué tiene el servidor (no es lo mismo que "vacío").
+      return { draft_code: '', status: 'not_started', sinRespuesta: true }
     }
   },
 
