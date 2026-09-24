@@ -1,6 +1,7 @@
 // Monta la pantalla REAL del estudiante (VistaEstudiante) con el mismo árbol de proveedores que
 // en producción —autenticación, React Query, router— y el cliente HTTP real contra el servidor
 // falso. Devuelve lo que ve y puede hacer un estudiante.
+import { afterEach } from 'node:test'
 import { ventana } from './entorno.ts'
 import type { ServidorFalso } from './servidorFalso.ts'
 
@@ -11,6 +12,13 @@ const { Link, MemoryRouter, Route, Routes, useLocation, useNavigate, useParams }
 const { AuthContext } = await import('../../src/features/auth/authContext.ts')
 const { createApiClient } = await import('../../src/lib/http.ts')
 const { VistaEstudiante } = await import('../../src/features/estudiante/VistaEstudiante.tsx')
+
+// Lo que un test deja montado (por ejemplo, porque falló antes de desmontar) se desmonta igual:
+// si no, sus temporizadores (el mapa se vuelve a pedir cada 45 s) no dejan terminar el proceso.
+const montadas = new Set<{ desmontar: () => Promise<void> }>()
+afterEach(async () => {
+  for (const p of [...montadas]) await p.desmontar()
+})
 
 export const esperar = (ms: number) => act(() => new Promise<void>((r) => setTimeout(r, ms)))
 
@@ -128,7 +136,7 @@ export async function montar(servidor: ServidorFalso, ruta = '/portafolio?e=4', 
   const editor = () => contenedor.querySelector<HTMLTextAreaElement>('textarea[data-editor="portafolio.js"]')
   const boton = (texto: string | RegExp) => [...contenedor.querySelectorAll('button')].find((b) =>
     typeof texto === 'string' ? (b.textContent ?? '').trim().startsWith(texto) : texto.test(b.textContent ?? '')) ?? null
-  return {
+  const pantalla: Pantalla = {
     contenedor,
     ubicacion: () => router.ubicacion,
     async ir(ruta) {
@@ -164,9 +172,12 @@ export async function montar(servidor: ServidorFalso, ruta = '/portafolio?e=4', 
     },
     texto: () => contenedor.textContent ?? '',
     async desmontar() {
+      if (!montadas.delete(pantalla)) return
       await act(async () => { raiz.unmount() })
       contenedor.remove()
       cliente.clear()
     },
   }
+  montadas.add(pantalla)
+  return pantalla
 }
