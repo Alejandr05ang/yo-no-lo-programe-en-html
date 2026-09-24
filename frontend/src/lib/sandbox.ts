@@ -109,7 +109,7 @@ const RUNTIME = String.raw`
 //    try/catch puede atrapar, en vez de abortar en silencio todo el <script> y que el
 //    estudiante vea "no terminó a tiempo" por un typo (confuso para quien no programa).
 // Un texto con "</script>" (en "Mis datos" o en el código) cerraría el <script> antes de
-// tiempo y la vista previa acabaría en "no terminó a tiempo". Se escribe "<" como <, que
+// tiempo y la vista previa acabaría en "no terminó a tiempo". Se escribe "<" como \u003c, que
 // dentro de un literal de JS sigue siendo el mismo carácter.
 function comoLiteralSeguro(valor: unknown): string {
   return JSON.stringify(valor).replace(/</g, '\\u003c')
