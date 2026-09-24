@@ -131,9 +131,9 @@ function mezclaEnLaLinea(linea: string): string | null {
   const llave = t.endsWith('{')
   // Pseudocódigo al que le falta su palabra de cierre (y no lleva llaves): es un olvido, no
   // una mezcla.
-  if (clave(/^(?:sino\s+)?si(?=\s+[^\s(\[])/iu) && !entonces && !llave) return 'Te falta "ENTONCES" al final de esta línea: SI condición ENTONCES.'
+  if (clave(/^(?:sino\s+)?si(?=\s+[^\s([])/iu) && !entonces && !llave) return 'Te falta "ENTONCES" al final de esta línea: SI condición ENTONCES.'
   if (/^para\s+cada\s/i.test(t) && !hacer && !llave) return 'Te falta "HACER" al final de esta línea: PARA CADA elemento EN lista HACER.'
-  if (clave(/^mientras(?=\s+[^\s(\[])/iu) && !hacer && !llave) return 'Te falta "HACER" al final de esta línea: MIENTRAS condición HACER.'
+  if (clave(/^mientras(?=\s+[^\s([])/iu) && !hacer && !llave) return 'Te falta "HACER" al final de esta línea: MIENTRAS condición HACER.'
   if (/^sino\s+si\b/i.test(t)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "SINO SI condición ENTONCES", sin llaves; o, en JavaScript, "} else if (condición) {".'
   if (clave(/^si(?![\p{ID_Continue}$])/iu) && (entonces || llave)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "SI condición ENTONCES", sin llaves ni paréntesis obligatorios; o, en JavaScript, "if (condición) {".'
   if (/^para\s+cada\b/i.test(t)) return 'Esta línea mezcla pseudocódigo y JavaScript. Escribe "PARA CADA elemento EN lista HACER", sin llaves; o, en JavaScript, "for (const elemento of lista) {".'
