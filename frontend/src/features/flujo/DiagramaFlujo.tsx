@@ -39,6 +39,10 @@ export function DiagramaFlujo({ codigo, onCerrar }: Props) {
         const { default: mermaid } = await import('mermaid')
         mermaid.initialize({
           startOnLoad: false,
+          // Por defecto Mermaid deja de dibujar a las 500 flechas o 50 000 caracteres, con un
+          // aviso en inglés; un portafolio largo pero normal no debe llegar a eso.
+          maxEdges: 2000,
+          maxTextSize: 200_000,
           theme: 'base',
           fontFamily: 'ui-monospace, Menlo, monospace',
           themeVariables: {
@@ -103,8 +107,8 @@ export function DiagramaFlujo({ codigo, onCerrar }: Props) {
         </div>
 
         <p className="flujo-nota">
-          Así se lee el código que tenés escrito ahora mismo en portafolio.js — es solo para
-          mirar, no se puede editar acá.
+          Así se lee el código que tienes escrito ahora mismo en portafolio.js: es solo para
+          mirar, no se puede editar aquí.
         </p>
 
         <div className="flujo-cuerpo">

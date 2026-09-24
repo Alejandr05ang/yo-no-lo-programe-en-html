@@ -29,6 +29,13 @@ function acortar(texto: string): string {
   return limpio.length > MAX_TEXTO ? limpio.slice(0, MAX_TEXTO - 1) + '…' : limpio
 }
 
+/** Para la vista de pseudocódigo (que tiene espacio): sin recortar nada, pero una sentencia
+ *  que el estudiante partió en varias líneas se lee en una sola, así sus líneas de
+ *  continuación no rompen la sangría ni dejan líneas en blanco sueltas. */
+function enUnaLinea(texto: string): string {
+  return texto.replace(/\s*\n\s*/g, ' ').trim()
+}
+
 /** El texto fuente de un nodo — un string literal se muestra entre comillas, el resto tal
  *  cual aparece en el código (una variable, una expresión, un member access…). */
 function fuente(n: Nodo, codigo: string): string {
@@ -52,7 +59,9 @@ const CREAR: Record<string, (a: string[]) => string> = {
   crearSalto: () => `un espacio en blanco`,
   crearLista: () => `una lista vacía`,
   crearItem: (a) => `un elemento de lista con el texto ${a[0] ?? ''}`,
-  crearEnlace: (a) => `un enlace "${a[0] ?? ''}" hacia ${a[1] ?? ''}`,
+  // Sin comillas propias: fuente() ya las pone a los textos, y una variable (red.nombre) no las
+  // lleva, como en el resto de frases.
+  crearEnlace: (a) => `un enlace ${a[0] ?? ''} hacia ${a[1] ?? ''}`,
   crearImagen: (a) => `una imagen desde ${a[0] ?? ''}`,
   crearCarrusel: () => `un carrusel`,
   crearBoton: (a) => `un botón con el texto ${a[0] ?? ''}`,
@@ -76,22 +85,27 @@ function textoLlamada(n: Nodo, codigo: string): string | null {
   return `Llamar a ${nombre}(${args.join(', ')})`
 }
 
-/** Traduce una sentencia "de hoja" (sin ramas propias) a una frase en español. */
-function textoSentencia(n: Nodo, codigo: string): string {
+/** "let x = 0" → "Guardar 0 en x"; "const t = crearTitulo(…)" → "Crear un título… y guardarlo como t". */
+function textoDeclaracion(d: Nodo, codigo: string): string {
+  const nombre = d.id.name ?? fuente(d.id, codigo)
+  if (!d.init) return `Declarar ${nombre}`
+  if (d.init.type === 'CallExpression' && d.init.callee.type === 'Identifier' && CREAR[d.init.callee.name]) {
+    const frase = CREAR[d.init.callee.name](listaFuente(d.init.arguments, codigo))
+    return `Crear ${frase} y guardarl${frase.startsWith('una ') ? 'a' : 'o'} como ${nombre}`
+  }
+  return `Guardar ${fuente(d.init, codigo)} en ${nombre}`
+}
+
+/** Traduce una sentencia "de hoja" (sin ramas propias) a una frase en español. `ajustar` es
+ *  cómo se muestra lo que se copia tal cual: recortado en el diagrama, entero en el pseudocódigo. */
+function textoSentencia(n: Nodo, codigo: string, ajustar: (t: string) => string = acortar): string {
   switch (n.type) {
-    case 'VariableDeclaration': {
-      const d = n.declarations[0]
-      const nombre = d.id.name ?? fuente(d.id, codigo)
-      if (!d.init) return `Declarar ${nombre}`
-      if (d.init.type === 'CallExpression' && d.init.callee.type === 'Identifier' && CREAR[d.init.callee.name]) {
-        const args = listaFuente(d.init.arguments, codigo)
-        return `Crear ${CREAR[d.init.callee.name](args)} y guardarlo como ${nombre}`
-      }
-      return `Guardar ${fuente(d.init, codigo)} en ${nombre}`
-    }
+    case 'VariableDeclaration':
+      // "let x = 0, y = 10": cada variable cuenta, no solo la primera.
+      return (n.declarations as Nodo[]).map((d) => textoDeclaracion(d, codigo)).join('; ')
     case 'ExpressionStatement': {
       const llamada = textoLlamada(n.expression, codigo)
-      return llamada ?? acortar(fuente(n, codigo))
+      return llamada ?? ajustar(fuente(n, codigo))
     }
     case 'ReturnStatement':
       return n.argument ? `Devolver ${fuente(n.argument, codigo)}` : 'Terminar la función'
@@ -100,7 +114,7 @@ function textoSentencia(n: Nodo, codigo: string): string {
     case 'ContinueStatement':
       return 'Saltar a la próxima vuelta'
     default:
-      return acortar(fuente(n, codigo))
+      return ajustar(fuente(n, codigo))
   }
 }
 
@@ -141,7 +155,7 @@ function pseudoIf(s: Nodo, codigo: string, nivel: number, lineas: string[]) {
   let actual: Nodo | null = s
   let primero = true
   while (actual) {
-    lineas.push(`${sangria}${primero ? 'SI' : 'SINO SI'} ${fuente(actual.test, codigo)} ENTONCES`)
+    lineas.push(`${sangria}${primero ? 'SI' : 'SINO SI'} ${enUnaLinea(fuente(actual.test, codigo))} ENTONCES`)
     lineas.push(...pseudoBloque(cuerpoDe(actual.consequent), codigo, nivel + 1))
     primero = false
 
@@ -178,7 +192,7 @@ function pseudoBloque(stmts: Nodo[], codigo: string, nivel: number): string[] {
       pseudoIf(s, codigo, nivel, lineas)
     } else if (s.type === 'ForOfStatement' || s.type === 'ForStatement' || s.type === 'WhileStatement') {
       const { cabecera, cierre } = descripcionBucle(s, codigo)
-      lineas.push(`${sangria}${cabecera}`)
+      lineas.push(`${sangria}${enUnaLinea(cabecera)}`)
       lineas.push(...pseudoBloque(cuerpoDe(s.body), codigo, nivel + 1))
       lineas.push(`${sangria}${cierre}`)
     } else if (s.type === 'FunctionDeclaration') {
@@ -187,7 +201,7 @@ function pseudoBloque(stmts: Nodo[], codigo: string, nivel: number): string[] {
       lineas.push(...pseudoBloque(cuerpoDe(s.body), codigo, nivel + 1))
       lineas.push(`${sangria}FIN FUNCIÓN`)
     } else {
-      lineas.push(`${sangria}${textoSentencia(s, codigo)}`)
+      lineas.push(`${sangria}${enUnaLinea(textoSentencia(s, codigo, enUnaLinea))}`)
     }
   }
   return lineas
@@ -209,8 +223,11 @@ function generarMermaid(programa: Nodo, codigo: string): string {
   const lineas: string[] = ['flowchart TD']
   const nuevoId = () => `n${contador++}`
 
+  // Mermaid lee la etiqueta como HTML: un "<" pegado a una letra (contador<limite, i<lista.length)
+  // se tomaba por el inicio de una etiqueta y la condición del rombo se cortaba. Se escriben
+  // con los códigos de Mermaid (#lt; …), que se ven como el carácter.
   function escaparTexto(t: string): string {
-    return acortar(t).replace(/"/g, "'")
+    return acortar(t).replace(/&/g, '#amp;').replace(/</g, '#lt;').replace(/>/g, '#gt;').replace(/"/g, "'")
   }
 
   function nodo(id: string, texto: string, forma: 'accion' | 'decision' | 'terminal') {
@@ -319,12 +336,15 @@ export function analizarFlujo(codigoEstudiante: string): ResultadoFlujo {
   // igual, con su propio mensaje.
   const traduccion = aJavaScript(codigoEstudiante)
   if (!traduccion.ok) {
-    return { ok: false, mermaid: '', pseudocodigo: '', error: traduccion.error?.mensaje ?? 'Hay un error en tu código.' }
+    // Con su línea: aquí el diálogo tapa el editor y "esta línea" sola no dice cuál es.
+    const e = traduccion.error
+    const error = !e ? 'Hay un error en tu código.' : e.linea ? `${e.mensaje} (línea ${e.linea})` : e.mensaje
+    return { ok: false, mermaid: '', pseudocodigo: '', error }
   }
   const codigo = traduccion.js
   let programa: Nodo
   try {
-    programa = parse(codigo, { ecmaVersion: 2023, sourceType: 'script' }) as unknown as Nodo
+    programa = parse(codigo, { ecmaVersion: 'latest', sourceType: 'script' }) as unknown as Nodo
   } catch {
     return {
       ok: false,
@@ -336,9 +356,15 @@ export function analizarFlujo(codigoEstudiante: string): ResultadoFlujo {
   if (programa.body.length === 0) {
     return { ok: false, mermaid: '', pseudocodigo: '', error: 'Escribe algo de código para ver aquí su diagrama de flujo.' }
   }
-  return {
-    ok: true,
-    mermaid: generarMermaid(programa, codigo),
-    pseudocodigo: generarPseudocodigo(programa, codigo),
+  try {
+    return {
+      ok: true,
+      mermaid: generarMermaid(programa, codigo),
+      pseudocodigo: generarPseudocodigo(programa, codigo),
+    }
+  } catch {
+    // Un programa enorme o anidadísimo puede agotar la pila al recorrerlo: se avisa en vez de
+    // tumbar la pantalla del estudiante.
+    return { ok: false, mermaid: '', pseudocodigo: '', error: 'Tu código es demasiado largo o anidado para dibujarlo.' }
   }
 }

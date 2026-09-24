@@ -11,7 +11,8 @@ test('un if/else se traduce a SI/SINO/FIN SI y a un rombo de decisión', () => {
   assert.match(r.pseudocodigo, /SINO/)
   assert.match(r.pseudocodigo, /FIN SI/)
   assert.match(r.mermaid, /flowchart TD/)
-  assert.match(r.mermaid, /\{"¿temperatura > 30\?"\}/)
+  // Mermaid lee la etiqueta como HTML: "<" y ">" van con sus códigos (#lt; #gt;).
+  assert.match(r.mermaid, /\{"¿temperatura #gt; 30\?"\}/)
   assert.match(r.mermaid, /-->\|Sí\|/)
   assert.match(r.mermaid, /-->\|No\|/)
 })
@@ -74,4 +75,72 @@ test('un pseudocódigo mal cerrado (falta FIN SI) da el mismo tipo de error amig
   const r = analizarFlujo('SI a > 1 ENTONCES\n  mostrar(a)')
   assert.equal(r.ok, false)
   assert.match(r.error ?? '', /FIN SI/)
+})
+
+// Auditoría final (revisión adversarial de la vista de flujo).
+
+test('una condición con "<" pegado a un nombre no se corta en el rombo del diagrama', () => {
+  const r = analizarFlujo('let contador = 0\nconst limite = 3\nSI contador<limite ENTONCES\n  mostrar(crearParrafo("sí"))\nFIN SI')
+  assert.equal(r.ok, true, r.error)
+  assert.match(r.mermaid, /\{"¿contador#lt;limite\?"\}/)
+  for (const [, etiqueta] of r.mermaid.matchAll(/"([^"\n]*)"/g)) {
+    assert.doesNotMatch(etiqueta, /[<>]/, `etiqueta con "<" o ">" crudos: ${etiqueta}`)
+  }
+  assert.match(r.pseudocodigo, /SI contador<limite ENTONCES/)
+})
+
+test('crearEnlace: la variable va sin comillas y el texto con las suyas, sin duplicarlas', () => {
+  const r = analizarFlujo('PARA CADA red EN datos.redes HACER\n  const enlace = crearEnlace(red.nombre, red.url)\nFIN PARA\nconst wiki = crearEnlace("Wikipedia", "https://wikipedia.org")\nconst lista = crearLista()')
+  assert.equal(r.ok, true, r.error)
+  assert.match(r.pseudocodigo, /Crear un enlace red\.nombre hacia red\.url y guardarlo como enlace/)
+  assert.match(r.pseudocodigo, /Crear un enlace "Wikipedia" hacia "https:\/\/wikipedia\.org" y guardarlo como wiki/)
+  assert.match(r.pseudocodigo, /Crear una lista vacía y guardarla como lista/)
+})
+
+test('el error de la vista de flujo dice en qué línea está', () => {
+  const r = analizarFlujo('mostrar(crearTitulo("a"))\nSI 1 > 0\n  mostrar(crearParrafo("b"))\nFIN SI')
+  assert.equal(r.ok, false)
+  assert.match(r.error ?? '', /\(línea 2\)$/)
+})
+
+test('una sentencia partida en varias líneas se lee en una, sin romper la sangría ni duplicar blancos', () => {
+  const codigo = [
+    'PARA CADA h EN datos.hobbies HACER',
+    '  agregarA(lista, crearItem(',
+    '    h',
+    '  ))',
+    'FIN PARA',
+    'const colores = [',
+    '  "rojo",',
+    '',
+    '',
+    '  "azul",',
+    ']',
+    'let x = 0, y = 10',
+  ].join('\n')
+  const r = analizarFlujo(codigo)
+  assert.equal(r.ok, true, r.error)
+  assert.deepEqual(r.pseudocodigo.split('\n'), [
+    'INICIO',
+    '    PARA CADA h EN datos.hobbies HACER',
+    '        Agregar crearItem( h ) dentro de lista',
+    '    FIN PARA',
+    '    Guardar [ "rojo", "azul", ] en colores',
+    '    Guardar 0 en x; Guardar 10 en y',
+    'FIN',
+  ])
+})
+
+test('el pseudocódigo no recorta lo que se copia tal cual (solo el diagrama lo acorta)', () => {
+  const largo = 'titulo.textContent = "Bienvenidos a mi portafolio personal, donde cuento lo que aprendí este verano"'
+  const r = analizarFlujo(`const titulo = crearTitulo("a")\n${largo}`)
+  assert.ok(r.pseudocodigo.includes(largo))
+  assert.ok(r.mermaid.includes('…'))
+})
+
+test('un programa larguísimo o anidadísimo no tumba la pantalla: vuelve un error amable', () => {
+  const cadena = ['if (a === 0) {', '  mostrar(a)'].concat(Array.from({ length: 3000 }, (_, i) => `} else if (a === ${i + 1}) {\n  mostrar(a)`), ['}']).join('\n')
+  let r: ReturnType<typeof analizarFlujo> | undefined
+  assert.doesNotThrow(() => { r = analizarFlujo(cadena) })
+  assert.ok(r)
 })
