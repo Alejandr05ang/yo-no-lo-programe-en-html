@@ -97,6 +97,25 @@ test('una respuesta vieja del servidor no pisa el reto que ya está abierto', as
   await p.desmontar()
 })
 
+test('Atrás con cambios sin guardar y el borrador nuevo tardando: lo del reto anterior nunca va al nuevo', async () => {
+  const s = new ServidorFalso()
+  s.borrador('e4', D4)
+  s.borrador('e5', D5)
+  const p = await montar(s, '/portafolio?e=5')
+  await hasta(() => p.editor()?.value === D5, 'carga e5')
+  const lenta = s.retener(esLectura('e4'))
+  await p.escribir('const cambioDeE5 = 1') // sin esperar a la pausa del autoguardado
+  await p.ir('/portafolio?e=4') // botón Atrás del navegador: no pasa por "Anterior"
+  await lenta.llegada
+  await esperar(1500) // más que la pausa del autoguardado, con e4 todavía cargando
+  assert.ok(s.guardados('e4').every((l) => l.cuerpo?.draft_code !== 'const cambioDeE5 = 1'), 'nada de e5 bajo e4')
+  lenta.soltar()
+  await hasta(() => p.editor()?.value === D4, 'e4 con lo suyo')
+  await hasta(() => s.progreso.get('e5')?.draft_code === 'const cambioDeE5 = 1', 'el cambio de e5 se guardó en e5')
+  assert.equal(s.progreso.get('e4')?.draft_code, D4)
+  await p.desmontar()
+})
+
 test('lo que se escribe durante un guardado no se da por guardado: se envía después', async () => {
   const s = new ServidorFalso()
   s.borrador('e4', D4)
@@ -188,6 +207,10 @@ test('recargar la página justo después de escribir no pierde lo escrito', asyn
   await p.escribir('const ultimo = "antes de recargar"')
   await esperar(100)
   ventana.dispatchEvent(new ventana.Event('pagehide'))
+  // Al cerrar o recargar la pestaña no hay desmontaje de React: lo tiene que dejar escrito el
+  // propio aviso de "pagehide", en ese instante.
+  assert.equal(ventana.localStorage.getItem('tutorias:draft:alumno-1:e4'), 'const ultimo = "antes de recargar"')
+  assert.equal(pendiente('e4'), '1')
   await p.desmontar()
 
   s.restablecerRed()

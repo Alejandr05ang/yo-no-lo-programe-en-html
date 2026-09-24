@@ -65,6 +65,26 @@ test('redes: un enlace vacío no cuenta como el enlace a una dirección que no s
   assert.equal(mala.revision.casos.find((c) => /dirección correcta/.test(c.descripcion))?.estado, 'falla')
 })
 
+// La revisión aplica la MISMA normalización que la vista previa también al HTML que recibe ya
+// hecho (overrideHtml): un href sin esquema cuenta como su dirección completa.
+test('redes: la revisión normaliza también el HTML que recibe hecho', async () => {
+  const datos = perfilComoDatos(perfilDesdeBackend({ ...USUARIO, github_url: 'https://github.com/ana' }))
+  const base = `${componerAndamiaje(4, {})}\n`
+  const { html } = await ejecutarReal(base, datos)
+  const crudo = `${html}<a href="github.com/ana">GitHub</a><a href="ana@ejemplo.com">Correo</a>`
+  const r = await revisarLocalmente(4, base, datos, crudo)
+  assert.equal(r.casosPasados, r.casosTotales, JSON.stringify(r.casos))
+})
+
+// Grader de enlaces: un href vacío o inválido nunca coincide con una dirección que tampoco se
+// puede interpretar (E11 no filtra las direcciones antes de comparar, a diferencia de E4).
+test('E11: un proyecto demo con dirección inválida no se da por enlazado con un enlace vacío', async () => {
+  const datos = { proyectos: [{ nombre: 'Demo rota', tipo: 'demo', url: 'no es una url' }, { nombre: 'Texto', tipo: 'texto' }] }
+  const html = '<a>Demo rota</a><p>Texto</p>'
+  const r = await revisarLocalmente(11, '', datos, html)
+  assert.equal(r.casos[0].estado, 'falla')
+})
+
 test('hobbies: el payload final lleva los tres, y tras rehidratar datos.js los muestra', () => {
   const guardado = guardarYRehidratar({ ...borradorDesdePerfil(perfilDesdeBackend(USUARIO)), hobbiesTexto: 'Ajedrez\nFútbol\n\n  Música  \n' })
   assert.deepEqual(guardado.hobbies, ['Ajedrez', 'Fútbol', 'Música'])
