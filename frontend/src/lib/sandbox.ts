@@ -327,12 +327,18 @@ export function ejecutarPreview(
 // ── Ju1: documento multi-pestaña (ver frontend/src/lib/estructuraDePagina.ts) ──────────────
 // Cada sección corre su propio script, con su PROPIO contenedor detached (no el <div
 // id="__raiz"> compartido), en la MISMA página/scope que el resto — así el RUNTIME (arriba)
-// se emite una sola vez, igual que con un solo archivo. El resultado de cada sección se guarda
-// envuelto en un <div> con el grid-row/grid-column que le toca según la cuadrícula, y ese
-// envoltorio es lo que se expone como variable con nombre ANTES de correr el "main"
+// se emite una sola vez, igual que con un solo archivo. El grid-row/grid-column que le toca
+// según la cuadrícula se pone DIRECTO sobre ese contenedor (no en un <div> que lo envuelva):
+// un elemento hijo de un grid se estira solo para llenar toda su celda (comportamiento por
+// defecto de CSS grid) — envolverlo en otro <div> rompía eso, porque el que se estiraba
+// terminaba siendo el envoltorio (invisible) y el contenedor real (con el fondo que haya
+// puesto cambiarColorFondo()) se quedaba del tamaño de su contenido, dejando ver el fondo de
+// la página alrededor. Puesto así, el contenedor mismo es el elemento del grid — su color de
+// fondo llena la celda entera, por más chica o grande que sea al lado de sus vecinas.
+// Ese mismo contenedor es lo que se expone como variable con nombre ANTES de correr el "main"
 // (portafolio.js) — mismo mecanismo que ya usa `datos` (una variable que sale de "afuera").
-// Con la posición ya resuelta en el envoltorio, el main solo necesita `mostrar(nombreSeccion)`;
-// no importa en qué orden lo haga, el CSS grid las ubica igual.
+// Con la posición ya puesta, el main solo necesita `mostrar(nombreSeccion)`; no importa en qué
+// orden lo haga, el CSS grid las ubica igual.
 export function construirSrcdocJu1(doc: DocumentoJu1, datos: unknown): string {
   const nombresEnLaCuadricula = new Set(
     doc.estructura.celdas.filter((c): c is typeof c & { seccion: string } => c.seccion !== null).map((c) => c.seccion),
@@ -346,14 +352,10 @@ export function construirSrcdocJu1(doc: DocumentoJu1, datos: unknown): string {
       const codigoConFuente = s.contenido + `\n//# sourceURL=${archivo}`
       return `
   pagina = document.createElement('div');
+  pagina.style.gridRow = '${celda.fila + 1} / span ${celda.expandeFilas}';
+  pagina.style.gridColumn = '${celda.columna + 1} / span ${celda.expandeColumnas}';
   __evaluarConNombre(${comoLiteralSeguro(codigoConFuente)}, ${comoLiteralSeguro(archivo)});
-  (function () {
-    var envoltura = document.createElement('div');
-    envoltura.style.gridRow = '${celda.fila + 1} / span ${celda.expandeFilas}';
-    envoltura.style.gridColumn = '${celda.columna + 1} / span ${celda.expandeColumnas}';
-    envoltura.appendChild(pagina);
-    window.__SECCIONES__[${comoLiteralSeguro(s.nombre)}] = envoltura;
-  })();`
+  window.__SECCIONES__[${comoLiteralSeguro(s.nombre)}] = pagina;`
     })
     .join('\n')
 

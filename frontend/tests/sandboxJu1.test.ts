@@ -131,6 +131,14 @@ test('cambiarColorFondo(color) desde una sección pinta ESA sección, no toda la
   assert.equal(pintados.length, 1, 'solo un div quedó pintado — el pie no se contagió')
   assert.equal(pintados[0].style.backgroundColor, 'rgb(238, 241, 230)')
   assert.ok(pintados[0].textContent?.includes('hola'), 'el div pintado es el del encabezado, no el del pie')
+
+  // El MISMO div es el que está posicionado en el grid — no un envoltorio invisible aparte
+  // (ese envoltorio era el bug real: se estiraba él, vacío, y el color se quedaba del tamaño
+  // de su contenido en vez de llenar toda la celda — jsdom no calcula layout, pero si el color
+  // vive en el elemento que YA tiene el grid-row/grid-column puesto, no hay más capas que
+  // puedan volver a romperlo).
+  assert.notEqual(pintados[0].style.gridColumn, '', 'la posición está puesta en el mismo div que el color')
+  assert.equal(pintados[0].parentElement?.style.display, 'grid', 'la sección es hija DIRECTA del contenedor grid, sin un envoltorio en el medio')
 })
 
 test('cambiarColorFondo(color) desde el main pinta toda la página compuesta', async () => {
