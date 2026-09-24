@@ -135,6 +135,8 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
 
   // Reorganización del 19-sep (docs/decisiones.md): 5 y 6 (hobbies) cambiaron de lugar con
   // el aviso condicional (ahora 7) — ver la tabla antes/después en docs/decisiones.md.
+  // El encargo 12 (Ju1, personalización) no tiene entrada acá a propósito: sin autograder,
+  // lo revisa el instructor (ver encargos.ts).
   5: [
     {
       descripcion: 'Hay una lista',

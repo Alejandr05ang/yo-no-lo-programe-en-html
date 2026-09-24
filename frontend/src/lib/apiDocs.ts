@@ -20,6 +20,10 @@ export interface DocHerramienta {
   ejemplo: string
   /** Nombres (clave del catálogo) de herramientas relacionadas. */
   relacionadas?: string[]
+  /** Mini ejemplo VISUAL (no el código): un fragmento de HTML de confianza, escrito a mano
+   *  acá — nunca a partir de datos del estudiante — para mostrar cómo se ve, no solo cómo se
+   *  escribe. Sin gradientes ni emojis, mismo criterio que el resto de la plataforma. */
+  previsualizacion?: string
 }
 
 // La clave es el texto EXACTO del tag que se muestra en el panel de encargo.
@@ -189,6 +193,75 @@ export const API_DOCS: Record<string, DocHerramienta> = {
     ejemplo:
       'cadaSegundo(destacado, destacados, proyecto =>\n  crearImagen(proyecto.imagenUrl, proyecto.nombre)\n)',
     relacionadas: ['crearCarrusel()', 'proyectosDestacados()', 'crearImagen()'],
+  },
+
+  'crearSeccion()': {
+    firma: 'crearSeccion(tipo)',
+    descripcion:
+      'Crea un contenedor vacío para agrupar cosas. "encabezado" pone lo de adentro en fila; "cuerpo" le da un recuadro; "cuadricula-2" y "cuadricula-3" reparten lo de adentro en 2 o 3 columnas. Después agregale contenido con agregarA().',
+    devuelve: 'el contenedor vacío',
+    ejemplo:
+      'const fila = crearSeccion("encabezado")\nmostrar(fila)\nagregarA(fila, crearParrafo("Lima"))\nagregarA(fila, crearParrafo("18°C"))',
+    relacionadas: ['agregarA()', 'mostrar()'],
+    previsualizacion:
+      '<div style="display:flex;flex-direction:column;gap:6px">' +
+      '<div style="display:flex;gap:6px"><div style="flex:1;height:14px;border-radius:3px;background:#ece4d6"></div><div style="flex:1;height:14px;border-radius:3px;background:#ece4d6"></div></div>' +
+      '<div style="height:24px;border-radius:6px;border:1px solid #cfc6b8"></div>' +
+      '<div style="display:flex;gap:6px"><div style="flex:1;height:18px;border-radius:3px;border:1px solid #cfc6b8"></div><div style="flex:1;height:18px;border-radius:3px;border:1px solid #cfc6b8"></div><div style="flex:1;height:18px;border-radius:3px;border:1px solid #cfc6b8"></div></div>' +
+      '</div>',
+  },
+
+  'cambiarColorTexto()': {
+    firma: 'cambiarColorTexto(elemento, color)',
+    descripcion:
+      'Cambia el color del texto de un título, párrafo o cualquier otro elemento. El color se escribe como en CSS (un nombre como "tomato" o un código como "#2b6a4f").',
+    devuelve: 'el mismo elemento, ya con el color puesto',
+    ejemplo: 'const p = crearParrafo("Hoy amaneció despejado")\nmostrar(p)\ncambiarColorTexto(p, "#2b6a4f")',
+    relacionadas: ['cambiarTamano()', 'cambiarFuente()', 'cambiarColorFondo()'],
+    previsualizacion:
+      '<div style="display:flex;flex-direction:column;gap:4px;font-size:13px">' +
+      '<span>Texto normal</span><span style="color:#2b6a4f">Texto con color</span>' +
+      '</div>',
+  },
+
+  'cambiarTamano()': {
+    firma: 'cambiarTamano(elemento, tamaño)',
+    descripcion:
+      'Cambia qué tan grande se ve un elemento. "tamaño" es uno de estos cuatro, siempre entre comillas: "pequeño", "normal", "grande", "muy grande".',
+    devuelve: 'el mismo elemento, ya con el tamaño puesto',
+    ejemplo: 'const p = crearParrafo("Aviso importante")\nmostrar(p)\ncambiarTamano(p, "grande")',
+    relacionadas: ['cambiarColorTexto()', 'cambiarFuente()'],
+    previsualizacion:
+      '<div style="display:flex;align-items:baseline;gap:10px">' +
+      '<span style="font-size:11px">pequeño</span><span style="font-size:14px">normal</span>' +
+      '<span style="font-size:18px">grande</span><span style="font-size:23px">muy grande</span>' +
+      '</div>',
+  },
+
+  'cambiarFuente()': {
+    firma: 'cambiarFuente(elemento, fuente)',
+    descripcion:
+      'Cambia el tipo de letra de un elemento. "fuente" es una de estas cuatro, siempre entre comillas: "clásica", "elegante", "moderna", "manuscrita".',
+    devuelve: 'el mismo elemento, ya con la fuente puesta',
+    ejemplo: 'const t = crearTitulo("Mi diario")\nmostrar(t)\ncambiarFuente(t, "manuscrita")',
+    relacionadas: ['cambiarTamano()', 'cambiarColorTexto()'],
+    previsualizacion:
+      '<div style="display:flex;flex-direction:column;gap:4px;font-size:14px">' +
+      '<span style="font-family:\'Lora\',Georgia,serif">clásica</span>' +
+      '<span style="font-family:\'Cormorant Garamond\',Georgia,serif">elegante</span>' +
+      '<span style="font-family:\'Inter\',Arial,sans-serif">moderna</span>' +
+      '<span style="font-family:\'Caveat\',cursive;font-size:18px">manuscrita</span>' +
+      '</div>',
+  },
+
+  'cambiarColorFondo()': {
+    firma: 'cambiarColorFondo(color)',
+    descripcion:
+      'Cambia el color de fondo de toda la página (no de un elemento). El color se escribe como en CSS, igual que en cambiarColorTexto().',
+    ejemplo: 'cambiarColorFondo("#f2ece0")',
+    relacionadas: ['cambiarColorTexto()'],
+    previsualizacion:
+      '<div style="width:100%;height:28px;border-radius:6px;border:1px solid #cfc6b8;background:#f2ece0"></div>',
   },
 
   'función': {

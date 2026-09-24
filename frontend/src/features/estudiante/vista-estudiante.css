@@ -325,6 +325,13 @@
   white-space: pre-wrap;
   overflow-x: auto;
 }
+.enc-ficha-preview {
+  padding: var(--space-2);
+  margin-bottom: var(--space-2);
+  background: #fdfcfa;
+  color: #241f1a;
+  border-radius: var(--radius-sm);
+}
 .enc-ficha-rel {
   margin-top: var(--space-2);
   font: 11.5px/1.5 ui-monospace, Menlo, monospace;

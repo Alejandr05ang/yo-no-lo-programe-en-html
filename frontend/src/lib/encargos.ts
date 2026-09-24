@@ -2,6 +2,13 @@ import type { Encargo, HerramientaAPI } from './tipos'
 
 // Mock de los encargos (docs/encargos.md §4). Sin backend todavía.
 // E1–E3 detallados; E4–E11 con enunciado, herramientas y andamiaje mínimo.
+// E12 es Ju1 ("Dale tu estilo"), agregado después: el número queda fuera de orden cronológico
+// (Ju1 va entre E6 y E7) a propósito — backend/app/catalog/seed.py ya tenía e1..e11 sembrados
+// en producción, y correrlo de nuevo hace upsert POR CLAVE ("e7", "e8"...); renumerar esas
+// claves les cambiaría el contenido a retos que alumnos reales ya pueden tener en progreso.
+// Ju1 no tenía clave previa, así que e12 es la única adición segura sin tocar las existentes.
+// El orden real para navegar sale de sort_order en el backend, no del número (ver heredaDe
+// explícito de E12 más abajo, en vez del automático numero-1 de stub()).
 //
 // Rampa (docs/encargos.md §2.1 y §5.2): el andamiaje arranca con la solución que el
 // estudiante ACEPTÓ en el encargo anterior — nunca código ajeno — y no regala la
@@ -37,12 +44,15 @@ const DIA_DE_SESION: Record<Sesion, string> = {
 
 // Herramientas que desbloquea cada sesión (docs/encargos.md §3.2). Se acumulan.
 // Reorganización del 19-sep (docs/decisiones.md): E6 y E7 (hobbies) pasan de Ju1 a Mi1, que
-// ahora concentra tres encargos (E4, E5, E6) en una sola sesión. Ju1 queda como día de
-// personalización visual (review, sin autograder) y no desbloquea herramienta de JS nueva.
+// ahora concentra tres encargos (E4, E5, E6) en una sola sesión. Ju1 pasa a ser día de
+// personalización visual CON su propio encargo (E12, "Dale tu estilo" — número fuera de
+// orden, ver comentario arriba), revisado por el instructor — sin CASOS_POR_ENCARGO en
+// revisionLocal.ts, no porque falte diseñarlo, sino porque el criterio de "correcto" acá
+// es visual, no un caso de prueba.
 const HERRAMIENTAS_POR_SESION: Record<Sesion, string[]> = {
   Ma1: ['crearTitulo()', 'crearSubtitulo()', 'crearParrafo()', 'mostrar()', 'const'],
   Mi1: ['crearEnlace()', 'condición', 'crearSalto()', 'crearLista()', 'crearItem()', 'agregarA()', 'vaciar()', 'por cada'],
-  Ju1: [],
+  Ju1: ['crearSeccion()', 'cambiarColorTexto()', 'cambiarTamano()', 'cambiarFuente()', 'cambiarColorFondo()'],
   // crearImagen() pedagógicamente es del nivel 2 / Mi1 (niveles.md), pero hoy no hay encargo
   // de Mi1 que la ejercite (D14, pendiente) — se desbloquea acá porque es donde se usa primero.
   V1: ['crearCarrusel()', 'proyectosDestacados()', 'cadaSegundo()', 'crearImagen()'],
@@ -135,8 +145,9 @@ const BASE_CON_PARRAFOS =
 // (docs/decisiones.md: el portafolio es del estudiante, no se penaliza que lo modifique o
 // lo saque al personalizar) — este arranque en frío solo mantiene la continuidad del ejemplo.
 const BASE_CON_SECCION = BASE_CON_PARRAFOS + '\n\nconst seccion = crearSubtitulo("Sobre mí")\nmostrar(seccion)'
-// Fallbacks de arranque en frío para E7 y E8 (§5.2) — aproximan lo que ya tendría un
-// estudiante que aceptó los encargos anteriores, no una réplica exacta de su código.
+// Fallbacks de arranque en frío para E7, E8 y E12 (§5.2) — aproximan lo que ya tendría un
+// estudiante que aceptó los encargos anteriores, no una réplica exacta de su código. E12
+// (Ju1) es solo estilo sobre esta misma estructura, así que reusarla alcanza también ahí.
 const BASE_CON_HOBBIES =
   BASE_CON_PARRAFOS +
   '\n\nconst lista = crearLista()\nmostrar(lista)\nPARA CADA hobby EN datos.hobbies HACER\n  agregarA(lista, crearItem(hobby))\nFIN PARA'
@@ -255,8 +266,8 @@ export const ENCARGOS: Record<number, EncargoMock> = {
 
   // Reorganización del 19-sep (docs/decisiones.md): E5–E6 (hobbies) pasan de Ju1 a Mi1, que
   // ahora concentra E4+E5+E6. El aviso condicional pasa a ser E7 y se dicta el viernes (V1,
-  // tarea autónoma sin charla) junto con el carrusel (E8) — Ju1 queda libre para
-  // personalización visual (review, sin autograder, docs/brief.md §4.1 N4).
+  // tarea autónoma sin charla) junto con el carrusel (E8) — Ju1 queda para personalización
+  // visual con su propio encargo, E12 más abajo (docs/brief.md §4.1 N4).
   5: stub(
     5,
     'Tus hobbies',
@@ -392,6 +403,38 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     ],
     'Un condicional (o varios encadenados) que mire el campo tipo de cada proyecto antes de decidir qué crear.',
   ),
+
+  // Día de personalización visual (docs/decisiones.md, reorganización del 19-sep). Número
+  // fuera de orden cronológico (Ju1 va entre E6 y E7) — ver el comentario grande al principio
+  // del archivo sobre por qué no se renumeró E7–E11. heredaDe es EXPLÍCITO (6), no el
+  // numero-1 automático de stub() (que daría 11, el encargo equivocado).
+  // Sin CASOS_POR_ENCARGO en revisionLocal.ts a propósito — "correcto" acá es una decisión
+  // visual del estudiante, la revisa el instructor en clase, no un caso de prueba automático.
+  12: {
+    sesion: 'Ju1',
+    heredaDe: 6,
+    fallbackHeredado: BASE_CON_HOBBIES,
+    datosOverride: {},
+    totalCasos: 0,
+    andamiajeNuevo:
+      '// Hoy no hay un resultado único: tu docente va a mirar cómo quedó tu portafolio, no un caso de prueba automático.\n' +
+      '// Mirá las fichas de cada herramienta nueva (a la izquierda): muestran los valores que aceptan y cómo se ven.\n' +
+      '// Probá cambiarColorTexto(), cambiarTamano() y cambiarFuente() sobre algún título o párrafo; cambiarColorFondo() para el fondo de toda la página; y crearSeccion() para agrupar cosas en fila, en un recuadro, o en columnas.\n' +
+      '// Pista: Anda probando de a una herramienta por vez, sobre un solo párrafo, antes de aplicarla a toda la página.\n' +
+      '// Escribí tu código acá abajo:\n',
+    meta: meta(
+      12,
+      'Dale tu estilo',
+      'Ju1',
+      DIA_DE_SESION.Ju1.toLowerCase(),
+      [
+        'Hasta ahora tu portafolio se ve igual que el de cualquier compañero: mismo color, mismo tamaño de letra, mismo fondo.',
+        'Hoy es tu turno de darle tu propio estilo. No hay una única forma correcta — probá las herramientas nuevas sobre lo que ya construiste y quedate con lo que más te guste.',
+      ],
+      'Anda probando de a una herramienta por vez, sobre un solo párrafo, antes de aplicarla a toda la página.',
+      true,
+    ),
+  },
 }
 
 export const NUMEROS_DE_ENCARGO = Object.keys(ENCARGOS).map(Number).sort((a, b) => a - b)

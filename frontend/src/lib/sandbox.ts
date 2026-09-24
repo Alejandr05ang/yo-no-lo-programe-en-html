@@ -72,6 +72,44 @@ const RUNTIME = String.raw`
   function agregarA(contenedor, elemento) { contenedor.appendChild(elemento); return elemento; }
   function vaciar(contenedor) { contenedor.replaceChildren(); return contenedor; }
 
+  // Personalización visual (Ju1): vocabulario chico y fijo, igual que el resto del API — no
+  // se expone CSS crudo. Los nombres de tamaño/fuente que no están en la lista se tratan como
+  // el valor por defecto, nunca rompen la página (mismo criterio que crearEnlace/crearImagen
+  // con datos incompletos).
+  function crearSeccion(tipo) {
+    const el = document.createElement('div');
+    const clases = {
+      encabezado: 'fila',
+      cuerpo: 'card',
+      'cuadricula-2': 'grid grid-2',
+      'cuadricula-3': 'grid grid-3',
+    };
+    el.className = clases[tipo] || '';
+    return el;
+  }
+  const __TAMANOS = { 'pequeño': '0.85em', normal: '1em', grande: '1.3em', 'muy grande': '1.8em' };
+  function cambiarTamano(elemento, tamano) {
+    elemento.style.fontSize = __TAMANOS[tamano] || __TAMANOS.normal;
+    return elemento;
+  }
+  const __FUENTES = {
+    'clásica': '"Lora", Georgia, serif',
+    elegante: '"Cormorant Garamond", Georgia, serif',
+    moderna: '"Inter", Arial, sans-serif',
+    manuscrita: '"Caveat", cursive',
+  };
+  function cambiarFuente(elemento, fuente) {
+    elemento.style.fontFamily = __FUENTES[fuente] || __FUENTES['clásica'];
+    return elemento;
+  }
+  function cambiarColorTexto(elemento, color) {
+    elemento.style.color = String(color);
+    return elemento;
+  }
+  function cambiarColorFondo(color) {
+    document.documentElement.style.setProperty('--color-fondo', String(color));
+  }
+
   function proyectosDestacados(proyectos) {
     return Array.isArray(proyectos) ? proyectos.filter((proyecto) => proyecto && proyecto.destacado === true) : [];
   }

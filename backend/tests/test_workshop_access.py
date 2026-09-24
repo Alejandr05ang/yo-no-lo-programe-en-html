@@ -125,6 +125,13 @@ async def test_days_accumulate_up_to_the_current_one(auth_harness, activo, abier
     [
         ("Ma1", ["e1", "e2", "e3"], "e4"),
         ("Mi1", ["e1", "e3", "e4", "e6"], "e7"),
+        # e12 es Ju1 ("Dale tu estilo"), agregado con una clave fuera de secuencia (ver
+        # catalog/seed.py) para no reescribir e7..e11 ya sembrados: la regla de acceso usa
+        # order_index de la sesión, no el número de la clave, así que e12 se bloquea con
+        # Mi1 activo (todavía no llega a Ju1) igual que cualquier otro reto de un día futuro.
+        ("Mi1", ["e1", "e3", "e4", "e6"], "e12"),
+        # Y una vez que Ju1 es el día activo, e12 ya se puede abrir — pero V1 (e7) todavía no.
+        ("Ju1", ["e1", "e4", "e6", "e12"], "e7"),
     ],
 )
 async def test_challenges_follow_the_same_cumulative_rule(

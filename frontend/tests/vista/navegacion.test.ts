@@ -29,27 +29,27 @@ async function abrir(s: ServidorFalso, e: number) {
 }
 
 test('fin de día con el siguiente abierto y sin actividades: CTA manual al día, que antes guarda', async () => {
-  const s = new ServidorFalso({ Ju1: 'open' })
-  const p = await abrir(s, 6)
+  // Ju2 (Git y publicación) todavía no tiene ningún encargo en ENCARGOS — a diferencia de
+  // Ju1, que desde "Dale tu estilo" (E12) ya tiene el suyo.
+  const s = new ServidorFalso({ Mi2: 'open', Ju2: 'open' })
+  const p = await abrir(s, 11)
   await hasta(() => p.texto().includes('No quedan más actividades abiertas en este día'), 'nota de fin de día')
-  assert.ok(p.boton('Ir al Día 4'))
+  assert.ok(p.boton('Ir al Día 9'))
   await esperar(1500)
-  assert.equal(p.ubicacion(), '/portafolio?e=6', 'nunca navega solo')
+  assert.equal(p.ubicacion(), '/portafolio?e=11', 'nunca navega solo')
 
   await p.escribir('const ultimo = 1')
-  await p.pulsar('Ir al Día 4')
-  await hasta(() => p.ubicacion() === '/sesiones/Ju1', 'va al día por su código')
-  assert.equal(s.progreso.get('e6')?.draft_code, 'const ultimo = 1', 'guardó antes de salir')
+  await p.pulsar('Ir al Día 9')
+  await hasta(() => p.ubicacion() === '/sesiones/Ju2', 'va al día por su código')
+  assert.equal(s.progreso.get('e11')?.draft_code, 'const ultimo = 1', 'guardó antes de salir')
   await p.desmontar()
 })
 
 test('fin de día con el siguiente abierto y con actividades: "Continuar con el Día N" a su primera actividad', async () => {
-  const s = new ServidorFalso({ Ju1: 'open', V1: 'open' })
-  const p = await abrir(s, 6)
-  // Ju1 no tiene actividades: el siguiente día con actividades es V1, pero se ofrece Ju1.
-  assert.ok(p.boton('Ir al Día 4'))
-  await p.desmontar()
-
+  // La variante "el día inmediato está vacío pero uno más allá ya tiene actividades, y se
+  // ofrece igual el inmediato" la cubre navegacionDias.test.ts con un mapa sintético — hoy no
+  // hay un par así entre días reales de ENCARGOS (Ju1 ya tiene contenido; Ju2/V2 todavía no
+  // tienen ninguno).
   const s2 = new ServidorFalso({ Ju1: 'open', V1: 'open', L2: 'open' })
   const q = await abrir(s2, 8)
   await hasta(() => !!q.boton('Continuar con el Día 6'), 'CTA al día 6')

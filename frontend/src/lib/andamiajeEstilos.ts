@@ -34,7 +34,10 @@ document.addEventListener('click', function (e) {
 </script>`
 
 export const ANDAMIAJE_CSS = `
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lora:wght@400;600&display=swap');
+/* Cormorant Garamond/Lora son las fuentes por defecto (--fuente-titulos/--fuente-texto).
+ * Inter y Caveat solo las usa cambiarFuente() (Ju1, "moderna"/"manuscrita") — se cargan igual
+ * para que estén listas apenas el estudiante las pide, sin depender de qué encargo abrió antes. */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lora:wght@400;600&family=Inter:wght@400;600&family=Caveat:wght@400;600&display=swap');
 
 :root {
   --color-fondo: #fdfcfa;

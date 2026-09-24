@@ -98,6 +98,13 @@ export function FichaHerramienta({ nombre, anclaEl, onCerrar, onIrA }: Props) {
       <div className="enc-ficha-ejemplo-titulo">ejemplo</div>
       <pre className="enc-ficha-ejemplo">{doc.ejemplo}</pre>
 
+      {doc.previsualizacion && (
+        <>
+          <div className="enc-ficha-ejemplo-titulo">así se ve</div>
+          <div className="enc-ficha-preview" dangerouslySetInnerHTML={{ __html: doc.previsualizacion }} />
+        </>
+      )}
+
       {doc.relacionadas && doc.relacionadas.length > 0 && (
         <div className="enc-ficha-rel">
           relacionadas:{' '}
