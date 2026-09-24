@@ -100,16 +100,21 @@ const  ·  if / else  ·  for (const x of lista) { … }  ·  function
 ### 3.2 Desbloqueo por día
 
 **Reorganización del 19-sep** (`docs/decisiones.md`): Mi1 pasa a concentrar tres encargos
-(E4, E5, E6) en vez de dos, y Ju1 queda sin encargo de código — es el día de personalización
-visual (paleta, tipografía, columnas propias), revisado por el instructor (`review`, sin test
-oculto), no por autograder. El aviso condicional (antes E5) y el carrusel de destacados pasan
-al viernes (V1, tarea autónoma), que ya no tiene charla en vivo.
+(E4, E5, E6) en vez de dos. Ju1 (Día 4) es el día de personalización visual — dos encargos,
+**E12 y E13** (números fuera de orden cronológico a propósito, ver `frontend/src/lib/
+encargos.ts`), revisados por el instructor (`review`, sin test oculto), no por autograder.
+El aviso condicional (antes E5) y el carrusel de destacados pasan al viernes (V1, tarea
+autónoma), que ya no tiene charla en vivo.
+
+**Actualización posterior:** E12/E13 dejaron de escribirse con `crearSeccion()`/`agregarA()` a
+mano — ver el recuadro antes de la §4 con el detalle del modelo actual (cuadrícula visual +
+una pestaña de código por sección).
 
 | Sesión | Se desbloquea |
 | --- | --- |
 | Ma1 | `crearTitulo`, `crearSubtitulo`, `crearParrafo`, `mostrar`, `const`, `datos` |
 | Mi1 | `crearEnlace`, `if` / `else`, `crearLista`, `crearItem`, `agregarA`, `for … of` |
-| Ju1 | (nada nuevo — día de personalización visual, sin autograder) |
+| Ju1 (E12/E13) | `cambiarColorTexto`, `cambiarTamano`, `cambiarFuente`, `cambiarAlineacion`, `cambiarColorFondo` — la estructura (E12) se arma con una herramienta visual, no con código |
 | V1 | `cadaSegundo` |
 | L2 | (nada nuevo — combina `for` + `if`) |
 | Ma2 | `function` |
@@ -117,7 +122,7 @@ al viernes (V1, tarea autónoma), que ya no tiene charla en vivo.
 
 ---
 
-## 4. Los 11 encargos
+## 4. Los encargos (E1–E13)
 
 Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4). La columna
 **capa** es la del currículo en espiral que se muestra en la pantalla del mapa (1e).
@@ -181,12 +186,32 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
   Es el paso previo a mover cosas por el espacio, cuadrículas y color (más adelante, fuera de este taller).
 
 > **Reorganización del 19-sep** (`docs/decisiones.md`, `brief.md` §4.1): E5 y E6 (hobbies) pasan
-> de Ju1 a **Mi1**, que ahora concentra tres encargos en una sola sesión de 2h. Ju1 queda **sin
-> encargo de código** — pasa a ser el día de personalización visual (paleta, tipografía,
-> columnas propias), revisado por el instructor (`review`), no por autograder. El aviso
-> condicional (antes E5, ahora **E7**) y el carrusel de destacados (**E8**, nuevo — reemplaza al
-> "saludo dinámico" que se evaluó y se descartó por no aportar peso visual real a un
-> portafolio) se dictan juntos el viernes (**V1**, tarea autónoma, sin charla en vivo).
+> de Ju1 a **Mi1**, que ahora concentra tres encargos en una sola sesión de 2h. Ju1 pasa a ser el
+> día de personalización visual — **E12 y E13**, revisados por el instructor (`review`), no por
+> autograder. El aviso condicional (antes E5, ahora **E7**) y el carrusel de destacados (**E8**,
+> nuevo — reemplaza al "saludo dinámico" que se evaluó y se descartó por no aportar peso visual
+> real a un portafolio) se dictan juntos el viernes (**V1**, tarea autónoma, sin charla en vivo).
+>
+> **E12/E13 — modelo de cuadrícula (posterior a esta reorganización).** En vez de escribir
+> `crearSeccion(tipo)` + `agregarA(contenedor, elemento)` a mano — se probó, y dispara la
+> complejidad de golpe: hay que enrutar cada título/párrafo al contenedor correcto entre varios
+> posibles, demasiado para quien recién entiende las bases y lo hace de tarea, sin nadie
+> guiando — el estudiante arma la ESTRUCTURA con una herramienta visual tipo planilla: agregar/
+> quitar filas y columnas, combinar celdas adyacentes en un rectángulo (misma regla que combinar
+> celdas en Excel: nunca se puede armar una cuadrícula inválida). Cada sección resultante se abre
+> como su propia pestaña de código — tan simple como `portafolio.js` de cualquier otro encargo,
+> sin `agregarA()` para ubicarse dentro de la sección (ya está adentro). `portafolio.js` pasa a
+> ser un archivo "main": `mostrar(nombreDeLaSección)` por cada una que se quiera incluir en la
+> página — la posición la fija la cuadrícula (paso visual), no el orden del código. E12 y E13
+> siguen siendo DOS encargos separados a propósito (no se fusionan pese a que el modelo nuevo lo
+> permitiría): la clase ya se armó alrededor de esos dos números. Entre ellos, "heredar" es
+> seguir con el mismo documento (misma cuadrícula, mismas secciones) tal cual, sin el
+> comentario+texto-anterior que arma `componerAndamiaje()` para un encargo de un solo archivo.
+> Implementación: `frontend/src/lib/estructuraDePagina.ts` (el modelo de datos y las reglas de
+> combinar/separar), `frontend/src/features/estructura/EditorEstructura.tsx` (la herramienta
+> visual), `frontend/src/lib/sandbox.ts` (`ejecutarPreviewJu1`/`construirSrcdocJu1`, que corren
+> las secciones + el main en el mismo scope, igual mecanismo con el que `datos.js` ya se expone
+> como `datos`).
 
 ### E4 — "Cómo encontrarte" · Mi1 · contacto / redes · N3 · capa 2
 
@@ -326,6 +351,36 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 - **Concepto.** Bucle + **acciones distintas según el tipo de dato** — una `function` que decide.
   Cierra el currículo en espiral (capa 5).
 
+### E12 — "Organiza tu página" · Ju1 · estructura de secciones · sin autograder
+
+- **Necesidad.** Hasta acá todo el contenido es una fila de títulos y párrafos, uno debajo del
+  otro (heredado de E6). Hay que agruparlo en secciones con sentido: una fila arriba, un
+  recuadro, columnas — lo que le sirva a lo que ya tiene.
+- **Incógnita.** Ninguna de lógica — elegir la estructura es una decisión de diseño, no algo que
+  se deduzca de un patrón de código (por eso se resuelve con una herramienta visual, no
+  escribiendo — ver el recuadro antes de esta sección).
+- **Andamiaje inicial.** El código heredado de E6 aparece tal cual, sin ninguna sección, en la
+  pestaña `portafolio.js` — es literalmente lo que hay que organizar.
+- **Entrega.** Al menos una sección armada con la herramienta visual, con su contenido movido
+  ahí, y mostrada desde `portafolio.js`.
+- **Revisión.** Manual, por el instructor en clase — no hay un resultado único ni test oculto.
+- **Concepto.** Separar CONTENIDO (lo que ya sabe escribir) de ESTRUCTURA (una herramienta nueva,
+  deliberadamente no-código).
+
+### E13 — "Dale tu estilo" · Ju1 · personalización visual · sin autograder
+
+- **Necesidad.** El portafolio se ve igual que el de cualquier compañero: mismo color, mismo
+  tamaño de letra, mismo fondo en todos lados.
+- **Andamiaje inicial.** Hereda LA MISMA cuadrícula y secciones de E12, tal cual quedaron — a
+  diferencia de un encargo de un solo archivo, no hay comentario ni texto anterior que anteponer:
+  el estudiante sigue exactamente donde lo dejó.
+- **Entrega.** Cambios de color, tamaño, fuente, alineación o fondo aplicados dentro de una o más
+  secciones.
+- **Revisión.** Manual, igual que E12.
+- **Concepto.** Las mismas herramientas de estilo (`cambiarColorTexto`, `cambiarTamano`,
+  `cambiarFuente`, `cambiarAlineacion`, `cambiarColorFondo`) aplicadas ahora DENTRO de la pestaña
+  de una sección, en vez de a un elemento suelto en un único archivo.
+
 ---
 
 ## 5. Flujo entre encargos
@@ -367,9 +422,9 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 Regla del brief (§2.7, §3, §5.3): **el desbloqueo es por día y para todo el grupo a la vez**,
 independiente del avance individual.
 
-- Cada encargo pertenece a una sesión (`E1–E3 → Ma1`, `E4,E5,E6 → Mi1`, `E7,E8 → V1`,
-  `E9 → L2`, `E10 → Ma2`, `E11 → Mi2` — ver la tabla de la §4). Ju1 no tiene encargo de código
-  (personalización visual, `review`).
+- Cada encargo pertenece a una sesión (`E1–E3 → Ma1`, `E4,E5,E6 → Mi1`, `E12,E13 → Ju1`,
+  `E7,E8 → V1`, `E9 → L2`, `E10 → Ma2`, `E11 → Mi2` — ver la tabla de la §4). E12/E13 son
+  personalización visual, revisados a mano (`review`), no por autograder.
 - Un encargo está `disponible` cuando **hoy ≥ la fecha de su sesión**. No importa si terminaste los
   anteriores ni cuántos intentos llevás.
 - Dentro de una sesión con dos encargos, la plataforma presenta como "activo" el primero que no

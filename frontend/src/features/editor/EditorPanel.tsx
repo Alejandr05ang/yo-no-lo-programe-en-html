@@ -1,14 +1,16 @@
 import Editor, { type BeforeMount, type Monaco, type OnMount } from '@monaco-editor/react'
-import type { editor } from 'monaco-editor'
 import { useEffect, useRef, useState } from 'react'
 import { API_DOCS } from '../../lib/apiDocs'
 import type { ArchivoEditor, EstadoGuardado, SalidaEjecucion } from '../../lib/tipos'
 import { DiagramaFlujo } from '../flujo/DiagramaFlujo'
 
 interface Props {
-  archivos: ArchivoEditor[] // [portafolio.js, datos.js, …]
-  contenido: string // contenido actual del archivo editable
-  onCambio: (valor: string) => void
+  // [portafolio.js, datos.js, …] en un encargo de un solo archivo; con el modelo de Ju1
+  // (cuadrícula), además una pestaña editable por cada sección. El contenido de cada uno vive
+  // EN el archivo (archivo.contenido) — este panel no asume que hay un único editable.
+  archivos: ArchivoEditor[]
+  /** Qué archivo cambió y su nuevo contenido — nunca se llama para uno de solo lectura. */
+  onCambio: (nombreArchivo: string, valor: string) => void
   /** true mientras se carga el borrador del encargo: el editor no acepta cambios, que se
    *  perderían al llegar el borrador (o se guardarían bajo la clave equivocada). */
   cargando?: boolean
@@ -16,12 +18,18 @@ interface Props {
   guardado: EstadoGuardado
   ejecutando?: boolean
   entregando?: boolean
-  onEjecutar: () => void
+  /** Sin argumento corre portafolio.js (`contenido`); con uno corre ESE código en su lugar
+   *  (una pestaña de prueba), sin tocar `contenido` ni lo que ya está guardado. */
+  onEjecutar: (codigo?: string) => void
   onEntregar: () => void
   abierto: boolean
   onToggle: () => void
   /** Abrir el formulario "Mis datos" (se ofrece cuando la pestaña activa es de solo lectura). */
   onEditarDatos: () => void
+  /** Pedido externo de abrir una pestaña puntual — p. ej. la herramienta de cuadrícula
+   *  (EditorEstructura) al hacer clic en una celda ya nombrada. `token` cambia en cada pedido,
+   *  incluso repetido (la misma pestaña dos veces seguidas), para que el efecto dispare igual. */
+  archivoSolicitado?: { nombre: string; token: number } | null
 }
 
 // Hallazgo de beta (docs/decisiones.md, H3): la API curada (crearTitulo, mostrar, datos…)
@@ -68,6 +76,21 @@ declare function cadaSegundo(
   elementos: Proyecto[],
   crearElemento: (proyecto: Proyecto) => HTMLElement,
 ): void
+/** ${doc('crearSalto()')} */
+declare function crearSalto(): HTMLElement
+/** ${doc('crearSeccion()')} */
+declare function crearSeccion(tipo: 'encabezado' | 'cuerpo' | 'cuadricula-2' | 'cuadricula-3'): HTMLElement
+/** ${doc('cambiarTamano()')} */
+declare function cambiarTamano(elemento: HTMLElement, tamano: 'pequeño' | 'normal' | 'grande' | 'muy grande'): HTMLElement
+/** ${doc('cambiarFuente()')} */
+declare function cambiarFuente(elemento: HTMLElement, fuente: 'clásica' | 'elegante' | 'moderna' | 'manuscrita'): HTMLElement
+/** ${doc('cambiarColorTexto()')} */
+declare function cambiarColorTexto(elemento: HTMLElement, color: string): HTMLElement
+/** ${doc('cambiarAlineacion()')} */
+declare function cambiarAlineacion(elemento: HTMLElement, alineacion: 'izquierda' | 'centro' | 'derecha' | 'justificado'): HTMLElement
+/** ${doc('cambiarColorFondo()')} */
+declare function cambiarColorFondo(color: string): void
+declare function cambiarColorFondo(elemento: HTMLElement, color: string): HTMLElement
 
 interface Proyecto {
   nombre: string
@@ -133,7 +156,6 @@ const definirTema: BeforeMount = (monaco) => {
 
 export function EditorPanel({
   archivos,
-  contenido,
   onCambio,
   cargando = false,
   salida,
@@ -145,13 +167,55 @@ export function EditorPanel({
   abierto,
   onToggle,
   onEditarDatos,
+  archivoSolicitado,
 }: Props) {
-  const [activo, setActivo] = useState(0)
-  const archivo = archivos[activo]
+  type Seleccion = { tipo: 'archivo'; index: number } | { tipo: 'prueba'; id: string }
+  type PestanaPrueba = { id: string; nombre: string; contenido: string }
+
+  const [seleccion, setSeleccion] = useState<Seleccion>({ tipo: 'archivo', index: 0 })
+  // Pestañas "en blanco" para probar código suelto (una herramienta nueva, un experimento)
+  // sin tocar el borrador de portafolio.js. Viven solo acá, no se autoguardan ni se entregan.
+  const [pruebas, setPruebas] = useState<PestanaPrueba[]>([])
+  const contadorPruebasRef = useRef(0)
+  const pruebasRef = useRef<PestanaPrueba[]>([])
+  pruebasRef.current = pruebas
+
+  const pruebaActiva = seleccion.tipo === 'prueba' ? pruebas.find((p) => p.id === seleccion.id) ?? null : null
+  const archivo = seleccion.tipo === 'archivo' ? archivos[seleccion.index] : archivos[0]
+  // Solo cuenta como "de solo lectura" cuando de verdad se está mirando esa pestaña — si hay
+  // una prueba activa, `archivo` de arriba es solo un respaldo para no dejar la variable vacía.
+  const soloLecturaActiva = !pruebaActiva && archivo.soloLectura
+
   const menuRef = useRef<HTMLDetailsElement>(null)
   const hayOverflow = archivos.length > 3
   const monacoRef = useRef<Monaco | null>(null)
   const [flujoAbierto, setFlujoAbierto] = useState(false)
+
+  // Un pedido externo de abrir una pestaña (EditorEstructura, al hacer clic en una celda ya
+  // nombrada) — dispara con cada `token` nuevo, aunque sea la misma pestaña que ya estaba
+  // abierta antes (por eso el token, no solo el nombre: si no, un segundo clic sobre la misma
+  // celda no dispararía el efecto).
+  useEffect(() => {
+    if (!archivoSolicitado) return
+    const i = archivos.findIndex((a) => a.nombre === archivoSolicitado.nombre)
+    if (i >= 0) setSeleccion({ tipo: 'archivo', index: i })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [archivoSolicitado])
+
+  function nuevaPestanaDePrueba() {
+    contadorPruebasRef.current += 1
+    const n = contadorPruebasRef.current
+    const id = `prueba-${Date.now()}-${n}`
+    setPruebas((prev) => [...prev, { id, nombre: n === 1 ? 'prueba.js' : `prueba ${n}.js`, contenido: '' }])
+    setSeleccion({ tipo: 'prueba', id })
+  }
+
+  function cerrarPestanaDePrueba(id: string) {
+    const p = pruebasRef.current.find((x) => x.id === id)
+    if (p) monacoRef.current?.editor.getModel(monacoRef.current.Uri.parse(p.nombre))?.dispose()
+    setPruebas((prev) => prev.filter((x) => x.id !== id))
+    setSeleccion((sel) => (sel.tipo === 'prueba' && sel.id === id ? { tipo: 'archivo', index: 0 } : sel))
+  }
 
   const onMount: OnMount = (editor, monaco) => {
     monacoRef.current = monaco
@@ -196,37 +260,42 @@ export function EditorPanel({
       for (const nombre of nombresArchivosRef.current) {
         monaco.editor.getModel(monaco.Uri.parse(nombre))?.dispose()
       }
+      for (const p of pruebasRef.current) {
+        monaco.editor.getModel(monaco.Uri.parse(p.nombre))?.dispose()
+      }
     }
   }, [])
 
-  // Encuentra el modelo del archivo editable (no el de datos.js, que es solo lectura)
-  // sin importar qué pestaña esté abierta ahora mismo.
-  function marcarLineaDeError(linea: number | undefined) {
+  // Marca la línea del error en la pestaña de la que vino (salida.archivo — undefined en un
+  // encargo de un solo archivo, que siempre es portafolio.js), sin importar cuál esté abierta
+  // ahora mismo. Limpia el resto: si el error se movió de archivo entre una corrida y la
+  // siguiente (dos secciones distintas de Ju1), no puede quedar una marca vieja en la de antes.
+  function marcarLineaDeError(linea: number | undefined, archivoConError: string | undefined) {
     const monaco = monacoRef.current
     if (!monaco) return
-    const modelo = monaco.editor
-      .getModels()
-      .find((m: editor.ITextModel) => m.uri.path.endsWith('/portafolio.js'))
-    if (!modelo) return
-    if (!linea || linea < 1 || linea > modelo.getLineCount()) {
-      monaco.editor.setModelMarkers(modelo, 'ejecucion', [])
-      return
+    const objetivo = archivoConError ?? 'portafolio.js'
+    for (const modelo of monaco.editor.getModels()) {
+      const esElObjetivo = modelo.uri.path.endsWith('/' + objetivo)
+      if (!esElObjetivo || !linea || linea < 1 || linea > modelo.getLineCount()) {
+        monaco.editor.setModelMarkers(modelo, 'ejecucion', [])
+        continue
+      }
+      monaco.editor.setModelMarkers(modelo, 'ejecucion', [
+        {
+          startLineNumber: linea,
+          startColumn: 1,
+          endLineNumber: linea,
+          endColumn: modelo.getLineMaxColumn(linea),
+          message: salida?.lineas[0]?.texto ?? 'Hubo un error en esta línea',
+          severity: monaco.MarkerSeverity.Error,
+        },
+      ])
     }
-    monaco.editor.setModelMarkers(modelo, 'ejecucion', [
-      {
-        startLineNumber: linea,
-        startColumn: 1,
-        endLineNumber: linea,
-        endColumn: modelo.getLineMaxColumn(linea),
-        message: salida?.lineas[0]?.texto ?? 'Hubo un error en esta línea',
-        severity: monaco.MarkerSeverity.Error,
-      },
-    ])
   }
 
   // Cada vez que corre el código, marcamos (o limpiamos) la línea del error.
   useEffect(() => {
-    marcarLineaDeError(salida?.linea)
+    marcarLineaDeError(salida?.linea, salida?.archivo)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [salida])
 
@@ -244,7 +313,7 @@ export function EditorPanel({
         </button>
         <span className="ed-rail-label">
           {archivos.length > 1 ? `${archivos.length} archivos · ` : ''}
-          {archivo.nombre}
+          {pruebaActiva ? pruebaActiva.nombre : archivo.nombre}
         </span>
       </div>
     )
@@ -258,14 +327,41 @@ export function EditorPanel({
             <button
               key={a.nombre}
               role="tab"
-              aria-selected={i === activo}
+              aria-selected={seleccion.tipo === 'archivo' && seleccion.index === i}
               className="ed-tab"
-              onClick={() => setActivo(i)}
+              onClick={() => setSeleccion({ tipo: 'archivo', index: i })}
             >
               {a.nombre}
               {a.soloLectura && <span className="ed-tab-nota"> — solo lectura</span>}
             </button>
           ))}
+          {pruebas.map((p) => (
+            <span key={p.id} className="ed-tab-prueba" role="presentation">
+              <button
+                role="tab"
+                aria-selected={seleccion.tipo === 'prueba' && seleccion.id === p.id}
+                className="ed-tab"
+                onClick={() => setSeleccion({ tipo: 'prueba', id: p.id })}
+              >
+                {p.nombre}
+              </button>
+              <button
+                className="ed-tab-cerrar"
+                onClick={() => cerrarPestanaDePrueba(p.id)}
+                aria-label={`Cerrar ${p.nombre}`}
+                title="Cerrar esta pestaña"
+              >
+                ×
+              </button>
+            </span>
+          ))}
+          <button
+            className="ed-nueva-pestana"
+            onClick={nuevaPestanaDePrueba}
+            title="Abrir una pestaña en blanco para probar código, sin tocar portafolio.js"
+          >
+            + nueva pestaña
+          </button>
         </div>
 
         {hayOverflow && (
@@ -275,9 +371,9 @@ export function EditorPanel({
               {archivos.map((a, i) => (
                 <li key={a.nombre}>
                   <button
-                    aria-current={i === activo}
+                    aria-current={seleccion.tipo === 'archivo' && seleccion.index === i}
                     onClick={() => {
-                      setActivo(i)
+                      setSeleccion({ tipo: 'archivo', index: i })
                       if (menuRef.current) menuRef.current.open = false
                     }}
                   >
@@ -290,7 +386,7 @@ export function EditorPanel({
           </details>
         )}
 
-        {archivo.soloLectura && (
+        {soloLecturaActiva && (
           <button className="ed-editar-datos" onClick={onEditarDatos}>
             editar mis datos
           </button>
@@ -310,17 +406,22 @@ export function EditorPanel({
         <Editor
           height="100%"
           language="javascript"
-          path={archivo.nombre}
-          value={archivo.soloLectura ? archivo.contenido : contenido}
+          path={pruebaActiva ? pruebaActiva.nombre : archivo.nombre}
+          value={pruebaActiva ? pruebaActiva.contenido : archivo.contenido}
           beforeMount={definirTema}
           onMount={onMount}
           onChange={(v) => {
+            if (pruebaActiva) {
+              const id = pruebaActiva.id
+              setPruebas((prev) => prev.map((p) => (p.id === id ? { ...p, contenido: v ?? '' } : p)))
+              return
+            }
             if (archivoRef.current.soloLectura || cargandoRef.current) return
-            onCambio(v ?? '')
-            marcarLineaDeError(undefined)
+            onCambio(archivoRef.current.nombre, v ?? '')
+            marcarLineaDeError(undefined, undefined)
           }}
           options={{
-            readOnly: archivo.soloLectura || cargando,
+            readOnly: pruebaActiva ? false : soloLecturaActiva || cargando,
             minimap: { enabled: false },
             scrollBeyondLastLine: false,
             padding: { top: 18, bottom: 12 },
@@ -365,10 +466,19 @@ export function EditorPanel({
       </div>
 
       <div className="ed-acciones">
-        <button className="btn btn-primary" onClick={onEjecutar} disabled={ejecutando || cargando}>
+        <button
+          className="btn btn-primary"
+          onClick={() => onEjecutar(pruebaActiva?.contenido)}
+          disabled={ejecutando || (cargando && !pruebaActiva)}
+        >
           {ejecutando ? 'Ejecutando…' : 'Ejecutar'}
         </button>
-        <button className="btn btn-secondary" onClick={onEntregar} disabled={entregando || cargando}>
+        <button
+          className="btn btn-secondary"
+          onClick={onEntregar}
+          disabled={entregando || cargando || !!pruebaActiva}
+          title={pruebaActiva ? 'Cambiá a la pestaña de portafolio.js para entregar' : undefined}
+        >
           {entregando ? 'Revisando…' : 'Entregar a revisión'}
         </button>
         <span className="mono ed-sello">
@@ -381,7 +491,9 @@ export function EditorPanel({
         </span>
       </div>
 
-      {flujoAbierto && <DiagramaFlujo codigo={contenido} onCerrar={() => setFlujoAbierto(false)} />}
+      {flujoAbierto && (
+        <DiagramaFlujo codigo={pruebaActiva?.contenido ?? archivo.contenido} onCerrar={() => setFlujoAbierto(false)} />
+      )}
     </div>
   )
 }

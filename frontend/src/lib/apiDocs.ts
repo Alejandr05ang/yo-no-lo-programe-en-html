@@ -217,7 +217,7 @@ export const API_DOCS: Record<string, DocHerramienta> = {
       'Cambia el color del texto de un título, párrafo o cualquier otro elemento. El color se escribe como en CSS (un nombre como "tomato" o un código como "#2b6a4f").',
     devuelve: 'el mismo elemento, ya con el color puesto',
     ejemplo: 'const p = crearParrafo("Hoy amaneció despejado")\nmostrar(p)\ncambiarColorTexto(p, "#2b6a4f")',
-    relacionadas: ['cambiarTamano()', 'cambiarFuente()', 'cambiarColorFondo()'],
+    relacionadas: ['cambiarTamano()', 'cambiarFuente()', 'cambiarColorFondo()', 'cambiarAlineacion()'],
     previsualizacion:
       '<div style="display:flex;flex-direction:column;gap:4px;font-size:13px">' +
       '<span>Texto normal</span><span style="color:#2b6a4f">Texto con color</span>' +
@@ -255,13 +255,31 @@ export const API_DOCS: Record<string, DocHerramienta> = {
   },
 
   'cambiarColorFondo()': {
-    firma: 'cambiarColorFondo(color)',
+    firma: 'cambiarColorFondo(color) — o cambiarColorFondo(elemento, color)',
     descripcion:
-      'Cambia el color de fondo de toda la página (no de un elemento). El color se escribe como en CSS, igual que en cambiarColorTexto().',
-    ejemplo: 'cambiarColorFondo("#f2ece0")',
-    relacionadas: ['cambiarColorTexto()'],
+      'Con un solo color, cambia el fondo de TODA la página. Pasándole un elemento antes del color (un título, una sección con crearSeccion()…), cambia el fondo de ESE elemento nada más. El color se escribe como en CSS, igual que en cambiarColorTexto().',
+    devuelve: 'con elemento: el mismo elemento, ya con el fondo puesto. Sin elemento: nada.',
+    ejemplo:
+      'cambiarColorFondo("#f2ece0")\n\nconst recuadro = crearSeccion("cuerpo")\nmostrar(recuadro)\ncambiarColorFondo(recuadro, "#eef1e6")',
+    relacionadas: ['cambiarColorTexto()', 'crearSeccion()'],
     previsualizacion:
       '<div style="width:100%;height:28px;border-radius:6px;border:1px solid #cfc6b8;background:#f2ece0"></div>',
+  },
+
+  'cambiarAlineacion()': {
+    firma: 'cambiarAlineacion(elemento, alineacion)',
+    descripcion:
+      'Cambia cómo se alinea el texto adentro de un elemento. "alineacion" es una de estas cuatro, siempre entre comillas: "izquierda", "centro", "derecha", "justificado".',
+    devuelve: 'el mismo elemento, ya con la alineación puesta',
+    ejemplo: 'const p = crearParrafo("Un texto más largo, para notar el efecto.")\nmostrar(p)\ncambiarAlineacion(p, "centro")',
+    relacionadas: ['cambiarColorTexto()', 'cambiarTamano()', 'cambiarFuente()'],
+    previsualizacion:
+      '<div style="display:flex;flex-direction:column;gap:6px;font-size:12px">' +
+      '<div style="text-align:left;border:1px solid #cfc6b8;border-radius:4px;padding:4px 6px">izquierda</div>' +
+      '<div style="text-align:center;border:1px solid #cfc6b8;border-radius:4px;padding:4px 6px">centro</div>' +
+      '<div style="text-align:right;border:1px solid #cfc6b8;border-radius:4px;padding:4px 6px">derecha</div>' +
+      '<div style="text-align:justify;border:1px solid #cfc6b8;border-radius:4px;padding:4px 6px">justificado justificado justificado justificado</div>' +
+      '</div>',
   },
 
   'función': {

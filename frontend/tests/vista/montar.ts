@@ -59,9 +59,10 @@ export interface Pantalla {
   ir: (ruta: string) => Promise<void>
   /** Pulsa un enlace (<a>) por su texto. */
   enlace: (texto: string | RegExp) => Promise<void>
-  /** El editor de portafolio.js (null si la pantalla no lo muestra). */
-  editor: () => HTMLTextAreaElement | null
-  escribir: (texto: string) => Promise<void>
+  /** El editor de la pestaña `path` (por defecto portafolio.js) — null si no es la activa. */
+  editor: (path?: string) => HTMLTextAreaElement | null
+  /** Escribe en la pestaña `path` (por defecto portafolio.js). */
+  escribir: (texto: string, path?: string) => Promise<void>
   sello: () => string
   boton: (texto: string | RegExp) => HTMLButtonElement | null
   pulsar: (texto: string | RegExp) => Promise<void>
@@ -133,7 +134,7 @@ export async function montar(servidor: ServidorFalso, ruta = '/portafolio?e=4', 
     raiz.render(createElement(QueryClientProvider, { client: cliente }, createElement(ConAuth)))
   })
 
-  const editor = () => contenedor.querySelector<HTMLTextAreaElement>('textarea[data-editor="portafolio.js"]')
+  const editor = (path = 'portafolio.js') => contenedor.querySelector<HTMLTextAreaElement>(`textarea[data-editor="${path}"]`)
   const boton = (texto: string | RegExp) => [...contenedor.querySelectorAll('button')].find((b) =>
     typeof texto === 'string' ? (b.textContent ?? '').trim().startsWith(texto) : texto.test(b.textContent ?? '')) ?? null
   const pantalla: Pantalla = {
@@ -149,8 +150,8 @@ export async function montar(servidor: ServidorFalso, ruta = '/portafolio?e=4', 
       await act(async () => { a.dispatchEvent(new ventana.MouseEvent('click', { bubbles: true, cancelable: true, button: 0 })) })
     },
     editor,
-    async escribir(texto) {
-      const e = editor()
+    async escribir(texto, path) {
+      const e = editor(path)
       if (!e) throw new Error('no hay editor')
       if (e.readOnly) throw new Error('el editor está en solo lectura')
       await act(async () => {

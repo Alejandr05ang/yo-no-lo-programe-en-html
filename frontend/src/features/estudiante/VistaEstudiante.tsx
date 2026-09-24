@@ -20,11 +20,25 @@ import { ApiError } from '../../lib/http'
 import { clavePendiente, crearColaDeGuardado, elegirBorrador, sePuedeGuardar, valorPendiente } from '../../lib/colaGuardado'
 import { datosComoTexto, pareceContenidoDeDatos, portafolioEjemplo } from '../../lib/mockEncargo'
 import { GuardadoSinRefrescar, leerPerfilLegado, olvidarPerfilLegado, perfilComoDatos, perfilDesdeBackend, perfilDelServidorEstaVacio, perfilLegadoParaSubir, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
-import { ejecutarPreview } from '../../lib/sandbox'
-import type { EstadoGuardado, ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
+import { ejecutarPreview, ejecutarPreviewJu1 } from '../../lib/sandbox'
+import {
+  actualizarContenidoDeSeccion,
+  actualizarMain,
+  agregarColumna,
+  agregarFila,
+  crearDocumentoJu1Inicial,
+  crearSeccion,
+  eliminarColumna,
+  eliminarFila,
+  parsearDocumentoJu1,
+  separarCeldaDelDocumento,
+  serializarDocumentoJu1,
+} from '../../lib/estructuraDePagina'
+import type { EstadoGuardado, EstructuraDePagina, ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
 import { PanelEncargo } from '../encargo/PanelEncargo'
 import { DivisorArrastrable } from './DivisorArrastrable'
 import { EditorPanel } from '../editor/EditorPanel'
+import { EditorEstructura } from '../estructura/EditorEstructura'
 import { MisDatos } from '../perfil/MisDatos'
 import { PanelPreview } from '../preview/PanelPreview'
 import { PanelRevision } from '../revision/PanelRevision'
@@ -87,6 +101,22 @@ function sinEncargo<T>(mapa: Record<number, T>, n: number): Record<number, T> {
 // Un guardado que no llegó (sin red) se reintenta solo, cada vez más espaciado.
 const REINTENTO_MIN_MS = 3000
 const REINTENTO_MAX_MS = 30_000
+
+/** El contenido inicial de un encargo nuevo (sin borrador propio ni heredado todavía). Un
+ *  encargo de modelo 'grid' (Ju1) no arma el archivo con comentario+texto anterior como
+ *  componerAndamiaje(): si hereda de otro (heredaDe), lo heredado se usa TAL CUAL como
+ *  contenido inicial — sea la cuadrícula ya armada de un encargo de grid anterior (E13
+ *  hereda de E12: sigue exactamente donde lo dejó), o el código de siempre de un encargo de
+ *  un solo archivo (E12 hereda de E6: aparece sin secciones en portafolio.js — organizarlo es
+ *  el punto del encargo). Sin nada que heredar, arranca una cuadrícula vacía. */
+function contenidoInicialDe(numero: number, soluciones: Record<number, string>): string {
+  const e = ENCARGOS[numero]
+  if (e?.modelo === 'grid') {
+    const heredado = e.heredaDe != null ? soluciones[e.heredaDe]?.trim() : undefined
+    return heredado || serializarDocumentoJu1(crearDocumentoJu1Inicial())
+  }
+  return componerAndamiaje(numero, soluciones)
+}
 
 export function VistaEstudiante() {
   // Otra cuenta es otra pantalla: nada del estado de la anterior pasa a la siguiente.
@@ -264,6 +294,38 @@ function VistaEstudianteInterna() {
     () => ({ nombre: 'datos.js', soloLectura: true, contenido: datosComoTexto(datos) }),
     [datos],
   )
+
+  // Ju1 (modelo 'grid'): `contenido` (el mismo string de siempre, autoguardado sin cambios)
+  // guarda el DocumentoJu1 serializado en vez de JS — ver plan "Cuadrícula visual + pestañas
+  // por sección". `documento` es null en cualquier otro encargo (archivo único, como siempre).
+  const esGrid = encargo?.modelo === 'grid'
+  const documento = useMemo(() => (esGrid ? parsearDocumentoJu1(contenido) : null), [esGrid, contenido])
+  const archivos = useMemo(() => {
+    if (!documento) return [{ nombre: 'portafolio.js', soloLectura: false, contenido }, archivoDatos]
+    return [
+      { nombre: 'portafolio.js', soloLectura: false, contenido: documento.main },
+      archivoDatos,
+      ...documento.secciones.map((s) => ({
+        nombre: `seccion-${s.nombre}.js`,
+        soloLectura: false,
+        contenido: s.contenido,
+      })),
+    ]
+  }, [documento, contenido, archivoDatos])
+
+  // Pedido de EditorEstructura de abrir la pestaña de una celda ya nombrada — EditorPanel lo
+  // consume y cambia de pestaña; `token` para que dispare aunque se pida la misma dos veces.
+  const [archivoSolicitado, setArchivoSolicitado] = useState<{ nombre: string; token: number } | null>(null)
+
+  // Los cambios de ESTRUCTURA (agregar/quitar fila o columna, combinar, separar) tocan
+  // `documento.estructura` y se re-serializan igual que cualquier otro cambio de `contenido` —
+  // misma cola de autoguardado, sin distinción especial. Solo tienen sentido si `documento` ya
+  // existe (el panel que los dispara, EditorEstructura, no se muestra si no).
+  function actualizarEstructura(actualizar: (e: EstructuraDePagina) => EstructuraDePagina) {
+    if (!documento) return
+    setContenido(serializarDocumentoJu1({ ...documento, estructura: actualizar(documento.estructura) }))
+    setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
+  }
 
   const [estadoGuardado, setEstadoGuardado] = useState<EstadoGuardado>({ estado: 'saved', intentos: 0 })
   const getProgressReq = useRef(0)
@@ -474,9 +536,10 @@ function VistaEstudianteInterna() {
       setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
       setSalida(null)
       setRevision(null)
-      if (encargo.heredaDe != null) {
+      if (encargo.heredaDe != null || encargo.modelo === 'grid') {
         const d = { ...perfilComoDatos(perfilRef.current), ...encargo.datosOverride }
-        void ejecutarPreview(code, d).then((r) => {
+        const promesa = encargo.modelo === 'grid' ? ejecutarPreviewJu1(parsearDocumentoJu1(code), d) : ejecutarPreview(code, d)
+        void promesa.then((r) => {
           if (r.ok) setPreviewHtml(r.html)
         })
       } else {
@@ -498,7 +561,7 @@ function VistaEstudianteInterna() {
           soluciones[previo] = anteriorServidor.draft_code
         }
       }
-      return componerAndamiaje(numero, soluciones)
+      return contenidoInicialDe(numero, soluciones)
     }
 
     let cancelled = false
@@ -543,14 +606,22 @@ function VistaEstudianteInterna() {
         }
       })()
     } else {
-      setInitialCode(fallbackLocal ?? componerAndamiaje(numero, solucionesRef.current))
+      setInitialCode(fallbackLocal ?? contenidoInicialDe(numero, solucionesRef.current))
     }
     return () => { cancelled = true }
   }, [numero, encargo, user, clienteApi, claveBorradores])
 
-  const ejecutar = useCallback(async () => {
+  // `codigoPrueba`: cuando el estudiante corre una pestaña de prueba en vez de la entrega real
+  // (EditorPanel.tsx). Se ve en la misma consola y vista previa, pero nunca pisa `contenido`
+  // ni lo que ya está guardado — es la forma de "probar antes de aplicar a toda la página".
+  // Sin eso, se corre LA ENTREGA: el documento completo (Ju1) o `contenido` tal cual (el resto).
+  const ejecutar = useCallback(async (codigoPrueba?: string) => {
     setEjecutando(true)
-    const r = await ejecutarPreview(contenido, datos)
+    const r = codigoPrueba !== undefined
+      ? await ejecutarPreview(codigoPrueba, datos)
+      : documento
+        ? await ejecutarPreviewJu1(documento, datos)
+        : await ejecutarPreview(contenido, datos)
     setEjecutando(false)
     if (r.ok) {
       setPreviewHtml(r.html)
@@ -565,9 +636,10 @@ function VistaEstudianteInterna() {
       setSalida({
         lineas: [{ prefijo: 'consola', texto: linea ? `${mensaje} (línea ${linea})` : mensaje }],
         linea,
+        archivo: r.error?.archivo,
       })
     }
-  }, [contenido, datos])
+  }, [contenido, datos, documento])
 
   const entregar = useCallback(async () => {
     setEntregando(true)
@@ -654,10 +726,20 @@ function VistaEstudianteInterna() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contenido, numero, numeroCargado, user, clienteApi])
 
-  const onChangeContenido = useCallback((v: string) => {
-    setContenido(v)
+  // En un encargo de un solo archivo, el único editable es siempre "portafolio.js" — el
+  // nombre no importa. En Ju1 (modelo 'grid'), `nombreArchivo` dice CUÁL de las pestañas
+  // cambió (el main o una sección) y hay que actualizar esa parte del documento antes de
+  // volver a serializarlo — `contenido` sigue siendo el único string que se autoguarda.
+  const onChangeContenido = useCallback((nombreArchivo: string, v: string) => {
+    setContenido((actual) => {
+      if (!esGrid) return v
+      const doc = parsearDocumentoJu1(actual)
+      if (nombreArchivo === 'portafolio.js') return serializarDocumentoJu1(actualizarMain(doc, v))
+      const nombreSeccion = nombreArchivo.replace(/^seccion-/, '').replace(/\.js$/, '')
+      return serializarDocumentoJu1(actualizarContenidoDeSeccion(doc, nombreSeccion, v))
+    })
     setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
-  }, [])
+  }, [esGrid])
 
   // Solo del encargo cuyo borrador está en el editor: justo después de cambiar de encargo,
   // progressStatus y revision todavía son los del anterior.
@@ -793,21 +875,52 @@ function VistaEstudianteInterna() {
           />
         )}
 
-        <EditorPanel
-          archivos={[{ nombre: 'portafolio.js', soloLectura: false, contenido }, archivoDatos]}
-          contenido={contenido}
-          onCambio={onChangeContenido}
-          cargando={numeroCargado !== numero}
-          salida={salida}
-          guardado={estadoGuardado}
-          ejecutando={ejecutando}
-          entregando={entregando}
-          onEjecutar={ejecutar}
-          onEntregar={entregar}
-          abierto={editorAbierto}
-          onToggle={() => setEditorAbierto((v) => !v)}
-          onEditarDatos={() => setMisDatosAbierto(true)}
-        />
+        <div className="ve-col-editor-conjunto">
+          {documento && editorAbierto && (
+            <EditorEstructura
+              estructura={documento.estructura}
+              onAgregarFila={() => actualizarEstructura(agregarFila)}
+              onAgregarColumna={() => actualizarEstructura(agregarColumna)}
+              onEliminarFila={() => {
+                const r = eliminarFila(documento.estructura)
+                if (r.ok) actualizarEstructura(() => r.valor)
+                return r.ok ? null : r.error
+              }}
+              onEliminarColumna={() => {
+                const r = eliminarColumna(documento.estructura)
+                if (r.ok) actualizarEstructura(() => r.valor)
+                return r.ok ? null : r.error
+              }}
+              onCrearSeccion={(fi, ci, ff, cf, etq) => {
+                const r = crearSeccion(documento, fi, ci, ff, cf, etq)
+                if (!r.ok) return r.error
+                setContenido(serializarDocumentoJu1(r.valor))
+                setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
+                return null
+              }}
+              onSepararCelda={(celdaId) => {
+                setContenido(serializarDocumentoJu1(separarCeldaDelDocumento(documento, celdaId)))
+                setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
+              }}
+              onAbrirSeccion={(nombre) => setArchivoSolicitado({ nombre: `seccion-${nombre}.js`, token: Date.now() })}
+            />
+          )}
+          <EditorPanel
+            archivos={archivos}
+            onCambio={onChangeContenido}
+            cargando={numeroCargado !== numero}
+            salida={salida}
+            guardado={estadoGuardado}
+            ejecutando={ejecutando}
+            entregando={entregando}
+            onEjecutar={ejecutar}
+            onEntregar={entregar}
+            abierto={editorAbierto}
+            onToggle={() => setEditorAbierto((v) => !v)}
+            onEditarDatos={() => setMisDatosAbierto(true)}
+            archivoSolicitado={archivoSolicitado}
+          />
+        </div>
 
         <DivisorArrastrable gridRef={gridRef} />
 

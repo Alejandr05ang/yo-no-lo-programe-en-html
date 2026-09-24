@@ -90,8 +90,7 @@
 }
 .ve-grid[data-preview='expandido'] .ve-col-encargo,
 .ve-grid[data-preview='expandido'] .enc-rail,
-.ve-grid[data-preview='expandido'] .ve-col-editor,
-.ve-grid[data-preview='expandido'] .ed-rail {
+.ve-grid[data-preview='expandido'] .ve-col-editor-conjunto {
   display: none;
 }
 
@@ -153,7 +152,24 @@
   flex: 1;
 }
 
-/* columna central: voz máquina */
+/* columna central: voz máquina. En un encargo de grid (Ju1), la cuadrícula (EditorEstructura)
+ * y el editor de código comparten esta columna, apilados — el envoltorio es el que ahora
+ * ocupa la celda del grid de .ve-grid, y .ve-col-editor/.ed-rail (adentro) se estiran para
+ * llenar lo que quede, igual que antes cuando eran ellos mismos la celda directa. */
+.ve-col-editor-conjunto {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid var(--color-divider);
+}
+.ve-col-editor-conjunto > .ve-col-editor,
+.ve-col-editor-conjunto > .ed-rail {
+  flex: 1;
+  min-height: 0;
+  border-right: 0;
+}
+
 .ve-col-editor {
   background: #191816;
   color: #d7d3d3;
@@ -422,6 +438,49 @@
 .ed-tab {
   white-space: nowrap;
   flex: none;
+}
+
+.ed-tab-prueba {
+  display: flex;
+  align-items: stretch;
+  flex: none;
+}
+.ed-tab-cerrar {
+  flex: none;
+  align-self: center;
+  width: 18px;
+  height: 18px;
+  margin-right: 6px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  font-size: 13px;
+  line-height: 1;
+  color: #605d5d;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.ed-tab-cerrar:hover {
+  color: var(--color-accent-300);
+  background: #2d2b2b;
+}
+.ed-nueva-pestana {
+  flex: none;
+  align-self: center;
+  margin: 0 4px;
+  padding: 4px 10px;
+  font: 11px/1 ui-monospace, Menlo, monospace;
+  color: #7d7979;
+  background: transparent;
+  border: 1px dashed #2d2b2b;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+.ed-nueva-pestana:hover {
+  color: var(--color-accent-300);
+  border-color: var(--color-accent-400);
 }
 
 .ed-menu {

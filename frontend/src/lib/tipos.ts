@@ -58,6 +58,53 @@ export interface ArchivoEditor {
 export interface SalidaEjecucion {
   /** Líneas de consola con prefijo y detalle. */
   lineas: { prefijo?: string; texto: string; detalle?: string }[]
-  /** Línea (1-based) de portafolio.js donde ocurrió el error, si se pudo determinar. */
+  /** Línea (1-based) donde ocurrió el error, si se pudo determinar. */
   linea?: number
+  /** Nombre del archivo/sección de donde vino el error ("portafolio.js", o el nombre de una
+   *  sección de Ju1) — sin esto, un error de cualquier pestaña se marcaba siempre en
+   *  portafolio.js. undefined = portafolio.js (comportamiento de siempre, un solo archivo). */
+  archivo?: string
+}
+
+// ── Ju1: cuadrícula visual + una pestaña de código por sección ──────────────────────────
+// docs: plan "Cuadrícula visual + pestañas por sección para Ju1". En vez de escribir
+// crearSeccion()/agregarA() a mano (dispara la complejidad de golpe: hay que enrutar cada
+// título/párrafo al contenedor correcto entre 4-5 posibles), el estudiante arma la ESTRUCTURA
+// con una herramienta visual tipo Excel (agregar filas/columnas, combinar celdas adyacentes en
+// un rectángulo — nunca una forma inválida, misma regla que combinar celdas en Excel) y el
+// CONTENIDO de cada sección resultante en su propia pestaña de código, tan simple como
+// portafolio.js de cualquier otro encargo. La posición la fija la cuadrícula, no el código.
+
+/** Una celda de la cuadrícula. `seccion === null` = celda vacía, sin pestaña de código propia
+ *  todavía (recién agregada, o recién separada de una combinación). */
+export interface Celda {
+  id: string
+  fila: number
+  columna: number
+  /** 1x1 por defecto; mayor a 1 = esta celda viene de combinar varias (como en Excel). */
+  expandeFilas: number
+  expandeColumnas: number
+  seccion: string | null
+}
+
+export interface EstructuraDePagina {
+  filas: number
+  columnas: number
+  celdas: Celda[]
+}
+
+/** El contenido de una sección: la pestaña de código de una celda ya etiquetada. */
+export interface PestanaSeccion {
+  nombre: string
+  contenido: string
+}
+
+/** El documento completo de un encargo con modelo "grid": la estructura visual, el contenido
+ *  de cada sección, y el "main" (antes portafolio.js a secas) que las compone con
+ *  mostrar(nombreDeSeccion) — mismo patrón que ya usa datos.js para exponerse como `datos`. */
+export interface DocumentoJu1 {
+  version: 1
+  estructura: EstructuraDePagina
+  secciones: PestanaSeccion[]
+  main: string
 }

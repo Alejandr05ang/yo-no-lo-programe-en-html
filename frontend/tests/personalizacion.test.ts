@@ -68,7 +68,40 @@ mostrar(p)
   assert.match(p.style.fontFamily, /Lora/)
 })
 
-test('cambiarColorFondo no rompe la página (el color de fondo es de :root, fuera de lo que devuelve la vista previa)', async () => {
+test('cambiarColorFondo(color) cambia el fondo de toda la página, y sobrevive en el HTML devuelto', async () => {
   const r = await ejecutarReal('cambiarColorFondo("#f2ece0")\nmostrar(crearTitulo("hola"))', {})
   assert.equal(r.ok, true, r.error)
+  const estilo = doc(r.html).querySelector('style')
+  assert.ok(estilo, 'debe quedar un <style> dentro del HTML devuelto, no solo en el documento efímero de la ejecución')
+  assert.match(estilo!.textContent ?? '', /--color-fondo:\s*#f2ece0/)
+})
+
+test('cambiarColorFondo(elemento, color) cambia el fondo de ESE elemento nada más', async () => {
+  const r = await ejecutarReal(
+    `
+const recuadro = crearSeccion("cuerpo")
+mostrar(recuadro)
+cambiarColorFondo(recuadro, "#eef1e6")
+`,
+    {},
+  )
+  assert.equal(r.ok, true, r.error)
+  const div = doc(r.html).querySelector('div.card') as HTMLElement
+  assert.equal(div.style.backgroundColor, 'rgb(238, 241, 230)')
+})
+
+test('cambiarAlineacion pone el text-align esperado; un valor no listado usa "izquierda"', async () => {
+  const r = await ejecutarReal(
+    `
+const p1 = crearParrafo("uno")
+mostrar(cambiarAlineacion(p1, "centro"))
+const p2 = crearParrafo("dos")
+mostrar(cambiarAlineacion(p2, "no existe"))
+`,
+    {},
+  )
+  assert.equal(r.ok, true, r.error)
+  const [p1, p2] = doc(r.html).querySelectorAll('p')
+  assert.equal((p1 as HTMLElement).style.textAlign, 'center')
+  assert.equal((p2 as HTMLElement).style.textAlign, 'left')
 })

@@ -28,6 +28,12 @@ export interface EncargoMock {
    *  (E5 quiere sobreMi vacío; E9–E11 aportan proyectos/skills que el perfil no tiene). */
   datosOverride: Record<string, unknown>
   totalCasos: number
+  /** undefined (la inmensa mayoría) = un solo archivo, como siempre. 'grid' = Ju1: el
+   *  estudiante arma la estructura con la herramienta visual (features/estructura/) y cada
+   *  sección es su propia pestaña — ver DocumentoJu1 en lib/tipos.ts. En ese caso `draft_code`
+   *  guarda el documento serializado (JSON), no JS: heredaDe/andamiajeNuevo/fallbackHeredado
+   *  no aplican (no hay un texto de script único para "heredar" de un encargo al siguiente). */
+  modelo?: 'grid'
 }
 
 type Sesion = 'Ma1' | 'Mi1' | 'Ju1' | 'V1' | 'L2' | 'Ma2' | 'Mi2'
@@ -52,7 +58,7 @@ const DIA_DE_SESION: Record<Sesion, string> = {
 const HERRAMIENTAS_POR_SESION: Record<Sesion, string[]> = {
   Ma1: ['crearTitulo()', 'crearSubtitulo()', 'crearParrafo()', 'mostrar()', 'const'],
   Mi1: ['crearEnlace()', 'condición', 'crearSalto()', 'crearLista()', 'crearItem()', 'agregarA()', 'vaciar()', 'por cada'],
-  Ju1: ['crearSeccion()', 'cambiarColorTexto()', 'cambiarTamano()', 'cambiarFuente()', 'cambiarColorFondo()'],
+  Ju1: ['crearSeccion()', 'cambiarColorTexto()', 'cambiarTamano()', 'cambiarFuente()', 'cambiarColorFondo()', 'cambiarAlineacion()'],
   // crearImagen() pedagógicamente es del nivel 2 / Mi1 (niveles.md), pero hoy no hay encargo
   // de Mi1 que la ejercite (D14, pendiente) — se desbloquea acá porque es donde se usa primero.
   V1: ['crearCarrusel()', 'proyectosDestacados()', 'cadaSegundo()', 'crearImagen()'],
@@ -410,21 +416,28 @@ export const ENCARGOS: Record<number, EncargoMock> = {
   // grande al principio del archivo sobre por qué no se renumeró E7–E11.
   // Sin CASOS_POR_ENCARGO en revisionLocal.ts a propósito, en los dos — "correcto" acá es una
   // decisión visual del estudiante, la revisa el instructor en clase, no un caso de prueba.
+  //
+  // modelo: 'grid' en los dos (plan "Cuadrícula visual + pestañas por sección"): en vez de
+  // crearSeccion()/agregarA() a mano, el estudiante arma la estructura con la herramienta
+  // visual y escribe el contenido de cada sección en su propia pestaña. Quedan como DOS
+  // encargos separados (no se fusionan: ya se armó la clase alrededor de esos dos números,
+  // fusionarlos ahora confundiría más de lo que simplifica) — `andamiajeNuevo`/
+  // `fallbackHeredado` quedan vacíos porque no aplican a este modelo: no hay un texto de
+  // script que "heredar" con un comentario adelante, la cuadrícula y las secciones SON lo
+  // que se hereda, tal cual (ver contenidoInicialDe en VistaEstudiante.tsx).
 
   // heredaDe EXPLÍCITO (6), no el numero-1 automático de stub() (que daría 11, el encargo
-  // equivocado).
+  // equivocado). Al heredar de un encargo de un solo archivo (E6), lo que aparece la primera
+  // vez en portafolio.js (el "main") es el código de siempre, todavía sin secciones — eso es
+  // justamente el punto de partida del encargo: organizarlo.
   12: {
     sesion: 'Ju1',
     heredaDe: 6,
-    fallbackHeredado: BASE_CON_HOBBIES,
+    fallbackHeredado: '',
     datosOverride: {},
     totalCasos: 0,
-    andamiajeNuevo:
-      '// Hoy no hay un resultado único: tu docente va a mirar cómo quedó tu portafolio, no un caso de prueba automático.\n' +
-      '// Mirá la ficha de crearSeccion() (a la izquierda): muestra los cuatro tipos y cómo se ve cada uno.\n' +
-      '// Probá agrupar alguna parte de tu portafolio con crearSeccion("encabezado"), "cuerpo", "cuadricula-2" o "cuadricula-3".\n' +
-      '// Pista: creá la sección, mostrala, y recién después agregale contenido con agregarA() — igual que con crearLista().\n' +
-      '// Escribí tu código acá abajo:\n',
+    modelo: 'grid',
+    andamiajeNuevo: '',
     meta: meta(
       12,
       'Organiza tu página',
@@ -432,33 +445,32 @@ export const ENCARGOS: Record<number, EncargoMock> = {
       DIA_DE_SESION.Ju1.toLowerCase(),
       [
         'Hasta ahora todo tu contenido es una fila de títulos y párrafos, uno debajo del otro.',
-        'Agrupá alguna parte en una sección: en fila, en un recuadro, o en columnas — la que tenga más sentido para lo que ya tenés.',
+        'Arriba del editor tenés una herramienta para armar la estructura de tu página: agregá filas, combiná las celdas que quieras juntar, y ponele nombre a cada sección.',
       ],
-      'Creá la sección con crearSeccion(), mostrala, y agregale lo que ya tenías con agregarA().',
+      'Cada sección que creás se abre como su propia pestaña de código. En portafolio.js hacé mostrar(nombreDeLaSección) por cada una que quieras que aparezca en la página.',
       true,
     ),
   },
 
-  // heredaDe SÍ coincide con el numero-1 automático de stub() acá (13-1=12), así que se puede
-  // usar el helper normal.
-  13: stub(
-    13,
-    'Dale tu estilo',
-    'Ju1',
-    [
-      'Hasta ahora tu portafolio se ve igual que el de cualquier compañero: mismo color, mismo tamaño de letra, mismo fondo.',
-      'Ahora es tu turno de darle tu propio estilo. No hay una única forma correcta — probá las herramientas nuevas sobre lo que ya construiste y quedate con lo que más te guste.',
-    ],
-    BASE_CON_HOBBIES,
-    {},
-    0,
-    [
-      'Hoy no hay un resultado único: tu docente va a mirar cómo quedó tu portafolio, no un caso de prueba automático.',
-      'Mirá las fichas de cada herramienta nueva (a la izquierda): muestran los valores que aceptan y cómo se ven.',
-      'Probá cambiarColorTexto(), cambiarTamano() y cambiarFuente() sobre algún título o párrafo; cambiarColorFondo() para el fondo de toda la página.',
-    ],
-    'Anda probando de a una herramienta por vez, sobre un solo párrafo, antes de aplicarla a toda la página.',
-  ),
+  // heredaDe SÍ coincide con el numero-1 automático de stub() acá (13-1=12) — pero stub() no
+  // sabe de `modelo`, así que se arma con el helper y se le agrega encima.
+  13: {
+    ...stub(
+      13,
+      'Dale tu estilo',
+      'Ju1',
+      [
+        'Hasta ahora tu portafolio se ve igual que el de cualquier compañero: mismo color, mismo tamaño de letra, mismo fondo.',
+        'Ahora es tu turno de darle tu propio estilo. Entrá a cada pestaña de sección y probá las herramientas nuevas sobre lo que ya escribiste ahí.',
+      ],
+      '',
+      {},
+      0,
+      [],
+      'Mirá las fichas de cada herramienta (a la izquierda): muestran los valores que aceptan y cómo se ven. Probá una por vez, sobre un solo párrafo, antes de aplicarla a toda una sección.',
+    ),
+    modelo: 'grid',
+  },
 }
 
 export const NUMEROS_DE_ENCARGO = Object.keys(ENCARGOS).map(Number).sort((a, b) => a - b)

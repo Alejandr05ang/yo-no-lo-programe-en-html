@@ -1,6 +1,7 @@
 import { ANDAMIAJE_CSS } from './andamiajeEstilos.ts'
 import { normalizarEnlacesDelHtml } from './enlaces.ts'
 import { aJavaScript } from './pseudocodigoAJS.ts'
+import type { DocumentoJu1 } from './tipos.ts'
 
 // Ejecuta el código del estudiante en un iframe aislado y devuelve el HTML generado.
 //
@@ -20,7 +21,10 @@ import { aJavaScript } from './pseudocodigoAJS.ts'
 export interface ResultadoPreview {
   ok: boolean
   html: string
-  error?: { mensaje: string; linea?: number }
+  /** `archivo`: solo lo llenan los documentos multi-pestaña (Ju1) — "portafolio.js" o
+   *  "seccion-<nombre>.js" — para marcar la línea de error en la pestaña correcta
+   *  (EditorPanel.tsx). undefined en el resto de los encargos = un solo archivo, como siempre. */
+  error?: { mensaje: string; linea?: number; archivo?: string }
   logs: string[]
 }
 
@@ -31,7 +35,11 @@ const RUNTIME = String.raw`
 
   // Globales ya listas. "pagina" es un contenedor propio, no document.body, para que
   // lo que se devuelve sea SOLO lo que construyó el estudiante (sin el <script> de arranque).
-  const pagina = document.getElementById('__raiz');
+  // "let", no "const": en el documento de Ju1 (construirSrcdocJu1, más abajo) cada
+  // sección corre con SU PROPIO contenedor detached, así que "pagina" se reasigna antes de
+  // evaluar cada script — acá (un solo archivo, como siempre) nunca se reasigna, así que el
+  // cambio de const a let no le cambia el comportamiento en nada.
+  let pagina = document.getElementById('__raiz');
   const datos = window.__DATOS__ ?? {};
 
   function __crear(tag, texto) {
@@ -106,8 +114,33 @@ const RUNTIME = String.raw`
     elemento.style.color = String(color);
     return elemento;
   }
-  function cambiarColorFondo(color) {
-    document.documentElement.style.setProperty('--color-fondo', String(color));
+  const __ALINEACIONES = { izquierda: 'left', centro: 'center', derecha: 'right', justificado: 'justify' };
+  function cambiarAlineacion(elemento, alineacion) {
+    elemento.style.textAlign = __ALINEACIONES[alineacion] || __ALINEACIONES.izquierda;
+    return elemento;
+  }
+  // Un solo argumento (color): fondo de TODA la página. Con dos (elemento, color): fondo de
+  // ESE elemento nada más — mismo truco de "según cuántos argumentos llegan" que cadaSegundo().
+  // El de toda la página no puede ir en document.documentElement.style como antes: esto es un
+  // ENSAYO que se descarta apenas termina de correr (ver ejecutarPreview más abajo), y de acá
+  // solo sobrevive el innerHTML de #__raiz — cualquier cambio fuera de esa rama se perdía sin
+  // que ni el estudiante ni la vista previa lo vieran nunca. Un <style> DENTRO de #__raiz sí
+  // viaja con ese innerHTML, así que el color llega también a la vista previa y al portafolio
+  // publicado (documentoPortafolio la vuelve a incluir en el <body>, donde un <style> aplica
+  // igual que en el <head>).
+  function cambiarColorFondo(elementoOColor, color) {
+    if (color === undefined) {
+      let estilo = document.getElementById('__fondo_pagina');
+      if (!estilo) {
+        estilo = document.createElement('style');
+        estilo.id = '__fondo_pagina';
+        pagina.appendChild(estilo);
+      }
+      estilo.textContent = ':root { --color-fondo: ' + String(elementoOColor) + '; }';
+      return;
+    }
+    elementoOColor.style.backgroundColor = String(color);
+    return elementoOColor;
   }
 
   function proyectosDestacados(proyectos) {
@@ -198,7 +231,7 @@ try {
  */
 export function resultadoDelMensaje(d: unknown, parser: DOMParser): ResultadoPreview | null {
   if (!d || typeof d !== 'object') return null
-  const m = d as { tipo?: unknown; html?: unknown; mensaje?: unknown; linea?: unknown; logs?: unknown }
+  const m = d as { tipo?: unknown; html?: unknown; mensaje?: unknown; linea?: unknown; logs?: unknown; archivo?: unknown }
   const logs = Array.isArray(m.logs) ? m.logs.map(String) : []
   if (m.tipo === 'preview-ok') {
     const { html, avisos } = normalizarEnlacesDelHtml(String(m.html ?? ''), parser)
@@ -206,30 +239,16 @@ export function resultadoDelMensaje(d: unknown, parser: DOMParser): ResultadoPre
   }
   if (m.tipo === 'preview-error') {
     const linea = typeof m.linea === 'number' ? m.linea : undefined
-    return { ok: false, html: '', error: { mensaje: String(m.mensaje ?? 'error'), linea }, logs }
+    const archivo = typeof m.archivo === 'string' ? m.archivo : undefined
+    return { ok: false, html: '', error: { mensaje: String(m.mensaje ?? 'error'), linea, archivo }, logs }
   }
   return null
 }
 
-/** Corre el código en un iframe efímero y resuelve con el HTML resultante. */
-// El timeout cubre dos cosas a la vez: arranque lento del iframe (máquinas del taller
-// que varían) y bucles sin fin. La protección real contra bucles infinitos es del
-// grader del servidor (Deno). 5s da margen al arranque en frío sin dejar colgado al
-// estudiante demasiado tiempo.
-export function ejecutarPreview(
-  codigoEstudiante: string,
-  datos: unknown,
-  timeoutMs = 5000,
-): Promise<ResultadoPreview> {
-  // Traducir el pseudocódigo (SI/PARA CADA/MIENTRAS/FUNCIÓN) a JS real antes de tocar el
-  // iframe — un pseudocódigo mal cerrado (falta un FIN SI, etc.) no es un error de
-  // "ejecución", así que se resuelve directo, sin timeout ni srcdoc de por medio.
-  const traduccion = aJavaScript(codigoEstudiante)
-  if (!traduccion.ok) {
-    return Promise.resolve({ ok: false, html: '', error: traduccion.error, logs: [] })
-  }
-  const codigoJs = traduccion.js
-
+/** El ir-y-venir con el iframe efímero (crearlo, escuchar el postMessage, el timeout, limpiar)
+ *  es igual para el documento de un solo archivo y el de Ju1 — lo único que cambia es el
+ *  srcdoc que se le manda. Ver ejecutarPreview/ejecutarPreviewJu1 más abajo. */
+function correrEnIframe(srcdoc: string, timeoutMs: number): Promise<ResultadoPreview> {
   return new Promise((resolve) => {
     const iframe = document.createElement('iframe')
     iframe.setAttribute('sandbox', 'allow-scripts')
@@ -272,7 +291,162 @@ export function ejecutarPreview(
     )
 
     window.addEventListener('message', onMsg)
-    iframe.srcdoc = construirSrcdoc(codigoJs, datos)
+    iframe.srcdoc = srcdoc
     document.body.appendChild(iframe)
   })
+}
+
+/** Corre el código en un iframe efímero y resuelve con el HTML resultante. */
+// El timeout cubre dos cosas a la vez: arranque lento del iframe (máquinas del taller
+// que varían) y bucles sin fin. La protección real contra bucles infinitos es del
+// grader del servidor (Deno). 5s da margen al arranque en frío sin dejar colgado al
+// estudiante demasiado tiempo.
+export function ejecutarPreview(
+  codigoEstudiante: string,
+  datos: unknown,
+  timeoutMs = 5000,
+): Promise<ResultadoPreview> {
+  // Traducir el pseudocódigo (SI/PARA CADA/MIENTRAS/FUNCIÓN) a JS real antes de tocar el
+  // iframe — un pseudocódigo mal cerrado (falta un FIN SI, etc.) no es un error de
+  // "ejecución", así que se resuelve directo, sin timeout ni srcdoc de por medio.
+  const traduccion = aJavaScript(codigoEstudiante)
+  if (!traduccion.ok) {
+    return Promise.resolve({ ok: false, html: '', error: traduccion.error, logs: [] })
+  }
+  return correrEnIframe(construirSrcdoc(traduccion.js, datos), timeoutMs)
+}
+
+// ── Ju1: documento multi-pestaña (ver frontend/src/lib/estructuraDePagina.ts) ──────────────
+// Cada sección corre su propio script, con su PROPIO contenedor detached (no el <div
+// id="__raiz"> compartido), en la MISMA página/scope que el resto — así el RUNTIME (arriba)
+// se emite una sola vez, igual que con un solo archivo. El resultado de cada sección se guarda
+// envuelto en un <div> con el grid-row/grid-column que le toca según la cuadrícula, y ese
+// envoltorio es lo que se expone como variable con nombre ANTES de correr el "main"
+// (portafolio.js) — mismo mecanismo que ya usa `datos` (una variable que sale de "afuera").
+// Con la posición ya resuelta en el envoltorio, el main solo necesita `mostrar(nombreSeccion)`;
+// no importa en qué orden lo haga, el CSS grid las ubica igual.
+export function construirSrcdocJu1(doc: DocumentoJu1, datos: unknown): string {
+  const nombresEnLaCuadricula = new Set(
+    doc.estructura.celdas.filter((c): c is typeof c & { seccion: string } => c.seccion !== null).map((c) => c.seccion),
+  )
+  const secciones = doc.secciones.filter((s) => nombresEnLaCuadricula.has(s.nombre))
+
+  const bloquesDeSecciones = secciones
+    .map((s) => {
+      const celda = doc.estructura.celdas.find((c) => c.seccion === s.nombre)!
+      const archivo = `seccion-${s.nombre}.js`
+      const codigoConFuente = s.contenido + `\n//# sourceURL=${archivo}`
+      return `
+  pagina = document.createElement('div');
+  __evaluarConNombre(${comoLiteralSeguro(codigoConFuente)}, ${comoLiteralSeguro(archivo)});
+  (function () {
+    var envoltura = document.createElement('div');
+    envoltura.style.gridRow = '${celda.fila + 1} / span ${celda.expandeFilas}';
+    envoltura.style.gridColumn = '${celda.columna + 1} / span ${celda.expandeColumnas}';
+    envoltura.appendChild(pagina);
+    window.__SECCIONES__[${comoLiteralSeguro(s.nombre)}] = envoltura;
+  })();`
+    })
+    .join('\n')
+
+  const declaracionesDeSecciones = secciones
+    .map((s) => `  var ${s.nombre} = window.__SECCIONES__[${comoLiteralSeguro(s.nombre)}];`)
+    .join('\n')
+
+  const archivoMain = 'portafolio.js'
+  const mainConFuente = doc.main + `\n//# sourceURL=${archivoMain}`
+
+  return `<!doctype html><html><head><meta charset="utf-8">
+<style>${ANDAMIAJE_CSS}</style>
+</head><body><div id="__raiz"></div><script>
+window.__DATOS__ = ${comoLiteralSeguro(datos)};
+window.__SECCIONES__ = {};
+${RUNTIME}
+var __raizReal = pagina;
+
+// A diferencia del documento de un solo archivo, acá corren VARIOS scripts en secuencia (uno
+// por sección + el main): __archivoConError dice cuál está corriendo en este momento, así un
+// error de cualquiera de ellos se puede marcar en SU pestaña, no siempre en portafolio.js.
+var __archivoConError = null;
+function __evaluarConNombre(codigo, archivo) {
+  __archivoConError = archivo;
+  eval(codigo);
+  __archivoConError = null;
+}
+function __escaparRegExp(s) {
+  return s.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&');
+}
+function __lineaDelError(e) {
+  if (__archivoConError) {
+    var patron = new RegExp(__escaparRegExp(__archivoConError) + ':(\\\\d+):(\\\\d+)');
+    var m = patron.exec((e && e.stack) || '');
+    if (m) return Number(m[1]);
+  }
+  if (e && typeof e.lineNumber === 'number') return e.lineNumber;
+  return undefined;
+}
+
+window.onerror = function (mensaje, _url, lineno, _colno, error) {
+  parent.postMessage(
+    { tipo: 'preview-error', archivo: __archivoConError, mensaje: String(mensaje), linea: __lineaDelError(error) ?? lineno, logs: __logs },
+    '*',
+  );
+  return true;
+};
+
+try {
+${bloquesDeSecciones}
+
+  var __grid = document.createElement('div');
+  __grid.style.display = 'grid';
+  __grid.style.gridTemplateRows = 'repeat(${doc.estructura.filas}, auto)';
+  __grid.style.gridTemplateColumns = 'repeat(${doc.estructura.columnas}, 1fr)';
+  __grid.style.gap = 'var(--espaciado)';
+  __raizReal.appendChild(__grid);
+  pagina = __grid;
+${declaracionesDeSecciones}
+  __evaluarConNombre(${comoLiteralSeguro(mainConFuente)}, ${comoLiteralSeguro(archivoMain)});
+  parent.postMessage({ tipo: 'preview-ok', html: __raizReal.innerHTML, logs: __logs }, '*');
+} catch (e) {
+  parent.postMessage(
+    { tipo: 'preview-error', archivo: __archivoConError, mensaje: String((e && e.message) || e), linea: __lineaDelError(e), logs: __logs },
+    '*',
+  );
+}
+</script></body></html>`
+}
+
+/** Como ejecutarPreview(), pero para un DocumentoJu1 (cuadrícula + una pestaña por sección +
+ *  el main). Si cualquier pestaña tiene un error de pseudocódigo, se resuelve directo con ESA
+ *  pestaña señalada — mismo criterio que ejecutarPreview con un solo archivo. */
+export function ejecutarPreviewJu1(doc: DocumentoJu1, datos: unknown, timeoutMs = 5000): Promise<ResultadoPreview> {
+  const seccionesJs: { nombre: string; contenido: string }[] = []
+  for (const s of doc.secciones) {
+    const t = aJavaScript(s.contenido)
+    if (!t.ok) {
+      return Promise.resolve({
+        ok: false,
+        html: '',
+        error: { mensaje: t.error?.mensaje ?? 'error', linea: t.error?.linea, archivo: `seccion-${s.nombre}.js` },
+        logs: [],
+      })
+    }
+    seccionesJs.push({ nombre: s.nombre, contenido: t.js })
+  }
+  const traduccionMain = aJavaScript(doc.main)
+  if (!traduccionMain.ok) {
+    return Promise.resolve({
+      ok: false,
+      html: '',
+      error: { mensaje: traduccionMain.error?.mensaje ?? 'error', linea: traduccionMain.error?.linea, archivo: 'portafolio.js' },
+      logs: [],
+    })
+  }
+
+  const docTraducido: DocumentoJu1 = {
+    ...doc,
+    secciones: seccionesJs.map((s) => ({ nombre: s.nombre, contenido: s.contenido })),
+    main: traduccionMain.js,
+  }
+  return correrEnIframe(construirSrcdocJu1(docTraducido, datos), timeoutMs)
 }
