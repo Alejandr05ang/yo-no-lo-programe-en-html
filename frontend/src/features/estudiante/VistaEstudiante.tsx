@@ -278,10 +278,6 @@ function VistaEstudianteInterna() {
       /* sin almacenamiento local: queda el guardado en el servidor */
     }
   }
-  // Guarda en el servidor el borrador `cont` del encargo `numSave`, en la cola. Si no llega,
-  // deja una marca en este equipo: al volver al encargo la copia local manda y se vuelve a
-  // subir. Y solo se da por "guardado" si mientras tanto no se escribió nada más; si no,
-  // lo escrito durante el envío quedaba marcado como guardado sin haberse enviado.
   // Lo último que este equipo SABE que está en el servidor, por encargo (undefined: no se sabe,
   // p. ej. se abrió sin red). Va en la marca de pendiente: al volver, la copia local solo manda
   // si el servidor no cambió desde entonces (lib/colaGuardado.ts, elegirBorrador).
@@ -294,6 +290,10 @@ function VistaEstudianteInterna() {
     } catch { /* sin almacenamiento */ }
   }
   const reintentosRef = useRef(0)
+  // Guarda en el servidor el borrador `cont` del encargo `numSave`, en la cola. Si no llega,
+  // deja una marca en este equipo: al volver al encargo la copia local manda y se vuelve a
+  // subir. Y solo se da por "guardado" si mientras tanto no se escribió nada más; si no,
+  // lo escrito durante el envío quedaba marcado como guardado sin haberse enviado.
   const guardarEnServidor = (numSave: number, cont: string) => {
     const marca = user ? clavePendiente(user.uid, challengeKeyFromNumero(numSave)) : null
     colaRef.current.encolar(async () => {
