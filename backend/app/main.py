@@ -20,6 +20,7 @@ from app.core.middleware import RequestSafetyMiddleware
 from app.db.session import create_database
 from app.demo.routes import router as demo_router
 from app.instructor.routes import router as instructor_router
+from app.portfolio.routes import router as portfolio_router
 from app.profile.routes import router as profile_router
 from app.progress.routes import router as progress_router
 
@@ -55,6 +56,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     install_error_handlers(app)
     app.include_router(auth_router)
     app.include_router(profile_router)
+    app.include_router(portfolio_router)
     app.include_router(cohorts_router)
     app.include_router(catalog_router)
     app.include_router(admin_router)

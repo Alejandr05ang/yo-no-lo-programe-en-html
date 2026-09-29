@@ -22,6 +22,12 @@ const MESSAGES: Record<string, string> = {
   INVALID_API_URL: 'La conexión con el taller todavía no está configurada correctamente.',
   SESSION_CHANGED: 'La sesión cambió. Vuelve a intentar la operación con tu cuenta actual.',
   REQUEST_CANCELLED: 'La operación se canceló.',
+  SOURCE_CHANGED: 'Tu código o tus datos cambiaron. Vuelve a cargar la fuente y prepara otra vista previa antes de publicar.',
+  PUBLICATION_NOT_OPEN: 'La publicación estará disponible cuando tu docente abra el día Git y publicación.',
+  EMPTY_SOURCE: 'Guarda primero el código de tu sitio en el editor.',
+  SOURCE_NOT_FOUND: 'Guarda primero el código de esa actividad y vuelve a cargar la fuente.',
+  EMPTY_SNAPSHOT: 'La vista previa necesita contenido visible. Añade un título o un texto a tu sitio antes de publicarlo.',
+  INVALID_SNAPSHOT: 'La página es demasiado grande para publicar. Reduce su contenido y prepara otra vista previa.',
 }
 
 export class ApiError extends Error {
@@ -81,7 +87,7 @@ function responseError(status: number, body: unknown): ApiError {
 export function createApiClient(options: ClientOptions) {
   const base = apiBase(options)
   const fetcher = options.fetcher ?? fetch
-  async function request<T>(path: string, init: RequestOptions = {}): Promise<T> {
+  async function perform<T>(path: string, init: RequestOptions, binary = false): Promise<T> {
     if (!/^\/[a-z0-9][a-z0-9/_-]*(?:\?[^#\\]*)?$/i.test(path)) throw new ApiError('INVALID_API_URL')
     const destination = new URL(path.slice(1), base)
     if (destination.origin !== base.origin || !destination.pathname.startsWith('/api/')) throw new ApiError('INVALID_API_URL')
@@ -98,7 +104,7 @@ export function createApiClient(options: ClientOptions) {
         const token = await options.getIdToken(attempt === 1)
         checkSession()
         if (!token) throw new ApiError('AUTH_REQUIRED', 401)
-        const headers = new Headers({ Accept: 'application/json', Authorization: `Bearer ${token}` })
+        const headers = new Headers({ Accept: binary ? 'image/webp' : 'application/json', Authorization: `Bearer ${token}` })
         if (init.json !== undefined) headers.set('Content-Type', 'application/json')
         const response = await fetcher(destination, {
           method: init.method ?? 'GET',
@@ -113,6 +119,11 @@ export function createApiClient(options: ClientOptions) {
         if (response.status === 401 && attempt === 0) {
           await response.body?.cancel()
           continue
+        }
+        if (binary && response.ok) {
+          const blob = await response.blob()
+          checkSession()
+          return blob as T
         }
         let body: unknown
         try { body = response.status === 204 ? null : await response.json() } catch {
@@ -132,7 +143,10 @@ export function createApiClient(options: ClientOptions) {
       clearTimeout(timer)
     }
   }
-  return { request }
+  return {
+    request: <T>(path: string, init: RequestOptions = {}) => perform<T>(path, init),
+    requestBlob: (path: string, init: RequestOptions = {}) => perform<Blob>(path, init, true),
+  }
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>

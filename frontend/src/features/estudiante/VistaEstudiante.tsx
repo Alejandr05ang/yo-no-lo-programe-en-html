@@ -54,7 +54,7 @@ const CLAVE_SOLUCIONES = 've:soluciones' // código aceptado por encargo (para h
 const CLAVE_BORRADORES = 've:borradores' // código en curso por encargo (para no perder trabajo al navegar)
 
 const MIN_ENCARGO = NUMEROS_DE_ENCARGO[0]
-const MAX_ENCARGO = NUMEROS_DE_ENCARGO[NUMEROS_DE_ENCARGO.length - 1]
+const ULTIMO_ENCARGO = NUMEROS_DE_ENCARGO[NUMEROS_DE_ENCARGO.length - 1]
 
 function leerEncargoAbierto(): boolean {
   try {
@@ -87,10 +87,6 @@ function claveDeCuenta(base: string, uid: string | undefined): string {
   return uid ? `${base}:${uid}` : base
 }
 
-function clamp(n: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, n))
-}
-
 type Casos = { casosPasados: number; casosTotales: number }
 
 function sinEncargo<T>(mapa: Record<number, T>, n: number): Record<number, T> {
@@ -114,6 +110,10 @@ function contenidoInicialDe(numero: number, soluciones: Record<number, string>):
   const e = ENCARGOS[numero]
   if (e?.modelo === 'grid') {
     const heredado = e.heredaDe != null ? soluciones[e.heredaDe]?.trim() : undefined
+    if (e.sesion !== 'Ju1' && e.andamiajeNuevo?.trim()) {
+      const doc = parsearDocumentoJu1(heredado || e.fallbackHeredado || '')
+      return serializarDocumentoJu1({ ...doc, main: `${doc.main}\n\n${e.andamiajeNuevo}` })
+    }
     return heredado || serializarDocumentoJu1(crearDocumentoJu1Inicial())
   }
   return componerAndamiaje(numero, soluciones)
@@ -128,7 +128,8 @@ export function VistaEstudiante() {
 function VistaEstudianteInterna() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
-  const numero = clamp(Number(params.get('e')) || MIN_ENCARGO, MIN_ENCARGO, MAX_ENCARGO)
+  const pedido = Number(params.get('e'))
+  const numero = NUMEROS_DE_ENCARGO.includes(pedido) ? pedido : MIN_ENCARGO
 
   const { data: encargo } = useQuery({
     queryKey: ['encargo', numero],
@@ -279,6 +280,10 @@ function VistaEstudianteInterna() {
 
   const [salida, setSalida] = useState<SalidaEjecucion | null>(null)
   const [previewHtml, setPreviewHtml] = useState('')
+  const [previewVivo, setPreviewVivo] = useState<{ numero: number; srcdoc: string } | null>(null)
+  const ejecucionRef = useRef(0)
+  // Invalida también A→B→A y desmontajes, aunque una ejecución siga esperando su mensaje.
+  useEffect(() => () => { ejecucionRef.current += 1 }, [numero])
   const [revision, setRevision] = useState<ResultadoRevision | null>(null)
   const [ejecutando, setEjecutando] = useState(false)
   const [entregando, setEntregando] = useState(false)
@@ -451,6 +456,23 @@ function VistaEstudianteInterna() {
     await flushPendiente()
     navigate(rutaDia(codigo))
   }
+  const abrirMiSitio = async () => {
+    const actual = numero
+    // Una fuente heredada recién abierta aún no tiene Progress propio hasta la
+    // primera edición. Al compartir se guarda explícitamente esa versión también.
+    if (clienteApi && numeroCargadoRef.current === actual && estadoGuardado.estado === 'saved'
+      && contenidoRef.current.trim() && enServidorRef.current[actual] !== contenidoRef.current) {
+      guardarCopiaLocal(actual, contenidoRef.current)
+      guardarEnServidor(actual, contenidoRef.current)
+    }
+    await flushPendiente()
+    if (numeroRef.current !== actual) return
+    if (!clienteApi || enServidorRef.current[actual] !== contenidoRef.current) {
+      setErrorEntrega('Antes de abrir Mi sitio, guarda los cambios con conexión. Tu borrador permanece en este equipo.')
+      return
+    }
+    navigate(`/mi-sitio?challenge_key=${challengeKeyFromNumero(actual)}`)
+  }
 
   // Lo que no llegó al servidor (el borrador o un aceptado) se reintenta solo, cada vez más
   // espaciado, sin esperar a que el estudiante vuelva a escribir o a navegar: si no, la última
@@ -533,6 +555,10 @@ function VistaEstudianteInterna() {
     if (fallbackLocal && pareceContenidoDeDatos(fallbackLocal)) fallbackLocal = undefined
 
     const setInitialCode = (code: string) => {
+      const ejecucion = ++ejecucionRef.current
+      setEjecutando(false)
+      setPreviewVivo(null)
+      setPreviewHtml('')
       setContenido(code)
       setNumeroCargado(numero)
       numeroCargadoRef.current = numero
@@ -544,7 +570,11 @@ function VistaEstudianteInterna() {
         const d = { ...perfilComoDatos(perfilRef.current), ...encargo.datosOverride }
         const promesa = encargo.modelo === 'grid' ? ejecutarPreviewJu1(parsearDocumentoJu1(code), d) : ejecutarPreview(code, d)
         void promesa.then((r) => {
-          if (r.ok) setPreviewHtml(r.html)
+          if (r.ok && numeroRef.current === numero && numeroCargadoRef.current === numero
+            && ejecucion === ejecucionRef.current) {
+            setPreviewHtml(r.html)
+            setPreviewVivo({ numero, srcdoc: r.srcdoc ?? '' })
+          }
         })
       } else {
         setPreviewHtml('')
@@ -620,15 +650,19 @@ function VistaEstudianteInterna() {
   // ni lo que ya está guardado — es la forma de "probar antes de aplicar a toda la página".
   // Sin eso, se corre LA ENTREGA: el documento completo (Ju1) o `contenido` tal cual (el resto).
   const ejecutar = useCallback(async (codigoPrueba?: string) => {
+    const ejecucion = ++ejecucionRef.current
+    setPreviewVivo(null)
     setEjecutando(true)
     const r = codigoPrueba !== undefined
       ? await ejecutarPreview(codigoPrueba, datos)
       : documento
         ? await ejecutarPreviewJu1(documento, datos)
         : await ejecutarPreview(contenido, datos)
+    if (numeroRef.current !== numero || numeroCargadoRef.current !== numero || ejecucion !== ejecucionRef.current) return
     setEjecutando(false)
     if (r.ok) {
       setPreviewHtml(r.html)
+      setPreviewVivo({ numero, srcdoc: r.srcdoc ?? '' })
       setSalida({
         lineas: r.logs.length
           ? r.logs.map((texto) => ({ prefijo: 'consola', texto }))
@@ -643,7 +677,7 @@ function VistaEstudianteInterna() {
         archivo: r.error?.archivo,
       })
     }
-  }, [contenido, datos, documento])
+  }, [contenido, datos, documento, numero])
 
   const entregar = useCallback(async () => {
     setEntregando(true)
@@ -749,7 +783,7 @@ function VistaEstudianteInterna() {
   // progressStatus y revision todavía son los del anterior.
   const aceptado = numeroCargado === numero
     && (progressStatus === 'accepted' || (!!revision && revision.casosPasados === revision.casosTotales))
-  const esUltimo = numero >= MAX_ENCARGO
+  const esUltimo = numero === ULTIMO_ENCARGO
 
   // Al aceptar: guardar la solución (para heredarla)
   useEffect(() => {
@@ -849,7 +883,7 @@ function VistaEstudianteInterna() {
   return (
     <div className="ve">
       {celebrando && <div className="ve-flash-exito" aria-hidden="true" />}
-      <Nav seccion="Portafolio" dia={diaDeEncargo(numero)} iniciales="AR" activo="portafolio" />
+      <Nav seccion="Portafolio" dia={diaDeEncargo(numero)} iniciales="AR" activo="portafolio" onAbrirSitio={() => void abrirMiSitio()} />
 
       <div
         ref={gridRef}
@@ -939,8 +973,10 @@ function VistaEstudianteInterna() {
 
         <div className="ve-col-preview">
           <PanelPreview
+            key={numero}
             url={portafolioEjemplo.url}
             html={previewHtml}
+            srcdocVivo={previewVivo?.numero === numero ? previewVivo.srcdoc : undefined}
             expandido={previewExpandido}
             onToggleExpandir={() => setPreviewExpandido((v) => !v)}
           />

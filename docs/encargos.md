@@ -1,5 +1,7 @@
 # Progresión de encargos
 
+> **Estado operativo, 28-sep-2026:** [Currículo vigente](CURRICULO-VIGENTE-2026-09-28.md) define el orden, los permisos y la comparación con Google Sites. La revisión es local con variantes de datos, no tests ocultos en Deno. Desde E7 se conserva el documento de cuadrícula de E13. Las ideas de checkpoints y retos opcionales de este diseño no implican que exista ya un flujo persistente para ellos.
+
 > Diseño de contenido del taller. Fuente de principios: `brief.md` (§2.1 currículo en espiral,
 > §2.2 necesidad real, §2.3 tests ocultos, §2.4 nombres descriptivos). Aquí se concreta la secuencia.
 >
@@ -302,10 +304,11 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 - **Entrega.** `proyectosDestacados()` selecciona los proyectos con `destacado: true` y
   `cadaSegundo()` mantiene una sola imagen en el carrusel. Con 0 destacados muestra un aviso; con
   1 repite el mismo; con varios rota en ciclo.
-- **Validación local.** Solo observa el primer snapshot: hay un carrusel, tiene una imagen y esa
-  imagen es destacada. No puede validar el paso del tiempo.
-- **Grader futuro.** 0 destacados → aviso · 1 destacado → se mantiene · ≥2 destacados → rota entre
-  todos sin acumular imágenes ni saltarse ninguno.
+- **Validación local.** Ejecuta variantes vacías, de uno y varios destacados, y simula hasta diez
+  ticks en el sandbox para comparar imágenes sucesivas. Comprueba orden, vuelta al inicio con
+  las variantes pequeñas y ausencia de acumulación. Una imagen estática no aprueba.
+- **Vista previa.** El editor conserva un iframe aislado con su programa vivo; los temporizadores
+  terminan al sustituir o desmontar ese iframe. La publicación sigue siendo un snapshot separado.
 - **Concepto.** Repetición que no termina (`cadaSegundo`). La selección de destacados se entrega
   como una herramienta explícita para no adelantar el filtro manual, que se trabaja en E9.
   Reemplaza al "saludo dinámico" descartado (decisión del 19-sep, `docs/decisiones.md`): mismo
@@ -398,16 +401,15 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
 ### 5.2 Qué pasa al aceptar un encargo
 
 1. La revisión devuelve todos los casos en verde → el encargo pasa a `aceptado`.
-2. El panel muestra el sello **"encargo aceptado"** por un instante y la plataforma **salta sola al
-   encargo N+1** en ~1 s — sin botón, sin aviso, siempre (también si volviste a repasar un encargo
-   ya hecho: pasa al siguiente igual). Para ir a un encargo concreto está el mapa (1e).
-   El último encargo no salta: muestra *"Terminaste el último encargo."*
-   En producción, si el siguiente está bloqueado por fecha, el sello queda sin salto.
+2. El panel muestra **"encargo aceptado"** y puede saltar en unos 900 ms a la siguiente actividad
+   **abierta del mismo día**, también al reentregar. No utiliza N+1 ni cruza automáticamente al
+   día siguiente. El mapa del backend gobierna los destinos; un día bloqueado o pausado no se abre.
 
    El panel de revisión, antes de entregar, dice explícitamente que **Entregar a revisión** es lo
    que hace avanzar.
-3. Al pasar al siguiente encargo, el editor carga el **andamiaje del encargo N+1**, compuesto como
-   `archivo_inicial(N+1) = solución_aceptada(N) + líneas_nuevas(N+1)`. La parte heredada es el
+3. Al pasar al siguiente encargo, el editor carga el **andamiaje de su predecesor curricular**.
+   E12 hereda E6, E13 hereda E12 y E7 hereda E13. E7–E11 conservan cuadrícula, secciones y estilos,
+   y añaden las instrucciones al archivo principal. La parte heredada es el
    código **real** del estudiante (su nombre, sus frases), no un ejemplo — si en E1 escribió
    "Daniel", E2 arranca con "Daniel". Las líneas nuevas son comentarios y una pista, **sin dar la
    estructura hecha**: el estudiante deduce el patrón de su propio código y lo escribe (§2.5).
@@ -417,42 +419,34 @@ Cada encargo se mapea a una pieza del portafolio del cronograma (`brief.md` §4)
    *"Queda un checkpoint oral pendiente · Agendar"* (pantalla 1c del handoff). El checkpoint no
    bloquea avanzar al siguiente encargo, pero sí cuenta para la evaluación formativa.
 
-### 5.3 Habilitación por calendario (producción)
+### 5.3 Habilitación por día (producción)
 
-Regla del brief (§2.7, §3, §5.3): **el desbloqueo es por día y para todo el grupo a la vez**,
-independiente del avance individual.
+**El backend autoriza los días abiertos y pausados por el docente**, independientemente del
+avance individual. Una fecha del navegador no abre actividades por sí sola.
 
 - Cada encargo pertenece a una sesión (`E1–E3 → Ma1`, `E4,E5,E6 → Mi1`, `E12,E13 → Ju1`,
   `E7,E8 → V1`, `E9 → L2`, `E10 → Ma2`, `E11 → Mi2` — ver la tabla de la §4). E12/E13 son
   personalización visual, revisados a mano (`review`), no por autograder.
-- Un encargo está `disponible` cuando **hoy ≥ la fecha de su sesión**. No importa si terminaste los
-  anteriores ni cuántos intentos llevás.
+- Un encargo está disponible cuando el mapa del backend lo indica. Aprobar anteriores no abre
+  días futuros, y pausar un día no borra el progreso.
 - Dentro de una sesión con dos encargos, la plataforma presenta como "activo" el primero que no
   esté `aceptado`; el estudiante puede volver a cualquiera ya disponible.
-- Quien termina todos los encargos del día **espera al día siguiente** — ese es el punto del
-  desbloqueo por día (evita que quien ya sabe se adelante saltándose el descubrimiento guiado,
-  brief §2.7). Mientras tanto puede tomar retos platino.
-- El calendario de sesiones (fecha por sesión) lo configura el instructor por cohorte. El backend
-  guarda `sesion → fecha` y deriva el estado de cada encargo.
+- Al terminar el día, si el siguiente está abierto, se ofrece un botón manual para continuar.
+  Si está bloqueado o pausado, se explica y se vuelve al mapa. `active_session_id = NULL`
+  significa solo demo.
 
-### 5.4 Desarrollo (sin calendario)
+### 5.4 Persistencia y navegación
 
-**No hay selector manual de encargo en la interfaz.** El avance es solo el automático al aceptar
-(§5.2). La única puerta trasera para desarrollo es la **URL**:
+La navegación dentro del día ofrece Anterior/Siguiente disponibles y el mapa. Una URL directa
+no evita la autorización. Toda salida guarda primero el borrador.
 
-- `/portafolio?e=3` abre el encargo 3 directamente. Sin `?e`, arranca en el 1. El salto automático
-  al aceptar no comprueba fecha (no hay calendario todavía).
-- **Dos caches en `sessionStorage`** (efímeras — sobreviven recargas, se pierden al cerrar la
-  pestaña; mismo criterio "sin persistencia en servidor" del brief §2.6):
-  - `ve:soluciones` — el código **aceptado** por encargo. El siguiente encargo lo prepende
-    (herencia). Si abrís por URL un encargo sin solución previa, se usa el `fallbackHeredado`
-    de `encargos.ts`.
-  - `ve:borradores` — el código **en curso** por encargo. Al cambiar de encargo, el del que salís
-    se guarda y el del que entrás se recupera; así no se pierde trabajo mientras la pestaña esté abierta.
-- Los datos (`datos.js`) y los andamiajes de cada encargo salen de `frontend/src/lib/encargos.ts`.
-
-Cuando exista el backend: `api.encargo(n)` pasa a pegarle a `/encargos/:n`, que responde 403 si la
-sesión aún no abrió. La navegación entre encargos ya disponibles será la pantalla del mapa (1e).
+- FastAPI/PostgreSQL guarda borradores, entregas y progreso. Los respaldos de este equipo ayudan
+  a recuperar fallos de red y se separan por cuenta; no son la fuente principal.
+- La cola de guardado evita que una respuesta vieja sobrescriba un reto nuevo. `accepted` no se
+  degrada por un autosave posterior.
+- `datos.js` combina el perfil del servidor y los datos de práctica del encargo. Los andamiajes
+  y el contenido pedagógico local viven en `frontend/src/lib/encargos.ts`.
+- El modo de fixtures usa el mismo orden curricular explícito que `sort_order` del backend.
 
 ### 5.5 "Mis datos" — el portafolio se siente propio desde E1
 
@@ -460,20 +454,22 @@ El estudiante llena una vez un formulario **"Mis datos"** (nombre, sobre mí, re
 desde el botón *editar mis datos* de la pestaña `datos.js`. Eso alimenta el objeto `datos` de la
 **vista previa**, así el portafolio muestra *sus* cosas y no un ejemplo genérico.
 
-- Precargado con datos de ejemplo que el estudiante reemplaza por los suyos.
+- El perfil se carga del servidor; el estudiante puede editarlo sin perder el foco ni los saltos de hobbies.
 - `datos` de la preview = **perfil del estudiante** + *override del encargo* (donde el encargo
-  necesita un estado concreto: E5 fuerza `sobreMi: ""` para que se vea el aviso "en construcción").
-- Los **tests ocultos** del servidor siguen inyectando datos de tamaño variable (E7: 0 / 3 / 14
-  hobbies). El perfil no afecta la evaluación — solo la preview. Ownership sin romper la pedagogía.
-- Dev: `localStorage` `ve:perfil`. Producción: pantalla de perfil / diagnóstico inicial (1f).
+  necesita un estado concreto: E7 fuerza `sobreMi: ""` para practicar el aviso).
+- La revisión local prueba también otros tamaños y valores en E6 y E7–E11. La lista vacía es
+  válida, pero no basta dejar una página vacía para aprobar las variantes con contenido.
+- `ve:perfil` es únicamente migración legada, no almacenamiento principal.
 
 ---
 
 ## 6. Después de los encargos
 
-- **Ju2 — Git + deploy.** No es un encargo con autograder: es un módulo guiado (`brief.md` §5.9).
-  Inicializar repo, `add`/`commit`/`push`, conectar Vercel/Netlify, verificar que la URL responde.
-- **V2 — Diagnóstico final + demo.** El mismo formulario del diagnóstico inicial, para comparar.
+- **Ju2 — Git y publicación.** Módulo guiado: guardar la fuente, previsualizar, publicar un snapshot,
+  obtener la URL de cohorte y actualizar la publicación. Git es un concepto de versión y una
+  práctica opcional; GitHub/Netlify externos no son obligatorios para compartir en la cohorte.
+- **V2 — Demo final.** Galería, presentación, últimos cambios y actualización. El diagnóstico final
+  lo aporta el equipo del taller; no se inventan preguntas ni resultados de evaluación.
 
 ---
 

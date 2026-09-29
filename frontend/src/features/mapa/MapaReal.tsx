@@ -137,7 +137,7 @@ export function MapaReal() {
       <p>
         <span className="tag tag-accent">Hoy</span>{' '}
         Día {hoy.day_number} · <strong>{hoy.title}</strong>
-        {' — '}{textoProgreso(comoDia(hoy).progress)}
+        {' — '}{textoProgreso(comoDia(hoy).progress, hoy.code)}
       </p>
       {hoyAbierto
         ? <Link className="btn btn-primary" to={rutaEntradaDia(hoy.code)}>
@@ -171,7 +171,7 @@ export function MapaReal() {
             {dia.is_current && estado !== 'hoy' && <span className="tag tag-accent">Hoy</span>}
           </div>
           {abierto && <div className="mapa-progreso">
-            <span>{textoProgreso(dia.progress)}</span>
+            <span>{textoProgreso(dia.progress, session.code)}</span>
             {dia.progress.required_total > 0 && <span
               className="mapa-progreso-barra"
               aria-hidden="true"

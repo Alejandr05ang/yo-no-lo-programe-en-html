@@ -1,5 +1,7 @@
 # Auditoría de niveles — 2026-09-20
 
+> **Informe histórico del 20-sep-2026.** Sus fallos de build, ausencia de backend y límites de navegación no describen necesariamente el estado actual. Consulte [Currículo vigente — 28-sep-2026](CURRICULO-VIGENTE-2026-09-28.md) y los informes `CODEX_PROJECT_STATE_2026-09-28.md` / `CODEX_FINAL_AUDIT_2026-09-28.md` para la nueva medición.
+
 ## Alcance y método
 
 Auditoría sin cambios de producto ni de código. Se leyeron `README.md`, `docs/brief.md`,

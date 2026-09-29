@@ -1,155 +1,69 @@
-import { JSDOM } from 'jsdom'
-const dom = new JSDOM(`<!DOCTYPE html><body></body>`)
-global.window = dom.window
-global.document = dom.window.document
-global.DOMParser = dom.window.DOMParser
-global.URL.createObjectURL = () => 'blob:dummy'
-global.HTMLIFrameElement = dom.window.HTMLIFrameElement
-
-import { componerAndamiaje, ENCARGOS } from './src/lib/encargos.ts'
+// Recorrido acumulativo con el mismo iframe/runtime y corrector que usa la pantalla.
+// El entorno sustituye solo el alojamiento del iframe que jsdom no implementa.
+import './tests/vista/entorno.ts'
+import assert from 'node:assert/strict'
+import { ENCARGOS, NUMEROS_DE_ENCARGO } from './src/lib/encargos.ts'
 import { revisarLocalmente } from './src/lib/revisionLocal.ts'
 import { PERFIL_DEFECTO, perfilComoDatos } from './src/lib/perfil.ts'
-import * as sandbox from './src/lib/sandbox.ts'
+import { crearDocumentoJu1Inicial, crearSeccion, serializarDocumentoJu1 } from './src/lib/estructuraDePagina.ts'
+import { ejecutarPreviewJu1 } from './src/lib/sandbox.ts'
 
-async function run() {
-  const datos = perfilComoDatos(PERFIL_DEFECTO)
-  datos.hobbies = ["Hobby 1", "Hobby 2"]
-  datos.redes = [
-    { nombre: "GitHub", url: "https://github.com" },
-    { nombre: "LinkedIn", url: "https://linkedin.com" }
-  ]
-  datos.proyectos = [
-    { nombre: "P1", terminado: true, destacado: true, imagenUrl: "p1.jpg", tipo: "demo", url: "https://demo1.com" },
-    { nombre: "P2", terminado: false, destacado: false, imagenUrl: "p2.jpg", tipo: "texto" },
-    { nombre: "P3", terminado: false, destacado: false, imagenUrl: "p3.jpg", tipo: "otro" }
-  ]
-  datos.skills = [
-    { categoria: "Frontend", items: ["HTML", "CSS", "JS"] },
-    { categoria: "Backend", items: ["Node", "SQL"] }
-  ]
-  
-  let allPass = true
-  
-  const soluciones = {
-    1: `mostrar(crearTitulo("Taller HTML"))`,
-    2: `mostrar(crearTitulo("Taller HTML")); mostrar(crearParrafo("P1")); mostrar(crearParrafo("P2"))`,
-    3: `mostrar(crearTitulo("Taller HTML")); mostrar(crearParrafo("P1")); mostrar(crearParrafo("P2")); mostrar(crearSubtitulo("S"));`,
-    4: `mostrar(crearTitulo("Taller HTML")); mostrar(crearParrafo("P1")); mostrar(crearParrafo("P2")); mostrar(crearSubtitulo("S"));
-        let l = crearLista();
-        for (const r of datos.redes) {
-          if (r.url) {
-            let item = crearItem("");
-            agregarA(item, crearEnlace(r.nombre, r.url));
-            agregarA(l, item);
-          }
-        }
-        mostrar(l);
-       `,
-    5: `let l = crearLista(); for (const p of datos.proyectos) { agregarA(l, crearItem(p.nombre)); } mostrar(l)`,
-    6: `let l = crearLista(); for (const h of datos.hobbies) { agregarA(l, crearItem(h)); } mostrar(l)`,
-    7: `mostrar(crearTitulo("Taller HTML")); mostrar(crearParrafo("En construcción"))`,
-    8: `let c = crearCarrusel(); for (const p of proyectosDestacados(datos.proyectos)) { agregarA(c, crearImagen(p.imagenUrl, p.nombre)); } mostrar(c)`,
-    9: `mostrar(crearTitulo("Taller HTML")); mostrar(crearParrafo("A1")); mostrar(crearParrafo("A2"));
-        for (const p of datos.proyectos) { if (p.terminado) mostrar(crearParrafo(p.nombre)); }`,
-    10: `for (const grupo of datos.skills) {
-          mostrar(crearSubtitulo(grupo.categoria));
-          let l = crearLista();
-          for (const item of grupo.items) {
-            agregarA(l, crearItem(item));
-          }
-          mostrar(l);
-        }`,
-    11: `for (const p of datos.proyectos) {
-          if (p.tipo === 'demo') {
-            mostrar(crearEnlace(p.nombre, p.url));
-          } else if (p.tipo === 'texto') {
-            mostrar(crearParrafo(p.nombre));
-          } else {
-            mostrar(crearParrafo(p.nombre));
-          }
-        }`
-  }
-
-  for (let numero = 1; numero <= 11; numero++) {
-    const encargo = ENCARGOS[numero]
-    if (!encargo) continue
-    const code = soluciones[numero] || ""
-    console.log(`\nProbando e${numero}...`)
-    
-    try {
-      const DOM = new JSDOM(`<!DOCTYPE html><div id="__raiz"></div>`)
-      const d = DOM.window.document
-      const raiz = d.getElementById('__raiz')
-      
-      const API = {
-        crearTitulo: (t) => { let el = d.createElement('h1'); el.textContent=t; return el; },
-        crearSubtitulo: (t) => { let el = d.createElement('h2'); el.textContent=t; return el; },
-        crearParrafo: (t) => { let el = d.createElement('p'); el.textContent=t; return el; },
-        crearLista: () => { return d.createElement('ul'); },
-        crearItem: (t) => { let el = d.createElement('li'); el.textContent=t; return el; },
-        crearEnlace: (t, u) => { let el = d.createElement('a'); el.textContent=t; el.href=u; return el; },
-        crearImagen: (u, t) => { let el = d.createElement('img'); el.src=u; el.alt=t; return el; },
-        crearCarrusel: () => { let el = d.createElement('section'); el.setAttribute('data-carrusel','true'); return el; },
-        mostrar: (el) => { raiz.appendChild(el); return el; },
-        agregarA: (p, el) => { p.appendChild(el); return el; },
-        proyectosDestacados: (l) => l.filter(p => p.destacado)
-      }
-      
-      const fn = new Function('datos', ...Object.keys(API), code)
-      fn(datos, ...Object.values(API))
-      
-      const html = raiz.innerHTML
-      
-      // Pasar html explícitamente para evitar ejecución en iframe
-      const res = await revisarLocalmente(numero, code, datos, html)
-      console.log(`Resultado: ${res.casosPasados}/${res.casosTotales}`)
-      if (res.casosPasados !== res.casosTotales) {
-         console.error(`BLOCKER e${numero}: No pasan todos los casos en el scaffolding!`)
-         console.error(res.casos)
-         allPass = false
-      }
-
-      if (numero === 6) {
-        console.log(`\nProbando e6-empty...`)
-        const datosEmpty = { ...datos, hobbies: [] }
-        const DOM_e = new JSDOM(`<!DOCTYPE html><div id="__raiz"></div>`)
-        const d_e = DOM_e.window.document
-        const raiz_e = d_e.getElementById('__raiz')
-        const API_e = {
-          crearTitulo: (t) => { let el = d_e.createElement('h1'); el.textContent=t; return el; },
-          crearSubtitulo: (t) => { let el = d_e.createElement('h2'); el.textContent=t; return el; },
-          crearParrafo: (t) => { let el = d_e.createElement('p'); el.textContent=t; return el; },
-          crearLista: () => { return d_e.createElement('ul'); },
-          crearItem: (t) => { let el = d_e.createElement('li'); el.textContent=t; return el; },
-          crearEnlace: (t, u) => { let el = d_e.createElement('a'); el.textContent=t; el.href=u; return el; },
-          crearImagen: (u, t) => { let el = d_e.createElement('img'); el.src=u; el.alt=t; return el; },
-          crearCarrusel: () => { let el = d_e.createElement('section'); el.setAttribute('data-carrusel','true'); return el; },
-          mostrar: (el) => { raiz_e.appendChild(el); return el; },
-          agregarA: (p, el) => { p.appendChild(el); return el; },
-          proyectosDestacados: (l) => l.filter(p => p.destacado)
-        }
-        const fn_e = new Function('datos', ...Object.keys(API_e), code)
-        fn_e(datosEmpty, ...Object.values(API_e))
-        const res_e = await revisarLocalmente(numero, code, datosEmpty, raiz_e.innerHTML)
-        console.log(`Resultado: ${res_e.casosPasados}/${res_e.casosTotales}`)
-        if (res_e.casosPasados !== res_e.casosTotales) {
-           console.error(`BLOCKER e6-empty: No pasan todos los casos en el scaffolding!`)
-           console.error(res_e.casos)
-           allPass = false
-        }
-      }
-    } catch (e) {
-      console.error(`BLOCKER e${numero} throw:`, e)
-      allPass = false
-    }
-  }
-  
-  if (allPass) {
-    console.log('PASS e1-e11')
-    process.exit(0)
-  } else {
-    process.exit(1)
-  }
+const datosPerfil = {
+  ...perfilComoDatos(PERFIL_DEFECTO),
+  hobbies: ['Ajedrez', 'Música', 'Ciclismo'],
+  redes: [{ nombre: 'Wikipedia', url: 'wikipedia.com' }, { nombre: 'Opcional', url: '' }],
+}
+const nuevos = {
+  1: 'mostrar(crearTitulo("Mi portafolio"))',
+  2: 'mostrar(crearParrafo("Aprendo programación")); mostrar(crearParrafo("Este es mi proyecto"))',
+  3: 'mostrar(crearSubtitulo("Sobre mí"))',
+  4: 'for(const red of datos.redes) if(red.url) mostrar(crearEnlace(red.nombre,red.url))',
+  5: 'const listaHobbies=crearLista(); mostrar(listaHobbies); agregarA(listaHobbies,crearItem("Uno")); agregarA(listaHobbies,crearItem("Dos")); agregarA(listaHobbies,crearItem("Tres"))',
+  6: 'vaciar(listaHobbies); for(const hobby of datos.hobbies) agregarA(listaHobbies,crearItem(hobby))',
+  7: 'if(datos.sobreMi.trim()) mostrar(crearParrafo(datos.sobreMi)); else mostrar(crearParrafo("En construcción"))',
+  8: 'const carrusel=crearCarrusel(); mostrar(carrusel); cadaSegundo(carrusel,proyectosDestacados(datos.proyectos),p=>crearImagen(p.imagenUrl,p.nombre))',
+  9: 'for(const p of datos.proyectos) if(p.terminado === true) mostrar(crearParrafo(p.nombre))',
+  10: 'for(const grupo of datos.skills){ mostrar(crearSubtitulo(grupo.categoria)); const lista=crearLista();mostrar(lista); for(const item of grupo.items) agregarA(lista,crearItem(item)); }',
+  11: String.raw`for(const p of datos.proyectos){
+    const nombre=p.nombre || 'Proyecto sin nombre';
+    if(p.tipo === 'demo' && /^https?:\/\//.test(p.url || '')) mostrar(crearEnlace(nombre,p.url));
+    else mostrar(crearParrafo(nombre));
+  }`,
 }
 
-run()
+let codigo = ''
+let documento
+let total = 0
+for (const numero of NUMEROS_DE_ENCARGO) {
+  const datos = { ...datosPerfil, ...ENCARGOS[numero].datosOverride }
+  if (numero === 12) {
+    documento = crearDocumentoJu1Inicial()
+    const r = crearSeccion(documento, 0, 0, 0, 0, 'Presentación')
+    assert.ok(r.ok)
+    documento = r.valor
+    documento.secciones[0].contenido = codigo
+    documento.main = `mostrar(${documento.secciones[0].nombre})`
+  } else if (numero === 13) {
+    documento.main += '\ncambiarColorFondo("#f2ece0")'
+  } else if (documento) {
+    documento.main += `\n${nuevos[numero]}`
+  } else {
+    codigo += `\n${nuevos[numero]}`
+  }
+
+  if (numero === 12 || numero === 13) {
+    const r = await ejecutarPreviewJu1(documento, datos)
+    assert.ok(r.ok, r.error?.mensaje)
+    assert.match(r.html, /Mi portafolio/)
+    if (numero === 13) assert.equal(new DOMParser().parseFromString(r.html, 'text/html').querySelector('div')?.style.backgroundColor, 'rgb(242, 236, 224)')
+    console.log(`PASS E${numero}: documento visual conserva el contenido${numero === 13 ? ' y el estilo' : ''}`)
+  } else {
+    const fuente = documento ? serializarDocumentoJu1(documento) : codigo
+    const r = await revisarLocalmente(numero, fuente, datos)
+    assert.ok(r.casosTotales > 0)
+    assert.equal(r.casosPasados, r.casosTotales, `E${numero}: ${JSON.stringify(r)}`)
+    console.log(`PASS E${numero}: ${r.casosPasados}/${r.casosTotales}, runtime real y variantes`)
+  }
+  total++
+}
+console.log(`PASS: ${total} encargos en orden curricular, E12/E13 conservados hasta E11`)

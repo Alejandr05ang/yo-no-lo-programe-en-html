@@ -1,5 +1,15 @@
 # Controles y alcance de seguridad
 
+## Estado vigente: auditoría local 28–29 septiembre 2026
+
+La auditoría descrita más abajo es histórica, del 20–21 de septiembre; no certifica el código actual. La revisión actual, basada en código, pruebas adversariales y revisión independiente, está en `CODEX_FINAL_AUDIT_2026-09-28.md` y `docs/PUBLICATION_2026-09-28.md`. No se ejecutó un nuevo scan nativo de Codex Security ni se consultaron credenciales/infraestructura productiva.
+
+La revisión formativa **sí se ejecuta en el navegador en el flujo actual** (`revisionLocal.ts`). FastAPI autoriza el recurso y valida la forma del resultado que guarda; no ejecuta casos ocultos ni demuestra que la solución sea correcta frente a un cliente manipulado. Deno sigue siendo diseño histórico. `accepted` persiste al editar, pero no debe usarse como certificación antifraude.
+
+Las publicaciones guardan una snapshot HTML separada de Progress, saneada con nh3 en FastAPI. El visitante recibe contenido estático con CSP sin scripts, red, fuentes o imágenes remotas, en iframe sin `allow-same-origin`. Galería, sitio y avatar requieren membresía activa del lector y del autor en la misma cohorte; no hay endpoint público y no se activa `public_portfolios`. Retirar sigue disponible para el propietario cuando pierde membresía.
+
+Se corrigieron el reingreso de miembros retirados por código y el listado de cohortes de instructores retirados. Las pruebas nuevas cubren también huella de fuente, permisos, Unicode, CSS/HTML hostil y preservación de geometría segura. La autenticación real, RLS efectivo, carreras PostgreSQL y configuración de edge deben comprobarse en un ambiente autorizado antes de producción.
+
 ## Contexto de esta revisión
 
 Se usó `codex-security:security-scan` (auditoría Standard) sobre la copia local. La revisión inicial examinó el frontend con fixtures; sin backend ejecutable no podía validar autenticación, SQL, uploads o grader. El resultado inicial sin vulnerabilidades confirmadas no es una certificación del MVP futuro.
@@ -15,7 +25,7 @@ Se revisaron adicionalmente los nuevos módulos de autenticación, cliente HTTP,
 - CORS de orígenes explícitos; el frontend no recibe credenciales de servidor.
 - Supabase `app`: RLS activo, sin policies públicas, `anon`/`authenticated` sin USAGE ni privilegios. Mantenerlo así.
 - `avatars` privado y sin upload anónimo. No introducir SVG ni URLs firmadas persistidas.
-- Los fixtures pedagógicos y la revisión local son únicamente desarrollo explícito, sin autoridad productiva.
+- El harness con autenticación ficticia está exclusivamente en tests, fuera del build y de la entrada productiva. Los datos pedagógicos y la revisión local forman parte del editor actual, con el límite formativo explicado arriba.
 
 ## Inspección real de Supabase
 
@@ -31,7 +41,7 @@ Los límites de solicitudes actuales son por IP y por proceso, con memoria acota
 
 La temporización del iframe de preview no es un límite de CPU que detenga bucles síncronos; mantenerlo exclusivamente para el código propio del editor. No usarlo para ejecutar entregas de otros alumnos o reemplazar Deno. `sandbox="allow-scripts"` sin `allow-same-origin` protege el origen padre.
 
-No hay todavía validación de flujo real Firebase→FastAPI→Postgres, uploads, mapa con 403, submissions, grader ni permisos de los endpoints futuros. Esas superficies no deben considerarse aprobadas por la auditoría de autenticación. Ningún resultado unitario autoriza un despliegue.
+Hay pruebas locales de autenticación, uploads, mapa con 403, submissions, permisos y publicación. Sigue pendiente la validación de integración con servicios reales Firebase→FastAPI→Postgres y Supabase Storage. Las pruebas SQLite y los mocks no sustituyen esa comprobación. Ningún resultado unitario autoriza un despliegue.
 
 
 ## Resultado y artefactos del scan

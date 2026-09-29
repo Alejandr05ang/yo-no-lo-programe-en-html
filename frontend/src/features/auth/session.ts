@@ -11,6 +11,12 @@ export function onboardingPath(state: OnboardingState): string {
   return paths[state]
 }
 
+/** Un destino de publicación local; no acepta URLs, queries, escapes ni rutas arbitrarias. */
+export function destinoCompartido(value: string | null): string | null {
+  if (value === '/mi-sitio' || (value !== null && /^\/p\/[a-z0-9_-]{1,100}$/i.test(value))) return value
+  return null
+}
+
 /**
  * 'pending' while Firebase is still reading its persisted store — a restored
  * user is not visible yet, and treating that moment as anonymous would bounce

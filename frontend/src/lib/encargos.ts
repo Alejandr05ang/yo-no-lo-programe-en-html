@@ -1,6 +1,6 @@
 import type { Encargo, HerramientaAPI } from './tipos'
 
-// Mock de los encargos (docs/encargos.md §4). Sin backend todavía.
+// Contenido pedagógico local; el backend conserva catálogo, permisos y progreso.
 // E1–E3 detallados; E4–E11 con enunciado, herramientas y andamiaje mínimo.
 // E12 y E13 son Ju1 ("Organiza tu página" / "Dale tu estilo"), agregados después: los números
 // quedan fuera de orden cronológico (Ju1 va entre E6 y E7) a propósito — backend/app/catalog/
@@ -25,14 +25,14 @@ export interface EncargoMock {
   fallbackHeredado: string
   /** Override de `datos` para este encargo: se mergea SOBRE el perfil del estudiante.
    *  Vacío en casi todos; solo se usa donde el encargo necesita un estado concreto
-   *  (E5 quiere sobreMi vacío; E9–E11 aportan proyectos/skills que el perfil no tiene). */
+   *  (E7 quiere sobreMi vacío; E8–E11 aportan proyectos/skills que el perfil no tiene). */
   datosOverride: Record<string, unknown>
   totalCasos: number
-  /** undefined (la inmensa mayoría) = un solo archivo, como siempre. 'grid' = Ju1: el
+  /** undefined = un solo archivo. 'grid' = desde Ju1: el
    *  estudiante arma la estructura con la herramienta visual (features/estructura/) y cada
    *  sección es su propia pestaña — ver DocumentoJu1 en lib/tipos.ts. En ese caso `draft_code`
-   *  guarda el documento serializado (JSON), no JS: heredaDe/andamiajeNuevo/fallbackHeredado
-   *  no aplican (no hay un texto de script único para "heredar" de un encargo al siguiente). */
+   *  guarda el documento serializado (JSON), no JS. Se hereda el documento completo;
+   *  E7–E11 añaden sus comentarios de tarea al main sin perder cuadrícula ni secciones. */
   modelo?: 'grid'
 }
 
@@ -131,7 +131,9 @@ function stub(
 ): EncargoMock {
   return {
     sesion,
-    heredaDe: numero - 1,
+    heredaDe: numero === 7 ? 13 : numero - 1,
+    // Desde V1 se sigue editando la estructura personalizada en Ju1.
+    modelo: numero >= 7 && numero <= 11 ? 'grid' : undefined,
     fallbackHeredado,
     datosOverride,
     totalCasos,
@@ -336,7 +338,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     ],
     BASE_CON_AVISO,
     { proyectos: PROYECTOS_PORTAFOLIO },
-    3,
+    4,
     [
       'proyectosDestacados(datos.proyectos) prepara solo los que tienen destacado: true.',
       'Creá y mostrá un carrusel. Después, cadaSegundo() cambia su contenido sin acumular imágenes.',
@@ -392,6 +394,7 @@ export const ENCARGOS: Record<number, EncargoMock> = {
     [
       'Los proyectos no son todos iguales: unos tienen enlace a una demo, otros son solo texto, otros tienen imagen.',
       'Cada tipo se muestra distinto. Un tipo que no conozcas no debe romper la página.',
+      'Si a una demo le falta una dirección válida, mostrala como texto. Una lista vacía también debe funcionar.',
     ],
     BASE_CON_PARRAFOS,
     {
@@ -473,4 +476,5 @@ export const ENCARGOS: Record<number, EncargoMock> = {
   },
 }
 
-export const NUMEROS_DE_ENCARGO = Object.keys(ENCARGOS).map(Number).sort((a, b) => a - b)
+// Las claves son permanentes; el orden curricular coincide con sort_order del catálogo.
+export const NUMEROS_DE_ENCARGO = [1, 2, 3, 4, 5, 6, 12, 13, 7, 8, 9, 10, 11]

@@ -44,7 +44,7 @@ export function VistaConsultaMovil({ encargo, dia, previewHtml, urlPortafolio, o
           className="vc-tab"
           onClick={() => setVista('portafolio')}
         >
-          Mi portafolio publicado
+          Vista previa de mi portafolio
         </button>
       </div>
 
@@ -61,11 +61,11 @@ export function VistaConsultaMovil({ encargo, dia, previewHtml, urlPortafolio, o
 
               <div className="vc-avance">
                 <span className="mono">
-                  {numero} / {NUMEROS_DE_ENCARGO.length}
+                  {NUMEROS_DE_ENCARGO.indexOf(numero) + 1} / {NUMEROS_DE_ENCARGO.length}
                 </span>
                 <div className="vc-barras">
-                  {NUMEROS_DE_ENCARGO.map((n) => (
-                    <span key={n} className="vc-barra" data-llena={n <= numero} />
+                  {NUMEROS_DE_ENCARGO.map((n, i) => (
+                    <span key={n} className="vc-barra" data-llena={i <= NUMEROS_DE_ENCARGO.indexOf(numero)} />
                   ))}
                 </div>
               </div>
@@ -98,7 +98,7 @@ export function VistaConsultaMovil({ encargo, dia, previewHtml, urlPortafolio, o
 
           <div className="vc-acciones">
             <button className="btn btn-secondary" onClick={() => setVista('portafolio')}>
-              Ver mi portafolio publicado
+              Ver la vista previa
             </button>
             <button className="btn btn-secondary" onClick={onEditarDeTodosModos}>
               Editar de todos modos
@@ -114,7 +114,7 @@ export function VistaConsultaMovil({ encargo, dia, previewHtml, urlPortafolio, o
           <iframe
             ref={marcoRef}
             className="vc-marco"
-            title="Tu portafolio publicado"
+            title="Vista previa de tu portafolio"
             sandbox="allow-scripts"
             srcDoc={documentoPortafolio(previewHtml)}
           />

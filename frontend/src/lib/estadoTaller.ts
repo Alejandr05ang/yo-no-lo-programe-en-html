@@ -65,8 +65,10 @@ export function motivoCerrado(dia: DiaParaEstado): string | null {
   return null
 }
 
-export function textoProgreso(progreso: ProgresoDia): string {
+export function textoProgreso(progreso: ProgresoDia, codigo?: string): string {
   const { required_total: total, accepted } = progreso
+  if (total === 0 && codigo === 'Ju2') return 'Actividad guiada: publicación y galería.'
+  if (total === 0 && codigo === 'V2') return 'Actividad guiada: demo final.'
   if (total === 0) return 'Sesión de clase, sin actividades en la plataforma.'
   return `${accepted} de ${total} ${total === 1 ? 'actividad completada' : 'actividades completadas'}`
 }

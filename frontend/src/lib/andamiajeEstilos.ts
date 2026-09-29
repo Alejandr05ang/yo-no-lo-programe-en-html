@@ -22,7 +22,7 @@ export function documentoPortafolio(html: string): string {
 // Un clic en un enlace de la vista previa no navega el iframe: se avisa a la ventana principal
 // (features/preview/useAbrirEnlaces.ts), que valida la dirección y la abre en otra pestaña. Las
 // anclas internas (#seccion) siguen funcionando dentro de la página.
-const PUENTE_ENLACES = `<script>
+export const PUENTE_ENLACES = `<script>
 document.addEventListener('click', function (e) {
   var a = e.target && e.target.closest ? e.target.closest('a') : null;
   if (!a) return;
@@ -104,7 +104,10 @@ a { color: var(--color-acento); }
 .fila { display: flex; flex-wrap: wrap; gap: var(--espaciado); align-items: center; }
 
 /* Media query base (Mi2, §5.6): a los estudiantes se les entrega ya resuelta. */
+.tutorias-grid > * { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 640px) {
   .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  .tutorias-grid { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: auto !important; }
+  .tutorias-grid > * { grid-column: 1 !important; grid-row: auto !important; }
 }
 `

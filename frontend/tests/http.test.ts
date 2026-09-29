@@ -114,3 +114,36 @@ test('a locked day says it is not open yet, not that the account lacks access', 
     assert.ok(error.message.length > 0)
   }
 })
+
+test('private avatar bytes use the same token refresh and session boundary as JSON', async () => {
+  let calls = 0
+  const client = createApiClient({ ...options, fetcher: async (_input, init) => {
+    assert.equal(new Headers(init?.headers).get('Authorization'), 'Bearer test-id-token')
+    assert.equal(init?.redirect, 'error')
+    calls++
+    return calls === 1 ? Response.json({}, { status: 401 }) : new Response('avatar', { headers: { 'Content-Type': 'image/webp' } })
+  } })
+  assert.equal(typeof client.requestBlob, 'function', 'private media needs authenticated transport')
+  const blob = await client.requestBlob('/cohort/portfolios/sitio/avatar')
+  assert.equal(await blob.text(), 'avatar')
+  assert.equal(blob.type, 'image/webp')
+  assert.equal(calls, 2)
+})
+
+test('private avatar response is discarded if the session changes while its body is read', async () => {
+  let uid = 'student-a'
+  const client = createApiClient({ ...options, getSessionKey: () => uid, fetcher: async () => {
+    const response = new Response('avatar')
+    response.blob = async () => { uid = 'student-b'; return new Blob(['private']) }
+    return response
+  } })
+  assert.equal(typeof client.requestBlob, 'function', 'private media needs authenticated transport')
+  await assert.rejects(client.requestBlob('/cohort/portfolios/sitio/avatar'), (error: unknown) => error instanceof ApiError && error.code === 'SESSION_CHANGED')
+})
+
+test('publication validation errors keep actionable codes without displaying backend internals', async () => {
+  for (const code of ['SOURCE_NOT_FOUND', 'EMPTY_SNAPSHOT', 'INVALID_SNAPSHOT']) {
+    const client = createApiClient({ ...options, fetcher: async () => Response.json({ error: { code, message: 'private trace' } }, { status: 422 }) })
+    await assert.rejects(client.request('/portfolio/publication/preview'), (error: unknown) => error instanceof ApiError && error.code === code && !error.message.includes('private trace'))
+  }
+})

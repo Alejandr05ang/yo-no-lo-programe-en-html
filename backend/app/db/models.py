@@ -558,3 +558,30 @@ class DemoProgress(Base):
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
+
+class PortfolioPublication(Base):
+    """Explicitly published snapshot, never the working source in Progress."""
+
+    __tablename__ = "portfolio_publications"
+    __table_args__ = (
+        UniqueConstraint("slug", name="portfolio_publications_slug_key"),
+        CheckConstraint("visibility = 'cohort'", name="portfolio_publications_visibility_check"),
+        CheckConstraint("revision >= 1", name="portfolio_publications_revision_check"),
+        Index("portfolio_publications_cohort_published_idx", "cohort_id", "is_published"),
+    )
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("app.users.id", ondelete="CASCADE", name="portfolio_publications_user_id_fkey"), primary_key=True
+    )
+    cohort_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("app.cohorts.id", ondelete="CASCADE", name="portfolio_publications_cohort_id_fkey")
+    )
+    slug: Mapped[str] = mapped_column(Text, default=lambda: "p-" + uuid4().hex)
+    title: Mapped[str] = mapped_column(Text)
+    snapshot_html: Mapped[str] = mapped_column(Text)
+    visibility: Mapped[str] = mapped_column(Text, server_default=text("'cohort'"))
+    source_challenge_key: Mapped[str] = mapped_column(Text)
+    source_fingerprint: Mapped[str] = mapped_column(Text)
+    revision: Mapped[int] = mapped_column(Integer, server_default=text("1"))
+    is_published: Mapped[bool] = mapped_column(Boolean, server_default=text("true"))
+    published_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

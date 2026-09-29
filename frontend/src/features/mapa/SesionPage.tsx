@@ -15,6 +15,7 @@ import {
 } from '../../lib/estadoTaller'
 import { ApiError } from '../../lib/http'
 import { rutaActividad } from '../../lib/navegacionActividades'
+import { CierreTaller } from '../publicacion/CierreTaller'
 import './mapa.css'
 
 interface Encargo {
@@ -37,6 +38,12 @@ type Cierre = 'SESSION_LOCKED' | 'SESSION_PAUSED'
  * por ejemplo— tiene que poder abrirse igual.
  */
 export function SesionPage() {
+  const { codigo } = useParams()
+  const { user } = useAuth()
+  return <ContenidoSesion key={`${user?.uid ?? 'sin-cuenta'}:${codigo}`} />
+}
+
+function ContenidoSesion() {
   const { codigo } = useParams()
   const { api } = useAuth()
   const [sesion, setSesion] = useState<Sesion | null>(null)
@@ -100,19 +107,20 @@ export function SesionPage() {
             : <>
                 <span className={estado === 'hoy' ? 'tag tag-accent' : 'tag tag-outline'}>{ETIQUETA_DIA[estado]}</span>
                 {sesion.is_current && estado !== 'hoy' && <span className="tag tag-accent">Hoy</span>}
-                <span>{textoProgreso(progreso)}</span>
+                <span>{textoProgreso(progreso, sesion.code)}</span>
               </>}
         </div>
         <p>{sesion.description || sesion.teaser_summary}</p>
       </header>
 
-      <h2>Actividades</h2>
-      {sesion.challenges.length === 0
+      {(sesion.code === 'Ju2' || sesion.code === 'V2') && <CierreTaller code={sesion.code} preview={sesion.preview} />}
+      {sesion.code !== 'Ju2' && sesion.code !== 'V2' && <h2>Actividades</h2>}
+      {sesion.challenges.length === 0 && sesion.code !== 'Ju2' && sesion.code !== 'V2'
         ? <p className="text-muted">
             No hay actividades asignadas en la plataforma. Este día se trabaja en clase;
             cuando haya encargos aparecerán aquí.
           </p>
-        : <ol className="ses-lista">
+        : sesion.challenges.length > 0 && <ol className="ses-lista">
             {sesion.challenges.map((e, i) => {
               const numero = numeroFromChallengeKey(e.key)
               const estadoActividad = estadoDeActividad(e.progress_status)

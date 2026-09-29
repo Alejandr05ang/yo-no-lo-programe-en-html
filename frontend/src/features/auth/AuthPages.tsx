@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Link, Navigate, NavLink } from 'react-router-dom'
+import { Link, Navigate, NavLink, useSearchParams } from 'react-router-dom'
 import { useAuth } from './authContext'
-import { friendlyAuthError, onboardingPath } from './session'
+import { destinoCompartido, friendlyAuthError, onboardingPath } from './session'
 import { JoinClassForm, ProfileForm } from './OnboardingForms'
 import './auth.css'
 
@@ -61,17 +61,25 @@ export function LoadingPage() {
 }
 
 export function SessionDestination() {
-  const { user, session } = useAuth()
+  const { user, session, loading } = useAuth()
+  const [params] = useSearchParams()
+  const destination = destinoCompartido(params.get('next'))
   if (sessionStorage.getItem('goto_demo') === '1') {
     sessionStorage.removeItem('goto_demo')
     return <Navigate to="/demo" replace />
   }
   if (user && !user.emailVerified) return <Navigate to="/verificar-email" replace />
+  // Firebase puede llegar antes que el perfil/cohorte: conserva el enlace hasta que
+  // el backend termine. Una publicación sigue pasando por RequireOnboarding.
+  if (destination && loading) return <LoadingPage />
+  if (destination && session && (session.onboarding.state === 'READY' || destination === '/mi-sitio')) return <Navigate to={destination} replace />
   return <Navigate to={session ? onboardingPath(session.onboarding.state) : '/cuenta'} replace />
 }
 
 export function AuthPage({ register = false }: { register?: boolean }) {
   const auth = useAuth()
+  const [params] = useSearchParams()
+  const destination = destinoCompartido(params.get('next'))
   const action = useAction()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -121,7 +129,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
         {!register && <Link to="/recuperar">Olvidé mi contraseña</Link>}
         <button className="btn btn-primary btn-block" disabled={disabled}>{action.pending ? 'Un momento…' : register ? 'Crear mi cuenta' : 'Iniciar sesión'}</button>
       </form>
-      <p className="auth-footer">{register ? '¿Ya tienes cuenta?' : '¿Es tu primera vez?'} <Link to={register ? '/login' : '/registro'}>{register ? 'Inicia sesión' : 'Crea tu cuenta'}</Link></p>
+      <p className="auth-footer">{register ? '¿Ya tienes cuenta?' : '¿Es tu primera vez?'} <Link to={`${register ? '/login' : '/registro'}${destination ? `?next=${encodeURIComponent(destination)}` : ''}`}>{register ? 'Inicia sesión' : 'Crea tu cuenta'}</Link></p>
       <p className="auth-help">Tu acceso queda guardado en este navegador para que no tengas que entrar cada día. Si compartes este computador, cierra sesión al terminar.</p>
     </AuthLayout>
   )
@@ -190,6 +198,8 @@ export function AccountFrame({ children }: { children: ReactNode }) {
     <nav className="nav account-nav" aria-label="Navegación de tu cuenta">
       <Link className="nav-brand" to="/cuenta">Taller · Portafolio</Link>
       {session?.user.role === 'student' && <NavLink to="/mapa">Mapa</NavLink>}
+      {session?.user.role === 'student' && session.user.email_verified && <NavLink to="/mi-sitio">Mi sitio</NavLink>}
+      {session?.user.role === 'student' && session.onboarding.state === 'READY' && <NavLink to="/galeria">Galería</NavLink>}
       <NavLink to="/cuenta">Mi cuenta</NavLink>
       {session?.user.role === 'instructor' && <NavLink to="/instructor">Mis clases</NavLink>}
       {session?.user.role === 'admin' && <NavLink to="/admin">Administración</NavLink>}

@@ -17,7 +17,7 @@ from app.db.models import (
     User,
 )
 from app.db.session import SessionDep
-from app.instructor.schemas import ActiveSessionUpdate, ReviewBody
+from app.instructor.schemas import ActiveSessionUpdate, InstructorCohortView, ReviewBody
 
 router = APIRouter(
     prefix="/api/instructor",
@@ -25,7 +25,7 @@ router = APIRouter(
     dependencies=[Depends(require_role("instructor", "admin"))],
 )
 
-@router.get("/cohorts")
+@router.get("/cohorts", response_model=list[InstructorCohortView])
 async def list_instructor_cohorts(user: CurrentUser, session: SessionDep):
     if user.role == "admin":
         cohorts = await session.scalars(select(Cohort).order_by(Cohort.created_at.desc()))
@@ -33,12 +33,17 @@ async def list_instructor_cohorts(user: CurrentUser, session: SessionDep):
         cohorts = await session.scalars(
             select(Cohort)
             .join(CohortMembership, CohortMembership.cohort_id == Cohort.id)
-            .where(CohortMembership.user_id == user.id, CohortMembership.role == "instructor")
+            .where(
+                CohortMembership.user_id == user.id,
+                CohortMembership.role == "instructor",
+                CohortMembership.status == "active",
+                Cohort.is_active.is_(True),
+            )
             .order_by(Cohort.created_at.desc())
         )
     return cohorts.all()
 
-@router.get("/cohorts/{cohort_id}")
+@router.get("/cohorts/{cohort_id}", response_model=InstructorCohortView)
 async def get_instructor_cohort(cohort_id: UUID, user: CurrentUser, session: SessionDep):
     await require_cohort_access(cohort_id, user, session, staff=True)
     cohort = await session.scalar(select(Cohort).where(Cohort.id == cohort_id))

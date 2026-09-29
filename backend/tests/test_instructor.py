@@ -75,3 +75,27 @@ async def test_instructor_isolation(auth_harness):
     res3 = await h.client.get(f"/api/instructor/cohorts/{c2_id}/students", headers=bearer("inst1"))
     assert res3.status_code == 403
     assert res3.json()["error"]["code"] == "NOT_COHORT_MEMBER"
+
+
+@pytest.mark.parametrize("revocation", ["removed", "pending", "inactive_cohort"])
+async def test_instructor_list_omits_revoked_memberships_and_inactive_cohorts(auth_harness, revocation):
+    h = auth_harness
+    first, _ = await setup_instructor_data(h)
+    async with h.sessions.begin() as session:
+        if revocation == "inactive_cohort":
+            (await session.get(Cohort, first)).is_active = False
+        else:
+            member = await session.scalar(select(CohortMembership).where(CohortMembership.cohort_id == first))
+            member.status = revocation
+    response = await h.client.get("/api/instructor/cohorts", headers=bearer("inst1"))
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+async def test_instructor_cohort_views_never_disclose_join_code_hash(auth_harness):
+    h = auth_harness
+    first, _ = await setup_instructor_data(h)
+    for path in ("/api/instructor/cohorts", f"/api/instructor/cohorts/{first}"):
+        response = await h.client.get(path, headers=bearer("inst1"))
+        assert response.status_code == 200
+        assert "join_code_hash" not in response.text
