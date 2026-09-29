@@ -232,9 +232,10 @@ export function EditorPanel({
   // en vez del que le pasamos por props — así es como una pestaña puede terminar mostrando el
   // texto de otro archivo (o de una sesión anterior) después de recargar o de volver a entrar.
   // Disponemos acá los modelos de todos los archivos de este panel para que cada montaje
-  // arranque limpio, siempre con el contenido real.
-  const nombresArchivosRef = useRef<string[]>([])
-  nombresArchivosRef.current = archivos.map((a) => a.nombre)
+  // arranque limpio, siempre con el contenido real. Incluye los que ya no están (una sección
+  // borrada antes de salir): si no, la cuenta siguiente que use ese nombre vería su código.
+  const nombresArchivosRef = useRef(new Set<string>())
+  for (const a of archivos) nombresArchivosRef.current.add(a.nombre)
 
   // BUG REAL (reportado en producción): al cambiar de pestaña, @monaco-editor/react dispara
   // "onDidChangeModelContent" de forma SÍNCRONA al cambiar de modelo — pero lo hace dentro de
@@ -254,10 +255,12 @@ export function EditorPanel({
   const cargandoRef = useRef(cargando)
   cargandoRef.current = cargando
   useEffect(() => {
+    // El mismo Set durante toda la vida del panel: se le van sumando nombres al dibujar.
+    const nombresArchivos = nombresArchivosRef.current
     return () => {
       const monaco = monacoRef.current
       if (!monaco) return
-      for (const nombre of nombresArchivosRef.current) {
+      for (const nombre of nombresArchivos) {
         monaco.editor.getModel(monaco.Uri.parse(nombre))?.dispose()
       }
       for (const p of pruebasRef.current) {
@@ -481,7 +484,7 @@ export function EditorPanel({
         >
           {entregando ? 'Revisando…' : 'Entregar a revisión'}
         </button>
-        <span className="mono ed-sello">
+        <span className="mono ed-sello" data-estado={guardado.estado}>
           {guardado.estado === 'dirty' && 'modificado sin guardar'}
           {guardado.estado === 'saving' && 'guardando...'}
           {cargando ? 'cargando tu borrador…' : guardado.estado === 'saved' && 'guardado'}

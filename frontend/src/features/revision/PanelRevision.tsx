@@ -56,7 +56,7 @@ export function PanelRevision({ resultado, aceptado, mensajeAceptado, syncError 
       {aceptado ? (
         <div className="rev-aceptado">
           <span className="tag tag-accent mono">encargo aceptado</span>
-          {syncError && <span className="tag tag-outline mono" style={{ marginLeft: 8, color: '#f85149', borderColor: '#f85149' }}>Pendiente de sincronizar</span>}
+          {syncError && <span className="tag tag-outline mono">Pendiente de sincronizar</span>}
           {mensajeAceptado && (
             <span className="rev-nota" style={{ margin: 0 }}>
               {mensajeAceptado}

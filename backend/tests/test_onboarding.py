@@ -89,6 +89,29 @@ async def test_join_is_verified_profile_gated_and_idempotent(auth_harness):
     assert second.json()["joined"] is False
 
 
+@pytest.mark.parametrize("status", ["removed", "pending"])
+async def test_join_code_cannot_restore_a_revoked_or_pending_membership(auth_harness, status):
+    from sqlalchemy import select
+
+    h = auth_harness
+    h.identities["token"] = identity()
+    await h.client.post("/api/auth/bootstrap", headers={"Authorization": "Bearer token"})
+    async with h.sessions.begin() as session:
+        user = await session.scalar(select(User))
+        user.profile_completed_at = datetime.now(UTC)
+        cohort = Cohort(name="Clase", slug="clase", join_code_hash=hash_join_code("KNOWN-CODE"))
+        session.add(cohort)
+        await session.flush()
+        session.add(CohortMembership(user_id=user.id, cohort_id=cohort.id, status=status))
+    response = await h.client.post(
+        "/api/cohorts/join", json={"code": "KNOWN-CODE"},
+        headers={"Authorization": "Bearer token"},
+    )
+    assert response.status_code == 403
+    async with h.sessions() as session:
+        assert (await session.scalar(select(CohortMembership))).status == status
+
+
 @pytest.mark.asyncio
 async def test_map_has_teasers_but_future_detail_is_forbidden(auth_harness):
     auth_harness.identities["token"] = identity()

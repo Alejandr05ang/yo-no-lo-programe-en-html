@@ -18,8 +18,8 @@ import {
 } from '../../lib/navegacionActividades'
 import { ApiError } from '../../lib/http'
 import { clavePendiente, crearColaDeGuardado, elegirBorrador, sePuedeGuardar, valorPendiente } from '../../lib/colaGuardado'
-import { datosComoTexto, pareceContenidoDeDatos, portafolioEjemplo } from '../../lib/mockEncargo'
-import { GuardadoSinRefrescar, leerPerfilLegado, olvidarPerfilLegado, perfilComoDatos, perfilDesdeBackend, perfilDelServidorEstaVacio, perfilLegadoParaSubir, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
+import { datosComoTexto, pareceContenidoDeDatos } from '../../lib/mockEncargo'
+import { GuardadoSinRefrescar, perfilComoDatos, perfilDesdeBackend, perfilParaBackend, PERFIL_DEFECTO, type Perfil } from '../../lib/perfil'
 import { ejecutarPreview, ejecutarPreviewJu1 } from '../../lib/sandbox'
 import {
   actualizarContenidoDeSeccion,
@@ -54,7 +54,7 @@ const CLAVE_SOLUCIONES = 've:soluciones' // código aceptado por encargo (para h
 const CLAVE_BORRADORES = 've:borradores' // código en curso por encargo (para no perder trabajo al navegar)
 
 const MIN_ENCARGO = NUMEROS_DE_ENCARGO[0]
-const MAX_ENCARGO = NUMEROS_DE_ENCARGO[NUMEROS_DE_ENCARGO.length - 1]
+const ULTIMO_ENCARGO = NUMEROS_DE_ENCARGO[NUMEROS_DE_ENCARGO.length - 1]
 
 function leerEncargoAbierto(): boolean {
   try {
@@ -87,10 +87,6 @@ function claveDeCuenta(base: string, uid: string | undefined): string {
   return uid ? `${base}:${uid}` : base
 }
 
-function clamp(n: number, lo: number, hi: number) {
-  return Math.max(lo, Math.min(hi, n))
-}
-
 type Casos = { casosPasados: number; casosTotales: number }
 
 function sinEncargo<T>(mapa: Record<number, T>, n: number): Record<number, T> {
@@ -114,6 +110,10 @@ function contenidoInicialDe(numero: number, soluciones: Record<number, string>):
   const e = ENCARGOS[numero]
   if (e?.modelo === 'grid') {
     const heredado = e.heredaDe != null ? soluciones[e.heredaDe]?.trim() : undefined
+    if (e.sesion !== 'Ju1' && e.andamiajeNuevo?.trim()) {
+      const doc = parsearDocumentoJu1(heredado || e.fallbackHeredado || '')
+      return serializarDocumentoJu1({ ...doc, main: `${doc.main}\n\n${e.andamiajeNuevo}` })
+    }
     return heredado || serializarDocumentoJu1(crearDocumentoJu1Inicial())
   }
   return componerAndamiaje(numero, soluciones)
@@ -128,7 +128,8 @@ export function VistaEstudiante() {
 function VistaEstudianteInterna() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
-  const numero = clamp(Number(params.get('e')) || MIN_ENCARGO, MIN_ENCARGO, MAX_ENCARGO)
+  const pedido = Number(params.get('e'))
+  const numero = NUMEROS_DE_ENCARGO.includes(pedido) ? pedido : MIN_ENCARGO
 
   const { data: encargo } = useQuery({
     queryKey: ['encargo', numero],
@@ -150,6 +151,11 @@ function VistaEstudianteInterna() {
   // Se evalúa una sola vez al montar (lib/dispositivo.ts): por capacidad del equipo, no por
   // ancho de ventana — una pantalla dividida angosta en una computadora real no debe caer acá.
   const { user, api: clienteApi, session, refresh } = useAuth()
+  const mounted = useRef(true)
+  useEffect(() => {
+    mounted.current = true
+    return () => { mounted.current = false }
+  }, [])
   const [vistaConsulta, setVistaConsulta] = useState(esVistaDeConsulta)
 
   const key = challengeKeyFromNumero(numero)
@@ -238,34 +244,8 @@ function VistaEstudianteInterna() {
   const perfilRef = useRef(perfil)
   perfilRef.current = perfil
 
-  // Migración de una sola vez para quien guardó su perfil cuando vivía en el
-  // navegador: se sube, y solo cuando el servidor confirma se borra la copia local. Un solo
-  // intento por visita (antes se repetía en cada lectura de la sesión si fallaba).
-  const migradoRef = useRef(false)
-  useEffect(() => {
-    if (migradoRef.current || !session || !clienteApi) return
-    const legado = leerPerfilLegado()
-    if (!legado) return
-    migradoRef.current = true
-    // El servidor ya tiene perfil propio: manda él y lo heredado se descarta.
-    const cuerpo = perfilDelServidorEstaVacio(session.user) ? perfilLegadoParaSubir(legado, session.user) : null
-    if (!cuerpo) {
-      olvidarPerfilLegado()
-      return
-    }
-    void (async () => {
-      try {
-        await clienteApi.request('/profile', { method: 'PUT', json: cuerpo })
-        olvidarPerfilLegado()
-        // Silencioso: sin desmontar el editor que el estudiante tiene abierto.
-        await refresh({ silencioso: true })
-      } catch (e) {
-        // Datos que el servidor nunca va a aceptar no se reintentan en cada visita.
-        if (e instanceof ApiError && e.code === 'VALIDATION_ERROR') olvidarPerfilLegado()
-        console.error('No se pudo migrar el perfil guardado en este navegador', e)
-      }
-    })()
-  }, [session, clienteApi, refresh])
+  // ve:perfil no registra un propietario. Se conserva como respaldo, pero nunca se
+  // importa automáticamente en la cuenta que abra este navegador compartido.
 
   const claveSoluciones = claveDeCuenta(CLAVE_SOLUCIONES, user?.uid)
   const claveBorradores = claveDeCuenta(CLAVE_BORRADORES, user?.uid)
@@ -279,6 +259,10 @@ function VistaEstudianteInterna() {
 
   const [salida, setSalida] = useState<SalidaEjecucion | null>(null)
   const [previewHtml, setPreviewHtml] = useState('')
+  const [previewVivo, setPreviewVivo] = useState<{ numero: number; srcdoc: string } | null>(null)
+  const ejecucionRef = useRef(0)
+  // Invalida también A→B→A y desmontajes, aunque una ejecución siga esperando su mensaje.
+  useEffect(() => () => { ejecucionRef.current += 1 }, [numero])
   const [revision, setRevision] = useState<ResultadoRevision | null>(null)
   const [ejecutando, setEjecutando] = useState(false)
   const [entregando, setEntregando] = useState(false)
@@ -325,8 +309,10 @@ function VistaEstudianteInterna() {
   // `documento.estructura` y se re-serializan igual que cualquier otro cambio de `contenido` —
   // misma cola de autoguardado, sin distinción especial. Solo tienen sentido si `documento` ya
   // existe (el panel que los dispara, EditorEstructura, no se muestra si no).
+  // Mientras llega el borrador de otro encargo, `documento` todavía se arma con el contenido
+  // del anterior: la estructura no se toca hasta que el editor tenga el de ESTE encargo.
   function actualizarEstructura(actualizar: (e: EstructuraDePagina) => EstructuraDePagina) {
-    if (!documento) return
+    if (!documento || numeroCargado !== numero) return
     setContenido(serializarDocumentoJu1({ ...documento, estructura: actualizar(documento.estructura) }))
     setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
   }
@@ -353,11 +339,15 @@ function VistaEstudianteInterna() {
   // p. ej. se abrió sin red). Va en la marca de pendiente: al volver, la copia local solo manda
   // si el servidor no cambió desde entonces (lib/colaGuardado.ts, elegirBorrador).
   const enServidorRef = useRef<Record<number, string>>({})
+  // Lo que salió hacia el servidor sin respuesta confirmada: pudo llegar aunque la pestaña no se
+  // enterara (se recargó, se cerró sesión, se cortó la red). La marca lo recuerda para que, al
+  // volver, ese envío no haga pasar por "cambio en otro equipo" lo escrito después.
+  const enviadosRef = useRef<Record<number, string[]>>({})
   const marcarPendiente = (n: number) => {
     if (!user) return
     const base = enServidorRef.current[n]
     try {
-      localStorage.setItem(clavePendiente(user.uid, challengeKeyFromNumero(n)), base === undefined ? '1' : valorPendiente(base))
+      localStorage.setItem(clavePendiente(user.uid, challengeKeyFromNumero(n)), base === undefined ? '1' : valorPendiente(base, enviadosRef.current[n]))
     } catch { /* sin almacenamiento */ }
   }
   const reintentosRef = useRef(0)
@@ -368,10 +358,13 @@ function VistaEstudianteInterna() {
   const guardarEnServidor = (numSave: number, cont: string) => {
     const marca = user ? clavePendiente(user.uid, challengeKeyFromNumero(numSave)) : null
     colaRef.current.encolar(async () => {
+      const enviados = enviadosRef.current[numSave] ?? []
+      if (!enviados.includes(cont)) enviadosRef.current[numSave] = [...enviados, cont]
       try {
         await api.autoguardar(clienteApi, numSave, cont)
         reintentosRef.current = 0
         enServidorRef.current[numSave] = cont
+        enviadosRef.current[numSave] = []
         if (marca) try { localStorage.removeItem(marca) } catch { /* sin almacenamiento */ }
         if (numSave === numeroRef.current) {
           setEstadoGuardado(prev => (contenidoRef.current === cont ? { ...prev, estado: 'saved' } : prev))
@@ -442,6 +435,7 @@ function VistaEstudianteInterna() {
   // Toda navegación manual espera a que el último cambio quede guardado.
   const irAEncargo = async (n: number) => {
     await flushPendiente()
+    if (!mounted.current) return
     setParams((p) => {
       p.set('e', String(n))
       return p
@@ -449,7 +443,25 @@ function VistaEstudianteInterna() {
   }
   const irADia = async (codigo: string) => {
     await flushPendiente()
+    if (!mounted.current) return
     navigate(rutaDia(codigo))
+  }
+  const abrirMiSitio = async () => {
+    const actual = numero
+    // Una fuente heredada recién abierta aún no tiene Progress propio hasta la
+    // primera edición. Al compartir se guarda explícitamente esa versión también.
+    if (clienteApi && numeroCargadoRef.current === actual && estadoGuardado.estado === 'saved'
+      && contenidoRef.current.trim() && enServidorRef.current[actual] !== contenidoRef.current) {
+      guardarCopiaLocal(actual, contenidoRef.current)
+      guardarEnServidor(actual, contenidoRef.current)
+    }
+    await flushPendiente()
+    if (!mounted.current || numeroRef.current !== actual) return
+    if (!clienteApi || enServidorRef.current[actual] !== contenidoRef.current) {
+      setErrorEntrega('Antes de abrir Mi sitio, guarda los cambios con conexión. Tu borrador permanece en este equipo.')
+      return
+    }
+    navigate(`/mi-sitio?challenge_key=${challengeKeyFromNumero(actual)}`)
   }
 
   // Lo que no llegó al servidor (el borrador o un aceptado) se reintenta solo, cada vez más
@@ -514,6 +526,13 @@ function VistaEstudianteInterna() {
       }
     }
     numeroAnteriorRef.current = numero
+    // El editor todavía tiene el borrador de ESTE encargo (el salto automático y enseguida
+    // Atrás, antes de que llegara el otro): no hay nada que cargar. Volver a leerlo del
+    // servidor pisaba lo que se tecleara mientras tanto.
+    if (numeroCargadoRef.current === numero) {
+      setEjecutando(false)
+      return
+    }
 
     let fallbackLocal: string | undefined = borradoresRef.current[numero]
     let pendiente: string | null = null
@@ -533,6 +552,10 @@ function VistaEstudianteInterna() {
     if (fallbackLocal && pareceContenidoDeDatos(fallbackLocal)) fallbackLocal = undefined
 
     const setInitialCode = (code: string) => {
+      const ejecucion = ++ejecucionRef.current
+      setEjecutando(false)
+      setPreviewVivo(null)
+      setPreviewHtml('')
       setContenido(code)
       setNumeroCargado(numero)
       numeroCargadoRef.current = numero
@@ -544,7 +567,11 @@ function VistaEstudianteInterna() {
         const d = { ...perfilComoDatos(perfilRef.current), ...encargo.datosOverride }
         const promesa = encargo.modelo === 'grid' ? ejecutarPreviewJu1(parsearDocumentoJu1(code), d) : ejecutarPreview(code, d)
         void promesa.then((r) => {
-          if (r.ok) setPreviewHtml(r.html)
+          if (r.ok && numeroRef.current === numero && numeroCargadoRef.current === numero
+            && ejecucion === ejecucionRef.current) {
+            setPreviewHtml(r.html)
+            setPreviewVivo({ numero, srcdoc: r.srcdoc ?? '' })
+          }
         })
       } else {
         setPreviewHtml('')
@@ -584,7 +611,10 @@ function VistaEstudianteInterna() {
         // datos.js como si fuera el borrador de portafolio.js — lo que ya haya quedado
         // guardado así en el backend se descarta acá en vez de mostrárselo al estudiante.
         const servidor = res.draft_code && !pareceContenidoDeDatos(res.draft_code) ? res.draft_code : ''
-        if (!res.sinRespuesta) enServidorRef.current[numero] = servidor
+        if (!res.sinRespuesta) {
+          enServidorRef.current[numero] = servidor
+          enviadosRef.current[numero] = []
+        }
         const elegido = elegirBorrador({ servidor, local: fallbackLocal ?? null, pendiente })
         // Una marca que ya no manda (lo local ya está en el servidor, o el servidor cambió
         // después en otro equipo) se borra: si no, volvería a decidir en la próxima visita.
@@ -598,7 +628,7 @@ function VistaEstudianteInterna() {
         if (elegido?.subir) setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
         // Después de setInitialCode, que limpia la revisión.
         if (res.status === 'accepted') {
-          setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
+          if (!elegido?.subir) setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
           setRevision({
             ok: true,
             casosPasados: res.cases_passed ?? 0,
@@ -620,15 +650,19 @@ function VistaEstudianteInterna() {
   // ni lo que ya está guardado — es la forma de "probar antes de aplicar a toda la página".
   // Sin eso, se corre LA ENTREGA: el documento completo (Ju1) o `contenido` tal cual (el resto).
   const ejecutar = useCallback(async (codigoPrueba?: string) => {
+    const ejecucion = ++ejecucionRef.current
+    setPreviewVivo(null)
     setEjecutando(true)
     const r = codigoPrueba !== undefined
       ? await ejecutarPreview(codigoPrueba, datos)
       : documento
         ? await ejecutarPreviewJu1(documento, datos)
         : await ejecutarPreview(contenido, datos)
+    if (numeroRef.current !== numero || numeroCargadoRef.current !== numero || ejecucion !== ejecucionRef.current) return
     setEjecutando(false)
     if (r.ok) {
       setPreviewHtml(r.html)
+      setPreviewVivo({ numero, srcdoc: r.srcdoc ?? '' })
       setSalida({
         lineas: r.logs.length
           ? r.logs.map((texto) => ({ prefijo: 'consola', texto }))
@@ -643,7 +677,7 @@ function VistaEstudianteInterna() {
         archivo: r.error?.archivo,
       })
     }
-  }, [contenido, datos, documento])
+  }, [contenido, datos, documento, numero])
 
   const entregar = useCallback(async () => {
     setEntregando(true)
@@ -749,7 +783,7 @@ function VistaEstudianteInterna() {
   // progressStatus y revision todavía son los del anterior.
   const aceptado = numeroCargado === numero
     && (progressStatus === 'accepted' || (!!revision && revision.casosPasados === revision.casosTotales))
-  const esUltimo = numero >= MAX_ENCARGO
+  const esUltimo = numero === ULTIMO_ENCARGO
 
   // Al aceptar: guardar la solución (para heredarla)
   useEffect(() => {
@@ -836,7 +870,7 @@ function VistaEstudianteInterna() {
         encargo={encargo?.meta ?? null}
         dia={diaDeEncargo(numero)}
         previewHtml={previewHtml}
-        urlPortafolio={portafolioEjemplo.url}
+        urlPortafolio={`Vista previa · ${perfil.nombre || 'Mi portafolio'}`}
         onEditarDeTodosModos={() => {
           habilitarEdicionForzada()
           setVistaConsulta(false)
@@ -849,7 +883,7 @@ function VistaEstudianteInterna() {
   return (
     <div className="ve">
       {celebrando && <div className="ve-flash-exito" aria-hidden="true" />}
-      <Nav seccion="Portafolio" dia={diaDeEncargo(numero)} iniciales="AR" activo="portafolio" />
+      <Nav seccion="Portafolio" dia={diaDeEncargo(numero)} iniciales="AR" activo="portafolio" onAbrirSitio={() => void abrirMiSitio()} />
 
       <div
         ref={gridRef}
@@ -896,6 +930,7 @@ function VistaEstudianteInterna() {
                 return r.ok ? null : r.error
               }}
               onCrearSeccion={(fi, ci, ff, cf, etq) => {
+                if (numeroCargado !== numero) return 'Espera a que termine de cargar tu borrador.'
                 const r = crearSeccion(documento, fi, ci, ff, cf, etq)
                 if (!r.ok) return r.error
                 setContenido(serializarDocumentoJu1(r.valor))
@@ -903,6 +938,7 @@ function VistaEstudianteInterna() {
                 return null
               }}
               onExtenderSeccion={(celdaId, fi, ci, ff, cf) => {
+                if (numeroCargado !== numero) return 'Espera a que termine de cargar tu borrador.'
                 const r = extenderSeccion(documento, celdaId, fi, ci, ff, cf)
                 if (!r.ok) return r.error
                 setContenido(serializarDocumentoJu1(r.valor))
@@ -910,6 +946,7 @@ function VistaEstudianteInterna() {
                 return null
               }}
               onSepararCelda={(celdaId) => {
+                if (numeroCargado !== numero) return
                 setContenido(serializarDocumentoJu1(separarCeldaDelDocumento(documento, celdaId)))
                 setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
               }}
@@ -939,8 +976,10 @@ function VistaEstudianteInterna() {
 
         <div className="ve-col-preview">
           <PanelPreview
-            url={portafolioEjemplo.url}
+            key={numero}
+            url={`Vista previa · ${perfil.nombre || 'Mi portafolio'}`}
             html={previewHtml}
+            srcdocVivo={previewVivo?.numero === numero ? previewVivo.srcdoc : undefined}
             expandido={previewExpandido}
             onToggleExpandir={() => setPreviewExpandido((v) => !v)}
           />

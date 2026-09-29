@@ -17,7 +17,13 @@ from app.db.models import (
     User,
 )
 from app.db.session import SessionDep
-from app.instructor.schemas import ActiveSessionUpdate, ReviewBody
+from app.instructor.schemas import (
+    ActiveSessionUpdate,
+    InstructorCohortView,
+    InstructorStudentView,
+    MembershipStatusUpdate,
+    ReviewBody,
+)
 
 router = APIRouter(
     prefix="/api/instructor",
@@ -25,7 +31,7 @@ router = APIRouter(
     dependencies=[Depends(require_role("instructor", "admin"))],
 )
 
-@router.get("/cohorts")
+@router.get("/cohorts", response_model=list[InstructorCohortView])
 async def list_instructor_cohorts(user: CurrentUser, session: SessionDep):
     if user.role == "admin":
         cohorts = await session.scalars(select(Cohort).order_by(Cohort.created_at.desc()))
@@ -33,12 +39,17 @@ async def list_instructor_cohorts(user: CurrentUser, session: SessionDep):
         cohorts = await session.scalars(
             select(Cohort)
             .join(CohortMembership, CohortMembership.cohort_id == Cohort.id)
-            .where(CohortMembership.user_id == user.id, CohortMembership.role == "instructor")
+            .where(
+                CohortMembership.user_id == user.id,
+                CohortMembership.role == "instructor",
+                CohortMembership.status == "active",
+                Cohort.is_active.is_(True),
+            )
             .order_by(Cohort.created_at.desc())
         )
     return cohorts.all()
 
-@router.get("/cohorts/{cohort_id}")
+@router.get("/cohorts/{cohort_id}", response_model=InstructorCohortView)
 async def get_instructor_cohort(cohort_id: UUID, user: CurrentUser, session: SessionDep):
     await require_cohort_access(cohort_id, user, session, staff=True)
     cohort = await session.scalar(select(Cohort).where(Cohort.id == cohort_id))
@@ -46,15 +57,86 @@ async def get_instructor_cohort(cohort_id: UUID, user: CurrentUser, session: Ses
         raise ApiError(404, "NOT_FOUND", "Cohorte no encontrada.")
     return cohort
 
-@router.get("/cohorts/{cohort_id}/students")
+def student_view(student: User, membership: CohortMembership) -> InstructorStudentView:
+    return InstructorStudentView(
+        id=student.id,
+        email=student.email,
+        full_name=student.full_name,
+        display_name=student.display_name,
+        joined_at=membership.joined_at,
+        status=membership.status,
+    )
+
+
+@router.get("/cohorts/{cohort_id}/students", response_model=list[InstructorStudentView])
 async def get_instructor_cohort_students(cohort_id: UUID, user: CurrentUser, session: SessionDep):
     await require_cohort_access(cohort_id, user, session, staff=True)
-    students = await session.scalars(
-        select(User)
+    if await session.get(Cohort, cohort_id) is None:
+        raise ApiError(404, "NOT_FOUND", "Cohorte no encontrada.")
+    students = await session.execute(
+        select(User, CohortMembership)
         .join(CohortMembership, User.id == CohortMembership.user_id)
-        .where(CohortMembership.cohort_id == cohort_id, CohortMembership.role == "student")
+        .where(
+            CohortMembership.cohort_id == cohort_id,
+            CohortMembership.role == "student",
+            User.role == "student",
+        )
+        .order_by(CohortMembership.joined_at, User.id)
     )
-    return students.all()
+    return [student_view(student, membership) for student, membership in students]
+
+
+@router.patch(
+    "/cohorts/{cohort_id}/students/{user_id}/membership",
+    response_model=InstructorStudentView,
+)
+async def update_student_membership(
+    cohort_id: UUID,
+    user_id: UUID,
+    body: MembershipStatusUpdate,
+    user: CurrentUser,
+    session: SessionDep,
+):
+    await require_cohort_access(cohort_id, user, session, staff=True)
+    cohort = await session.get(Cohort, cohort_id)
+    if cohort is None:
+        raise ApiError(404, "NOT_FOUND", "Cohorte no encontrada.")
+    if not cohort.is_active:
+        raise ApiError(409, "COHORT_INACTIVE", "Activa la clase antes de cambiar sus matrículas.")
+
+    row = (
+        await session.execute(
+            select(User, CohortMembership)
+            .join(CohortMembership, User.id == CohortMembership.user_id)
+            .where(
+                CohortMembership.cohort_id == cohort_id,
+                CohortMembership.user_id == user_id,
+                CohortMembership.role == "student",
+                User.role == "student",
+            )
+            .with_for_update(of=CohortMembership)
+        )
+    ).first()
+    if row is None:
+        raise ApiError(404, "NOT_FOUND", "No se encontró esa matrícula de estudiante.")
+    student, membership = row
+    if membership.status == "pending":
+        raise ApiError(409, "MEMBERSHIP_PENDING", "La matrícula todavía está pendiente de aprobación.")
+    if membership.status != body.status:
+        before = {"status": membership.status}
+        membership.status = body.status
+        await create_audit_log(
+            session,
+            user.id,
+            "REACTIVATE_STUDENT" if body.status == "active" else "REMOVE_STUDENT",
+            "cohort_membership",
+            f"{cohort_id}:{user_id}",
+            before,
+            {"status": membership.status},
+        )
+        # SessionDep commits the membership and audit together before sending a response.
+        await session.flush()
+    return student_view(student, membership)
 
 @router.get("/submissions/{submission_id}")
 async def get_submission(submission_id: UUID, user: CurrentUser, session: SessionDep):

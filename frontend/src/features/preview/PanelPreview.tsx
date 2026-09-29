@@ -15,6 +15,8 @@ interface Props {
   url: string
   /** HTML generado por el código del estudiante (viene de sandbox.ejecutarPreview). */
   html: string
+  /** Programa propio ya traducido. El contexto muere al cambiar srcDoc o desmontar. */
+  srcdocVivo?: string
   enVivo?: boolean
   expandido: boolean
   onToggleExpandir: () => void
@@ -24,7 +26,7 @@ interface Props {
 // El portafolio se exporta y publica (brief §5.9): es un sitio responsive de verdad, así que
 // el preview debe poder verse a ancho de móvil y a ancho completo, no solo al ancho del panel.
 // El ancho del panel NO limita el ancho al que se renderiza: si el objetivo no cabe, se escala.
-export function PanelPreview({ url, html, enVivo = true, expandido, onToggleExpandir }: Props) {
+export function PanelPreview({ url, html, srcdocVivo, enVivo = true, expandido, onToggleExpandir }: Props) {
   const [vp, setVp] = useState<Viewport>('escritorio')
   const zonaRef = useRef<HTMLDivElement>(null)
   const marcoRef = useRef<HTMLIFrameElement>(null)
@@ -45,7 +47,7 @@ export function PanelPreview({ url, html, enVivo = true, expandido, onToggleExpa
   const anchoObjetivo = anchoOpcion ?? (Math.round(zona.w) || 0)
   const escala = zona.w > 0 && anchoObjetivo > 0 ? Math.min(1, zona.w / anchoObjetivo) : 1
 
-  const doc = useMemo(() => documentoPortafolio(html), [html])
+  const doc = useMemo(() => srcdocVivo || documentoPortafolio(html), [html, srcdocVivo])
 
   return (
     <>

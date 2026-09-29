@@ -123,6 +123,7 @@ export async function montar(servidor: ServidorFalso, ruta = '/portafolio?e=4', 
         createElement(Routes, null,
           createElement(Route, { path: '/portafolio', element: createElement(VistaEstudiante) }),
           createElement(Route, { path: '/sesiones/:codigo', element: createElement(Sesion) }),
+          createElement(Route, { path: '/mi-sitio', element: createElement('h1', null, 'Mi sitio') }),
           createElement(Route, { path: '/mapa', element: createElement('div', null, createElement('h1', null, 'Mapa'), createElement(Link, { to: '/portafolio?e=7' }, 'Abrir E7')) }),
         )))
   }

@@ -41,6 +41,7 @@ async def auth_harness(tmp_path):
         CohortState,
         DemoProgress,
         FeatureFlag,
+        PortfolioPublication,
         Progress,
         SessionCatalog,
         Submission,
@@ -77,6 +78,7 @@ async def auth_harness(tmp_path):
                     Progress.__table__,
                     Submission.__table__,
                     FeatureFlag.__table__,
+                    PortfolioPublication.__table__,
                     AuditLog.__table__,
                 ],
             )

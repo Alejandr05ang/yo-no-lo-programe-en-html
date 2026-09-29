@@ -1,5 +1,7 @@
 # Diseño de Plataforma — Taller de Desarrollo Web para Principiantes
 
+> **Diseño histórico, no contrato operativo actual.** El calendario, permisos, persistencia y publicación vigentes están en [Currículo vigente — 28-sep-2026](CURRICULO-VIGENTE-2026-09-28.md). En particular, Ju2 es Git y publicación, V2 es demo final, la publicación se puede actualizar y los días dependen del backend. Las propuestas de publicación única y desbloqueo por nivel que siguen se conservan como antecedentes.
+
 > **Nota de versión:** esta revisión reestructura el cronograma y el sistema de niveles a partir de
 > cuatro decisiones: (1) el entregable (portafolio publicado) manda sobre el temario, no al
 > revés; (2) las sesiones antes marcadas de "4 horas" (martes/jueves) son en realidad la misma

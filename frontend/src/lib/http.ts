@@ -3,7 +3,9 @@ const MESSAGES: Record<string, string> = {
   EMAIL_NOT_VERIFIED: 'Verifica tu correo antes de continuar.',
   PROFILE_INCOMPLETE: 'Completa tu perfil antes de continuar.',
   INVALID_JOIN_CODE: 'No pudimos validar ese código de clase.',
-  NOT_COHORT_MEMBER: 'Primero debes unirte a una clase.',
+  NOT_COHORT_MEMBER: 'No tienes acceso a esta clase. Contacta a tu docente para revisar tu inscripción o recuperar el acceso.',
+  COHORT_INACTIVE: 'Esta clase está inactiva. Reactívala antes de cambiar el acceso de sus estudiantes.',
+  MEMBERSHIP_PENDING: 'Esta inscripción sigue pendiente. Todavía no se puede retirar ni reactivar.',
   CHALLENGE_LOCKED: 'Tu docente todavía no ha habilitado este encargo.',
   SESSION_LOCKED: 'Tu docente todavía no ha abierto este día.',
   SESSION_PAUSED: 'Tu docente pausó temporalmente este día. Tu progreso sigue guardado.',
@@ -22,6 +24,12 @@ const MESSAGES: Record<string, string> = {
   INVALID_API_URL: 'La conexión con el taller todavía no está configurada correctamente.',
   SESSION_CHANGED: 'La sesión cambió. Vuelve a intentar la operación con tu cuenta actual.',
   REQUEST_CANCELLED: 'La operación se canceló.',
+  SOURCE_CHANGED: 'Tu código o tus datos cambiaron. Vuelve a cargar la fuente y prepara otra vista previa antes de publicar.',
+  PUBLICATION_NOT_OPEN: 'La publicación estará disponible cuando tu docente abra el día Git y publicación.',
+  EMPTY_SOURCE: 'Guarda primero el código de tu sitio en el editor.',
+  SOURCE_NOT_FOUND: 'Guarda primero el código de esa actividad y vuelve a cargar la fuente.',
+  EMPTY_SNAPSHOT: 'La vista previa necesita contenido visible. Añade un título o un texto a tu sitio antes de publicarlo.',
+  INVALID_SNAPSHOT: 'La página es demasiado grande para publicar. Reduce su contenido y prepara otra vista previa.',
 }
 
 export class ApiError extends Error {
@@ -49,6 +57,8 @@ interface RequestOptions {
   json?: unknown
   form?: FormData
   signal?: AbortSignal
+  /** Cuenta y generación que originaron una operación diferida. */
+  expectedSessionKey?: string | null
 }
 
 function apiBase(options: ClientOptions): URL {
@@ -81,11 +91,12 @@ function responseError(status: number, body: unknown): ApiError {
 export function createApiClient(options: ClientOptions) {
   const base = apiBase(options)
   const fetcher = options.fetcher ?? fetch
-  async function request<T>(path: string, init: RequestOptions = {}): Promise<T> {
+  async function perform<T>(path: string, init: RequestOptions, binary = false): Promise<T> {
     if (!/^\/[a-z0-9][a-z0-9/_-]*(?:\?[^#\\]*)?$/i.test(path)) throw new ApiError('INVALID_API_URL')
     const destination = new URL(path.slice(1), base)
     if (destination.origin !== base.origin || !destination.pathname.startsWith('/api/')) throw new ApiError('INVALID_API_URL')
     const sessionKey = options.getSessionKey()
+    if (init.expectedSessionKey !== undefined && sessionKey !== init.expectedSessionKey) throw new ApiError('SESSION_CHANGED')
     if (!sessionKey) throw new ApiError('AUTH_REQUIRED', 401)
     const checkSession = () => {
       if (options.getSessionKey() !== sessionKey) throw new ApiError('SESSION_CHANGED')
@@ -98,7 +109,7 @@ export function createApiClient(options: ClientOptions) {
         const token = await options.getIdToken(attempt === 1)
         checkSession()
         if (!token) throw new ApiError('AUTH_REQUIRED', 401)
-        const headers = new Headers({ Accept: 'application/json', Authorization: `Bearer ${token}` })
+        const headers = new Headers({ Accept: binary ? 'image/webp' : 'application/json', Authorization: `Bearer ${token}` })
         if (init.json !== undefined) headers.set('Content-Type', 'application/json')
         const response = await fetcher(destination, {
           method: init.method ?? 'GET',
@@ -113,6 +124,11 @@ export function createApiClient(options: ClientOptions) {
         if (response.status === 401 && attempt === 0) {
           await response.body?.cancel()
           continue
+        }
+        if (binary && response.ok) {
+          const blob = await response.blob()
+          checkSession()
+          return blob as T
         }
         let body: unknown
         try { body = response.status === 204 ? null : await response.json() } catch {
@@ -132,7 +148,18 @@ export function createApiClient(options: ClientOptions) {
       clearTimeout(timer)
     }
   }
-  return { request }
+  return {
+    request: <T>(path: string, init: RequestOptions = {}) => perform<T>(path, init),
+    requestBlob: (path: string, init: RequestOptions = {}) => perform<Blob>(path, init, true),
+  }
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>
+
+/** Una cola conserva el cliente de su sesión; nunca toma las credenciales de la siguiente. */
+export function bindApiClientToSession(client: ApiClient, sessionKey: string | null): ApiClient {
+  return {
+    request: <T>(path: string, init: RequestOptions = {}) => client.request<T>(path, { ...init, expectedSessionKey: sessionKey }),
+    requestBlob: (path: string, init: RequestOptions = {}) => client.requestBlob(path, { ...init, expectedSessionKey: sessionKey }),
+  }
+}

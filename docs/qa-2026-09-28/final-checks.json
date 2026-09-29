@@ -1,0 +1,36 @@
+{
+  "date": "2026-09-29",
+  "scope": "local only, no production",
+  "starting_master": "40018744eb258fbb467f37dbeb88d99ae8a7e335",
+  "backend": {
+    "passed": 197,
+    "skipped": 1,
+    "failed": 0,
+    "duration_seconds": 42.55
+  },
+  "frontend": {
+    "failed": 0,
+    "vista": 46,
+    "unit": 237,
+    "skipped": 0,
+    "ui": 27
+  },
+  "playthrough": {
+    "exercises": 13,
+    "passed": 13
+  },
+  "ruff": "PASS",
+  "build": "PASS, existing chunk-size warning",
+  "lint": {
+    "warnings": 6,
+    "errors": 0
+  },
+  "npm_audit_known_vulnerabilities": 0,
+  "mutations": {
+    "detected": 21,
+    "total": 21
+  },
+  "browser_qa": "PASS, local SQLite fixtures, desktop and mobile",
+  "deployment": "NONE",
+  "push": "NONE"
+}

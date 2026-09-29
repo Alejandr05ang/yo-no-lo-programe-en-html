@@ -16,7 +16,7 @@ SESSIONS = [
     ("L2", 6, "Filtrar con intención", "Muestra solo lo que ya está listo para compartir."),
     ("Ma2", 7, "Matrices y funciones", "Organiza habilidades sin fijar cantidades."),
     ("Mi2", 8, "Funciones por tipo", "Cada proyecto se presenta según lo que ofrece."),
-    ("Ju2", 9, "Git y publicación", "Prepara una versión pública y revisable."),
+    ("Ju2", 9, "Git y publicación", "Prepara una versión revisable para tu cohorte."),
     ("V2", 10, "Demo final", "Cuenta el recorrido y comparte el portafolio terminado."),
 ]
 
@@ -73,7 +73,7 @@ CHALLENGES = [
         "Ju1",
         "Organiza tu página",
         "Agrupa contenido en secciones antes de personalizarlo.",
-        "Agrupa alguna parte de tu portafolio con crearSeccion().",
+        "Organiza la cuadrícula con la herramienta visual y coloca tu contenido en las pestañas de sección.",
     ),
     (
         "e13",

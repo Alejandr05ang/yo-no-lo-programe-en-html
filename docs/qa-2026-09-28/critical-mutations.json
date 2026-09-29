@@ -1,0 +1,38 @@
+[
+  {
+    "mutation": "autosave serialized writes",
+    "control_exit": 0,
+    "mutant_exit": 1,
+    "detected": true
+  },
+  {
+    "mutation": "URL scheme rejection",
+    "control_exit": 0,
+    "mutant_exit": 1,
+    "detected": true
+  },
+  {
+    "mutation": "iframe message source",
+    "control_exit": 0,
+    "mutant_exit": 1,
+    "detected": true
+  },
+  {
+    "mutation": "late initial preview generation",
+    "control_exit": 0,
+    "mutant_exit": 1,
+    "detected": true
+  },
+  {
+    "mutation": "new challenge resets running preview",
+    "control_exit": 0,
+    "mutant_exit": 1,
+    "detected": true
+  },
+  {
+    "mutation": "accepted sticky on autosave",
+    "control_exit": 0,
+    "mutant_exit": 1,
+    "detected": true
+  }
+]

@@ -1,5 +1,7 @@
 # Registro de decisiones
 
+> **Registro histórico.** Las marcas de decisión cerrada reflejan su fecha, no todas la implementación actual. Para autorización por día, PostgreSQL/Supabase, Firebase, Cloud Run/Netlify, revisión local, orden y publicación véase [Currículo vigente — 28-sep-2026](CURRICULO-VIGENTE-2026-09-28.md). Deno, SQLite productivo y Fly.io/Railway son propuestas antiguas, no servicios activos.
+
 Estado: ✅ cerrada · 🟡 propuesta (a confirmar con el equipo del taller) · ⬜ pendiente
 
 ## Producto (del brief §8 — cerradas)

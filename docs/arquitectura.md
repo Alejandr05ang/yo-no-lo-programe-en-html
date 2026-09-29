@@ -1,5 +1,7 @@
 # Arquitectura
 
+> **Diseño histórico, no descripción operativa actual.** Al 28–29-sep-2026 el stack confirmado es Firebase (identidad), FastAPI (autorización), SQLAlchemy/PostgreSQL/Supabase (persistencia), React/Vite y Netlify/Cloud Run según configuración del repositorio. SQLite se usa en pruebas. La revisión actual es formativa y local en el navegador; el backend no ejecuta Deno ni casos ocultos. El acceso depende del mapa por cohorte y del docente, no de aprobar N−1. Las publicaciones nuevas son snapshots estáticas saneadas, privadas por cohorte: nunca ejecutan código de otro alumno en el visitante. Consultar `CURRICULO-VIGENTE-2026-09-28.md`, `PUBLICATION_2026-09-28.md` y `../CODEX_FINAL_AUDIT_2026-09-28.md`. Se conserva abajo el diseño original como historial; sus decisiones incompatibles no prevalecen sobre el código validado.
+
 > Fecha: 2026-08-30. Este documento fija el stack y el patrón de arquitectura.
 > Si algo aquí contradice `brief.md`, manda el brief en lo de producto; este documento manda en lo técnico.
 > Las alternativas descartadas se registran para no volver a discutirlas sin motivo nuevo.

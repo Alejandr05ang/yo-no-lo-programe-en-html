@@ -2,6 +2,29 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { componerAndamiaje, ENCARGOS, NUMEROS_DE_ENCARGO } from '../src/lib/encargos.ts'
 import { aJavaScript } from '../src/lib/pseudocodigoAJS.ts'
+import { encargoFrontera, guardarSoluciones } from '../src/lib/progreso.ts'
+
+test('tras Mi1 el progreso local abre Ju1 antes que V1, y termina en Mi2', () => {
+  const datos = new Map<string, string>()
+  Object.assign(globalThis, { sessionStorage: {
+    getItem: (k: string) => datos.get(k) ?? null,
+    setItem: (k: string, v: string) => datos.set(k, v),
+  } })
+  const aceptadas = Object.fromEntries([1, 2, 3, 4, 5, 6].map(n => [n, 'código propio']))
+  guardarSoluciones(aceptadas)
+  assert.equal(encargoFrontera(), 12)
+  guardarSoluciones({ ...aceptadas, 12: 'grid propio' })
+  assert.equal(encargoFrontera(), 13)
+  guardarSoluciones({ ...aceptadas, 12: 'grid', 13: 'grid con estilo' })
+  assert.equal(encargoFrontera(), 7)
+  guardarSoluciones(Object.fromEntries([1, 2, 3, 4, 5, 6, 12, 13, 7, 8, 9, 10, 11].map(n => [n, 'propio'])))
+  assert.equal(encargoFrontera(), 11)
+})
+
+test('V1 continúa el documento personalizado de Ju1 y los siguientes días conservan el formato', () => {
+  assert.equal(ENCARGOS[7].heredaDe, 13)
+  for (const n of [7, 8, 9, 10, 11]) assert.equal(ENCARGOS[n].modelo, 'grid')
+})
 
 test('E11 conserva las skills que usa el código acumulado de E10', () => {
   assert.ok(Array.isArray(ENCARGOS[10].datosOverride.skills))

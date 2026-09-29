@@ -53,7 +53,7 @@ async def join_cohort(
     )
     if membership is not None:
         if membership.status != "active":
-            membership.status = "active"
+            raise ApiError(403, "NOT_COHORT_MEMBER", "Contacta al docente para recuperar el acceso a esta clase.")
         await session.flush()
         return cohort, membership, False
     try:
@@ -71,4 +71,6 @@ async def join_cohort(
             raise ApiError(
                 409, "JOIN_CONFLICT", "No se pudo completar la unión a la clase."
             ) from None
+        if membership.status != "active":
+            raise ApiError(403, "NOT_COHORT_MEMBER", "Contacta al docente para recuperar el acceso a esta clase.")
     return cohort, membership, True

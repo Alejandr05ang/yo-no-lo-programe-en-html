@@ -1,25 +1,20 @@
 import { normalizarEnlace } from './enlaces.ts'
 import { ENCARGOS } from './encargos.ts'
-import { ejecutarPreview } from './sandbox.ts'
+import { ejecutarPreview, ejecutarPreviewJu1, ejecutarPreviewEvolucion, type ResultadoPreview } from './sandbox.ts'
+import { parsearDocumentoJu1 } from './estructuraDePagina.ts'
 import type { ResultadoRevision } from './tipos'
 
 // Revisión automática LOCAL: es la que acepta los encargos hoy. El servidor guarda cada
 // entrega (POST /submit) y el estado accepted, pero no corre casos propios; el autograder
 // Deno con casos ocultos de docs/arquitectura.md sigue sin integrarse. Esta revisión corre
-// el código una vez y verifica el DOM resultante contra unos criterios fijos por encargo.
-// No detecta hardcodeo ni prueba con datos distintos.
+// el código con datos actuales y variantes de borde. Sigue siendo evaluación formativa
+// del cliente, no una barrera de autorización ni un autograder oculto del servidor.
 
 type DatosLike = Record<string, unknown>
 
 interface CasoLocal {
   descripcion: string
   verificar: (doc: Document, datos: DatosLike) => boolean
-}
-
-/** Cuántas veces aparece `texto` como substring de `contenido`. */
-function contarOcurrencias(contenido: string, texto: string): number {
-  if (!texto) return 0
-  return contenido.split(texto).length - 1
 }
 
 // Helpers para leer `datos` (unknown) sin asumir su forma exacta — varía por encargo.
@@ -53,7 +48,7 @@ function encontrarListaConItems(doc: Document, esperados: string[]): Element | n
     const items = [...lista.children]
       .filter((n) => n.tagName === 'LI')
       .map((n) => (n.textContent ?? '').trim())
-    if (items.length === esperados.length && esperados.every((item) => items.includes(item))) {
+    if (items.length === esperados.length && esperados.every((item, i) => items[i] === item)) {
       return lista
     }
   }
@@ -65,6 +60,34 @@ function gruposDeSkills(v: unknown): { categoria: string; items: string[] }[] {
     categoria: comoTexto(grupo.categoria),
     items: comoLista(grupo.items).map((item) => comoTexto(item)),
   }))
+}
+
+// Nombres completos por nodo: "Web" no se cuenta otra vez dentro de "Web grande".
+function textosVisibles(doc: Document): string[] {
+  const textos: string[] = []
+  const visitar = (n: Node) => {
+    if (n.nodeType === 3 && n.textContent?.trim()) textos.push(n.textContent.trim())
+    else if (n.nodeType === 1 && !['SCRIPT', 'STYLE'].includes((n as Element).tagName)) {
+      for (const hijo of n.childNodes) visitar(hijo)
+    }
+  }
+  visitar(doc.body)
+  return textos
+}
+
+function listaDeCategoria(doc: Document, categoria: string, items: string[]): Element | null {
+  const titulos = [...doc.querySelectorAll('h2, h3')].filter(t => t.textContent?.trim() === categoria)
+  for (const titulo of titulos) {
+    for (let vecino = titulo.nextElementSibling; vecino; vecino = vecino.nextElementSibling) {
+      if (vecino.matches('h2, h3')) break
+      const listas = vecino.matches('ul,ol') ? [vecino] : [...vecino.querySelectorAll('ul,ol')]
+      for (const lista of listas) {
+        const textos = [...lista.children].map(item => item.textContent?.trim() ?? '')
+        if (textos.length === items.length && items.every((item, i) => textos[i] === item)) return lista
+      }
+    }
+  }
+  return null
 }
 
 const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
@@ -184,9 +207,12 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
 
   7: [
     {
-      descripcion: 'Aparece un aviso de "en construcción"',
-      verificar: (d) =>
-        [...d.querySelectorAll('p')].some((p) => /construcci[oó]n/i.test(p.textContent ?? '')),
+      descripcion: 'El aviso aparece únicamente cuando la biografía está vacía',
+      verificar: (d, datos) => {
+        const bio = comoTexto(datos.sobreMi).trim()
+        const aviso = [...d.querySelectorAll('p')].some(p => /construcci[oó]n/i.test(p.textContent ?? ''))
+        return bio ? !aviso && textosVisibles(d).includes(bio) : aviso
+      },
     },
     {
       descripcion: 'Ningún párrafo queda vacío',
@@ -197,13 +223,16 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
     },
   ],
 
-  // Nivel 6 (niveles.md) — snapshot único: ejecutarPreview corre el código una vez y
-  // captura el resultado de la primera llamada de cadaSegundo(), así que se puede
-  // verificar "qué se ve en el primer instante" pero no el avance automático en sí.
+  // La forma y el filtro se verifican para listas vacías, de uno y de varios proyectos.
+  // El movimiento y la limpieza de timers tienen pruebas del runtime y de la preview viva.
   8: [
     {
-      descripcion: 'Hay un carrusel con una imagen',
-      verificar: (d) => !!d.querySelector('[data-carrusel] img'),
+      descripcion: 'El carrusel muestra una imagen, o un estado vacío cuando no hay destacados',
+      verificar: (d, datos) => {
+        const cantidad = comoLista(datos.proyectos).filter(p => p.destacado === true).length
+        const carrusel = d.querySelector('[data-carrusel]')
+        return !!carrusel && carrusel.querySelectorAll('img').length === (cantidad ? 1 : 0)
+      },
     },
     {
       descripcion: 'El proyecto mostrado es uno de los destacados',
@@ -214,7 +243,7 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
           .filter((p) => p.destacado === true)
           .map((p) => comoTexto(p.imagenUrl))
         const srcs = [...d.querySelectorAll('[data-carrusel] img')].map((img) => img.getAttribute('src'))
-        return urls.some((u) => srcs.includes(u))
+        return urls.length === 0 ? srcs.length === 0 : srcs.length === 1 && srcs[0] === urls[0]
       },
     },
     {
@@ -225,7 +254,7 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
           .map((p) => comoTexto(p.imagenUrl))
         const imgs = [...d.querySelectorAll('[data-carrusel] img')]
         const srcs = imgs.map((img) => img.getAttribute('src'))
-        return imgs.length === 1 && !urls.some((u) => srcs.includes(u))
+        return imgs.length <= 1 && !urls.some((u) => srcs.includes(u))
       },
     },
   ],
@@ -237,8 +266,8 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
         const terminados = comoLista(datos.proyectos)
           .filter((p) => p.terminado === true)
           .map((p) => comoTexto(p.nombre))
-        const texto = d.body.textContent ?? ''
-        return terminados.length > 0 && terminados.every((n) => texto.includes(n))
+        const textos = textosVisibles(d)
+        return terminados.every(n => textos.includes(n))
       },
     },
     {
@@ -247,18 +276,18 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
         const sinTerminar = comoLista(datos.proyectos)
           .filter((p) => p.terminado !== true)
           .map((p) => comoTexto(p.nombre))
-        const texto = d.body.textContent ?? ''
-        return !sinTerminar.some((n) => texto.includes(n))
+        const textos = textosVisibles(d)
+        return !sinTerminar.some(n => textos.includes(n))
       },
     },
     {
-      descripcion: 'Cada proyecto terminado aparece una sola vez',
+      descripcion: 'Cada proyecto terminado aparece una sola vez y en su orden',
       verificar: (d, datos) => {
         const terminados = comoLista(datos.proyectos)
           .filter((p) => p.terminado === true)
           .map((p) => comoTexto(p.nombre))
-        const texto = d.body.textContent ?? ''
-        return terminados.every((n) => contarOcurrencias(texto, n) === 1)
+        const textos = textosVisibles(d).filter(t => terminados.includes(t))
+        return textos.length === terminados.length && terminados.every((n, i) => textos[i] === n)
       },
     },
   ],
@@ -269,22 +298,22 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
       verificar: (d, datos) => {
         const skills = gruposDeSkills(datos.skills)
         const titulos = [...d.querySelectorAll('h2, h3')].map((t) => (t.textContent ?? '').trim())
-        return skills.length > 0 && skills.every((grupo) => titulos.includes(grupo.categoria))
+        return skills.every((grupo) => titulos.includes(grupo.categoria))
       },
     },
     {
       descripcion: 'Cada categoría tiene su propia lista de items',
       verificar: (d, datos) => {
         const skills = gruposDeSkills(datos.skills)
-        return skills.length > 0 && skills.every((grupo) => !!encontrarListaConItems(d, grupo.items))
+        return skills.every((grupo) => !!listaDeCategoria(d, grupo.categoria, grupo.items))
       },
     },
     {
       descripcion: 'El texto de los items sale de datos.skills',
       verificar: (d, datos) => {
         const skills = gruposDeSkills(datos.skills)
-        return skills.length > 0 && skills.every((grupo) => {
-          const lista = encontrarListaConItems(d, grupo.items)
+        return skills.every((grupo) => {
+          const lista = listaDeCategoria(d, grupo.categoria, grupo.items)
           const textos = lista ? [...lista.children].map((item) => (item.textContent ?? '').trim()) : []
           return grupo.items.every((item) => textos.includes(item))
         })
@@ -294,11 +323,16 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
 
   11: [
     {
-      descripcion: 'El proyecto de tipo "demo" muestra un enlace a su url',
+      descripcion: 'Cada demo tiene un enlace válido o texto cuando falta una dirección segura',
       verificar: (d, datos) => {
         const demos = comoLista(datos.proyectos).filter((p) => comoTexto(p.tipo) === 'demo')
         const destinos = destinosDeEnlaces(d)
-        return demos.length > 0 && demos.every((p) => hayEnlaceA(destinos, p.url))
+        return demos.every((p) => {
+          if (normalizarEnlace(comoTexto(p.url))) return hayEnlaceA(destinos, p.url)
+          // Una URL imposible no bloquea el encargo; tampoco acepta un enlace vacío.
+          const nombre = comoTexto(p.nombre)
+          return [...d.querySelectorAll('p, li, h2, h3')].some(el => el.textContent?.trim() === nombre && !el.querySelector('a'))
+        })
       },
     },
     {
@@ -306,7 +340,7 @@ const CASOS_POR_ENCARGO: Record<number, CasoLocal[]> = {
       verificar: (d, datos) => {
         const textos = comoLista(datos.proyectos).filter((p) => comoTexto(p.tipo) === 'texto')
         const contenido = d.body.textContent ?? ''
-        return textos.length > 0 && textos.every((p) => contenido.includes(comoTexto(p.nombre)))
+        return textos.every((p) => contenido.includes(comoTexto(p.nombre)))
       },
     },
     {
@@ -336,6 +370,48 @@ const DATOS_EXTRA: Partial<Record<number, { datos: (d: DatosLike) => DatosLike |
   },
 }
 
+/** Variantes públicas de evaluación formativa; no se analizan palabras del código. */
+function variantesDeRevision(numero: number, datos: DatosLike): DatosLike[] {
+  const proyectos = [
+    { nombre: 'Proyecto de prueba A', imagenUrl: 'https://example.com/a.png', terminado: true, destacado: true, tipo: 'demo', url: 'https://example.com/demo-a' },
+    { nombre: 'Proyecto de prueba B', imagenUrl: 'https://example.com/b.png', terminado: false, destacado: false, tipo: 'texto' },
+    { nombre: 'Proyecto de prueba C', imagenUrl: 'https://example.com/c.png', terminado: true, destacado: true, tipo: 'nuevo' },
+    { nombre: 'Proyecto de prueba D', imagenUrl: 'https://example.com/d.png', terminado: true, destacado: true, tipo: 'texto' },
+  ]
+  switch (numero) {
+    case 7: return [{ ...datos, sobreMi: '' }, { ...datos, sobreMi: 'Esta es una biografía de prueba distinta.' }]
+    case 8:
+    case 9: return [
+      { ...datos, proyectos: [] },
+      { ...datos, proyectos: [proyectos[1]] },
+      { ...datos, proyectos: [proyectos[2]] },
+      { ...datos, proyectos: [proyectos[3], proyectos[1], proyectos[0], proyectos[2]] },
+    ]
+    case 10: return [
+      { ...datos, skills: [] },
+      { ...datos, skills: [{ categoria: 'Grupo vacío', items: [] }] },
+      { ...datos, skills: [{ categoria: 'Grupo nuevo A', items: ['A1', 'A2', 'A3', 'A4'] }, { categoria: 'Grupo nuevo B', items: ['B1'] }, { categoria: 'Grupo nuevo C', items: [] }] },
+    ]
+    case 11: return [
+      { ...datos, proyectos: [] },
+      { ...datos, proyectos: [proyectos[1]] },
+      { ...datos, proyectos: [proyectos[0]] },
+      { ...datos, proyectos: [proyectos[2], { nombre: 'Sin dirección', tipo: 'demo' }, { nombre: 'Dirección insegura', tipo: 'demo', url: 'javascript:alert(1)' }, { nombre: 'Dirección mal formada', tipo: 'demo', url: 'no es una url' }, {}] },
+    ]
+    default: return []
+  }
+}
+
+function ejecutarContenido(codigo: string, datos: unknown) {
+  try {
+    const documento = JSON.parse(codigo)
+    if (documento?.version === 1 && documento.estructura && Array.isArray(documento.secciones)) {
+      return ejecutarPreviewJu1(parsearDocumentoJu1(codigo), datos)
+    }
+  } catch { /* Un archivo de JavaScript o pseudocódigo sigue usando su runtime habitual. */ }
+  return ejecutarPreview(codigo, datos)
+}
+
 export async function revisarLocalmente(
   numeroEncargo: number,
   codigo: string,
@@ -346,7 +422,7 @@ export async function revisarLocalmente(
 
   // Encargo sin criterios definidos aún: no se puede aceptar (evita el auto-avance).
   if (!casos || casos.length === 0) {
-    const total = ENCARGOS[numeroEncargo]?.totalCasos ?? 1
+    const total = Math.max(1, ENCARGOS[numeroEncargo]?.totalCasos ?? 1)
     return {
       casos: Array.from({ length: total }, (_, i) => ({
         descripcion: `Caso ${i + 1}`,
@@ -354,11 +430,13 @@ export async function revisarLocalmente(
       })),
       casosPasados: 0,
       casosTotales: total,
-      nota: 'Este encargo todavía no tiene revisión automática (pendiente de diseño del contenido).',
+      nota: numeroEncargo === 12 || numeroEncargo === 13
+        ? 'Este encargo requiere revisión visual del instructor; no se acepta automáticamente.'
+        : 'Este encargo todavía no tiene revisión automática (pendiente de diseño del contenido).',
     }
   }
 
-  const r = overrideHtml === undefined ? await ejecutarPreview(codigo, datos) : { ok: true, html: overrideHtml, error: undefined }
+  const r = overrideHtml === undefined ? await ejecutarContenido(codigo, datos) : { ok: true, html: overrideHtml, error: undefined }
   const doc = new DOMParser().parseFromString(
     `<body>${r.ok ? r.html : ''}</body>`,
     'text/html',
@@ -368,19 +446,49 @@ export async function revisarLocalmente(
   // Con `overrideHtml` (quien llama ya ejecutó el código) no se puede volver a ejecutar.
   const extra = overrideHtml === undefined ? DATOS_EXTRA[numeroEncargo] : undefined
   const datosExtra = extra?.datos(datosObj) ?? null
-  const r2 = r.ok && datosExtra ? await ejecutarPreview(codigo, datosExtra) : null
+  const r2 = r.ok && datosExtra ? await ejecutarContenido(codigo, datosExtra) : null
   const docExtra = r2?.ok ? new DOMParser().parseFromString(`<body>${r2.html}</body>`, 'text/html') : null
+  const variantes = r.ok && overrideHtml === undefined ? variantesDeRevision(numeroEncargo, datosObj) : []
+  const resultadosVariantes: { datos: DatosLike; resultado: ResultadoPreview; doc: Document }[] = []
+  for (const variante of variantes) {
+    const resultado = await ejecutarContenido(codigo, variante)
+    resultadosVariantes.push({ datos: variante, resultado, doc: new DOMParser().parseFromString(`<body>${resultado.ok ? resultado.html : ''}</body>`, 'text/html') })
+  }
   const pasa = (c: CasoLocal) =>
-    r.ok && safe(() => c.verificar(doc, datosObj)) && (!datosExtra || (!!docExtra && safe(() => c.verificar(docExtra, datosExtra))))
+    r.ok && safe(() => c.verificar(doc, datosObj))
+    && (!datosExtra || (!!docExtra && safe(() => c.verificar(docExtra, datosExtra))))
+    && resultadosVariantes.every(v => v.resultado.ok && safe(() => c.verificar(v.doc, v.datos)))
   const evaluados = casos.map((c) => ({
     descripcion: c.descripcion,
     estado: (pasa(c) ? 'pasa' : 'falla') as 'pasa' | 'falla',
   }))
+  if (numeroEncargo === 8) {
+    let movimientoCorrecto = r.ok && overrideHtml === undefined
+    if (movimientoCorrecto) {
+      for (const muestra of [datosObj, ...variantes]) {
+        const urls = comoLista(muestra.proyectos).filter(p => p.destacado === true).map(p => comoTexto(p.imagenUrl))
+        // El reloj aislado limita a diez ticks. Las variantes pequeñas cubren la vuelta.
+        const ticks = Math.min(10, Math.max(3, urls.length))
+        const frames = await ejecutarPreviewEvolucion(codigo, muestra, ticks)
+        if (frames.length !== ticks + 1 || frames.some((frame, i) => {
+          if (!frame.ok) return true
+          const d = new DOMParser().parseFromString(frame.html, 'text/html')
+          const carrusel = d.querySelector('[data-carrusel]')
+          const imagenes = [...d.querySelectorAll('[data-carrusel] img')]
+          return !carrusel || (urls.length === 0 ? imagenes.length !== 0
+            : imagenes.length !== 1 || imagenes[0].getAttribute('src') !== urls[i % urls.length])
+        })) movimientoCorrecto = false
+      }
+    }
+    evaluados.push({ descripcion: 'El carrusel avanza, vuelve al inicio y no acumula imágenes', estado: movimientoCorrecto ? 'pasa' : 'falla' })
+  }
   const pasados = evaluados.filter((c) => c.estado === 'pasa').length
 
-  const nota = r.ok
+  const notaBase = r.ok
     ? 'Esta revisión mira el resultado visible al ejecutar. Ningún caso te dice cómo arreglarlo.'
     : `El código no llegó a ejecutarse: ${r.error?.mensaje ?? 'error'}.`
+  const falloVariante = resultadosVariantes.find(v => !v.resultado.ok)
+  const nota = `${notaBase}${variantes.length ? ' También se ejecutó tu código con datos distintos, vacíos y de distintas cantidades.' : ''}${falloVariante ? ` Con esos datos tu código falló: ${falloVariante.resultado.error?.mensaje ?? 'error'}.` : ''}`
   return {
     casos: evaluados,
     casosPasados: pasados,

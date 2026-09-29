@@ -17,6 +17,8 @@ const applicationRoutes: RouteObject[] = [
     { path: '/onboarding/clase', element: <AccountPage stage="class" /> },
     { path: '/inicio', element: <Navigate to="/cuenta" replace /> },
     { path: '/entrar', element: <Navigate to="/cuenta" replace /> },
+    // El propietario puede retirar su publicación aunque ya no pertenezca a una cohorte.
+    { path: '/mi-sitio', lazy: async () => ({ Component: (await import('./features/publicacion/MiSitioPage')).MiSitioPage }) },
     { element: <RequireRole roles={['admin']} />, children: [
       { path: '/admin', lazy: async () => ({ Component: (await import('./features/admin/AdminDashboard')).AdminDashboard }) },
     ] },
@@ -28,6 +30,8 @@ const applicationRoutes: RouteObject[] = [
       { path: '/mapa', element: <MapaReal /> },
       { path: '/sesiones/:codigo', lazy: async () => ({ Component: (await import('./features/mapa/SesionPage')).SesionPage }) },
       { path: '/portafolio', lazy: async () => ({ Component: (await import('./features/estudiante/VistaEstudiante')).VistaEstudiante }) },
+      { path: '/galeria', lazy: async () => ({ Component: (await import('./features/publicacion/GaleriaPage')).GaleriaPage }) },
+      { path: '/p/:slug', lazy: async () => ({ Component: (await import('./features/publicacion/SitioPublicadoPage')).SitioPublicadoPage }) },
     ] },
   ] },
   { path: '*', element: <NoEncontrada /> },

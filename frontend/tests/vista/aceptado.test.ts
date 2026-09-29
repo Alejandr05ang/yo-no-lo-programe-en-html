@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict'
 import { beforeEach, test } from 'node:test'
 import { ventana } from './entorno.ts'
-import { esEntrega, ServidorFalso, type Llamada } from './servidorFalso.ts'
+import { esEntrega, esLectura, ServidorFalso, type Llamada } from './servidorFalso.ts'
 
 const { montar, hasta, esperar } = await import('./montar.ts')
 const { componerAndamiaje } = await import('../../src/lib/encargos.ts')
@@ -40,6 +40,13 @@ test('una solución correcta queda aceptada en el servidor y no se degrada al se
   assert.equal(aceptado.cuerpo?.cases_total, 2)
   assert.equal(s.entregas.length, 1)
   await hasta(() => p.texto().includes('encargo aceptado'), 'se ve aceptado')
+  // Aceptar salta solo a la siguiente actividad abierta del día (E5). Se espera a que E5 esté
+  // cargado y se vuelve con "Actividad anterior", como haría el estudiante: escribir antes
+  // competía con ese salto.
+  await hasta(() => p.ubicacion() === '/portafolio?e=5' && !!p.editor() && !p.editor()!.readOnly, 'salto automático a E5, ya cargado')
+  await p.pulsar('← Actividad anterior')
+  await hasta(() => p.ubicacion() === '/portafolio?e=4' && p.editor()?.value === SOLUCION_E4 && !p.editor()!.readOnly
+    && p.texto().includes('encargo aceptado'), 'E4 aceptado al volver')
 
   // Seguir editando un reto aceptado: el autoguardado nunca manda otro estado que in_progress
   // y el reto sigue aceptado (en el servidor y en la pantalla).
@@ -54,6 +61,27 @@ test('una solución correcta queda aceptada en el servidor y no se degrada al se
   p = await abrirE4(s)
   await hasta(() => p.texto().includes('encargo aceptado'), 'aceptado tras recargar')
   assert.ok(p.editor()!.value.endsWith('// repaso'))
+  await p.desmontar()
+})
+
+test('volver enseguida tras el salto automático y seguir editando: nada lo pisa y sigue aceptado', async () => {
+  const s = new ServidorFalso()
+  const p = await abrirE4(s)
+  await p.escribir(SOLUCION_E4)
+  const lentaE5 = s.retener(esLectura('e5')) // E5 todavía no llega cuando se vuelve
+  await p.pulsar('Entregar a revisión')
+  await hasta(() => s.progreso.get('e4')?.status === 'accepted' && p.texto().includes('encargo aceptado'), 'aceptado')
+  await hasta(() => p.ubicacion() === '/portafolio?e=5', 'salto automático a E5')
+  await lentaE5.llegada
+  await p.ir('/portafolio?e=4') // Atrás del navegador, con E5 cargando
+  await hasta(() => p.ubicacion() === '/portafolio?e=4' && p.editor()?.value === SOLUCION_E4 && !p.editor()!.readOnly, 'E4 editable')
+  await p.escribir(`${SOLUCION_E4}\n// repaso al volver`)
+  lentaE5.soltar()
+  await hasta(() => s.progreso.get('e4')?.draft_code.endsWith('// repaso al volver') === true, 'se guarda lo escrito al volver')
+  assert.equal(p.editor()?.value.endsWith('// repaso al volver'), true, 'la respuesta tardía no pisa el editor')
+  assert.equal(p.ubicacion(), '/portafolio?e=4')
+  assert.equal(s.progreso.get('e4')?.status, 'accepted')
+  assert.ok(p.texto().includes('encargo aceptado'))
   await p.desmontar()
 })
 

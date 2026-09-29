@@ -1,7 +1,8 @@
-import { ANDAMIAJE_CSS } from './andamiajeEstilos.ts'
+import { ANDAMIAJE_CSS, PUENTE_ENLACES } from './andamiajeEstilos.ts'
 import { normalizarEnlacesDelHtml } from './enlaces.ts'
 import { aJavaScript } from './pseudocodigoAJS.ts'
 import type { DocumentoJu1 } from './tipos.ts'
+import { parsearDocumentoJu1 } from './estructuraDePagina.ts'
 
 // Ejecuta el código del estudiante en un iframe aislado y devuelve el HTML generado.
 //
@@ -9,8 +10,8 @@ import type { DocumentoJu1 } from './tipos.ts'
 // El iframe va con sandbox="allow-scripts" y SIN allow-same-origin, así el código
 // del estudiante no puede tocar la app. La comunicación es por postMessage.
 //
-// OJO: esto es solo para la VISTA PREVIA. La evaluación real (autograder) corre en
-// el servidor con Deno; este módulo no decide si un encargo se acepta.
+// Este runtime sirve a la vista previa y a la revisión formativa local. FastAPI guarda
+// progreso/entregas y autoriza el acceso; el autograder Deno es un diseño histórico pendiente.
 //
 // La implementación de la API aquí sigue docs/encargos.md §3 (API revisada). Es PROVISIONAL
 // (pendiente D5 / EN2-EN4): debe terminar coincidiendo con la API del grader y el desbloqueo por día.
@@ -21,6 +22,10 @@ import type { DocumentoJu1 } from './tipos.ts'
 export interface ResultadoPreview {
   ok: boolean
   html: string
+  /** Solo para el editor del propietario: mantiene eventos/timers en un iframe aislado.
+   * Nunca se envía a publicación; allí se usa únicamente html sanitizado. */
+  srcdoc?: string
+  frames?: ResultadoPreview[]
   /** `archivo`: solo lo llenan los documentos multi-pestaña (Ju1) — "portafolio.js" o
    *  "seccion-<nombre>.js" — para marcar la línea de error en la pestaña correcta
    *  (EditorPanel.tsx). undefined en el resto de los encargos = un solo archivo, como siempre. */
@@ -194,12 +199,29 @@ function comoLiteralSeguro(valor: unknown): string {
   return JSON.stringify(valor).replace(/</g, '\\u003c')
 }
 
-export function construirSrcdoc(codigoEstudiante: string, datos: unknown): string {
+// Reloj de revisión determinista dentro del mismo aislamiento; jamás en la ventana padre.
+function relojDeRevision(ticks?: number): string {
+  if (ticks === undefined) return 'var __capturas; function __capturarEvolucion() {}'
+  return `var __capturas = []; const __intervalos = new Map(); let __idIntervalo = 0;
+window.setInterval = (fn) => { const id = ++__idIntervalo; __intervalos.set(id, fn); return id; };
+window.clearInterval = (id) => __intervalos.delete(id);
+function __capturarEvolucion() {
+  const capturar = () => __capturas.push(document.getElementById('__raiz').innerHTML);
+  capturar();
+  for (let tick = 0; tick < ${Math.max(0, Math.min(10, Math.floor(ticks)))}; tick++) {
+    for (const fn of [...__intervalos.values()]) fn();
+    capturar();
+  }
+}`
+}
+
+export function construirSrcdoc(codigoEstudiante: string, datos: unknown, ticks?: number): string {
   const codigoConFuente = codigoEstudiante + '\n//# sourceURL=estudiante.js'
   return `<!doctype html><html><head><meta charset="utf-8">
 <style>${ANDAMIAJE_CSS}</style>
 </head><body><div id="__raiz"></div><script>
 window.__DATOS__ = ${comoLiteralSeguro(datos)};
+${relojDeRevision(ticks)}
 ${RUNTIME}
 
 function __lineaDelError(e) {
@@ -221,7 +243,8 @@ window.onerror = function (mensaje, _url, lineno, _colno, error) {
 
 try {
   eval(${comoLiteralSeguro(codigoConFuente)});
-  parent.postMessage({ tipo: 'preview-ok', html: document.getElementById('__raiz').innerHTML, logs: __logs }, '*');
+  __capturarEvolucion();
+  parent.postMessage({ tipo: 'preview-ok', html: document.getElementById('__raiz').innerHTML, frames: __capturas, logs: __logs }, '*');
 } catch (e) {
   parent.postMessage(
     { tipo: 'preview-error', mensaje: String((e && e.message) || e), linea: __lineaDelError(e), logs: __logs },
@@ -239,11 +262,14 @@ try {
  */
 export function resultadoDelMensaje(d: unknown, parser: DOMParser): ResultadoPreview | null {
   if (!d || typeof d !== 'object') return null
-  const m = d as { tipo?: unknown; html?: unknown; mensaje?: unknown; linea?: unknown; logs?: unknown; archivo?: unknown }
+  const m = d as { tipo?: unknown; html?: unknown; frames?: unknown; mensaje?: unknown; linea?: unknown; logs?: unknown; archivo?: unknown }
   const logs = Array.isArray(m.logs) ? m.logs.map(String) : []
   if (m.tipo === 'preview-ok') {
     const { html, avisos } = normalizarEnlacesDelHtml(String(m.html ?? ''), parser)
-    return { ok: true, html, logs: [...logs, ...avisos] }
+    const frames = Array.isArray(m.frames) ? Array.from(m.frames).slice(0, 11).map((frame) => ({
+      ok: true, html: normalizarEnlacesDelHtml(String(frame), parser).html, logs: [],
+    })) : undefined
+    return { ok: true, html, logs: [...logs, ...avisos], ...(frames ? { frames } : {}) }
   }
   if (m.tipo === 'preview-error') {
     const linea = typeof m.linea === 'number' ? m.linea : undefined
@@ -272,7 +298,7 @@ function correrEnIframe(srcdoc: string, timeoutMs: number): Promise<ResultadoPre
       if (resuelto) return
       resuelto = true
       limpiar()
-      resolve(r)
+      resolve(r.ok ? { ...r, srcdoc: srcdoc.replace('</body></html>', `${PUENTE_ENLACES}</body></html>`) } : r)
     }
 
     const onMsg = (ev: MessageEvent) => {
@@ -305,14 +331,13 @@ function correrEnIframe(srcdoc: string, timeoutMs: number): Promise<ResultadoPre
 }
 
 /** Corre el código en un iframe efímero y resuelve con el HTML resultante. */
-// El timeout cubre dos cosas a la vez: arranque lento del iframe (máquinas del taller
-// que varían) y bucles sin fin. La protección real contra bucles infinitos es del
-// grader del servidor (Deno). 5s da margen al arranque en frío sin dejar colgado al
-// estudiante demasiado tiempo.
+// El timeout detecta falta de respuesta, pero no puede interrumpir un bucle síncrono
+// que bloquee el hilo del navegador. El grader Deno sigue siendo un diseño pendiente.
 export function ejecutarPreview(
   codigoEstudiante: string,
   datos: unknown,
   timeoutMs = 5000,
+  ticks?: number,
 ): Promise<ResultadoPreview> {
   // Traducir el pseudocódigo (SI/PARA CADA/MIENTRAS/FUNCIÓN) a JS real antes de tocar el
   // iframe — un pseudocódigo mal cerrado (falta un FIN SI, etc.) no es un error de
@@ -321,7 +346,7 @@ export function ejecutarPreview(
   if (!traduccion.ok) {
     return Promise.resolve({ ok: false, html: '', error: traduccion.error, logs: [] })
   }
-  return correrEnIframe(construirSrcdoc(traduccion.js, datos), timeoutMs)
+  return correrEnIframe(construirSrcdoc(traduccion.js, datos, ticks), timeoutMs)
 }
 
 // ── Ju1: documento multi-pestaña (ver frontend/src/lib/estructuraDePagina.ts) ──────────────
@@ -339,7 +364,7 @@ export function ejecutarPreview(
 // (portafolio.js) — mismo mecanismo que ya usa `datos` (una variable que sale de "afuera").
 // Con la posición ya puesta, el main solo necesita `mostrar(nombreSeccion)`; no importa en qué
 // orden lo haga, el CSS grid las ubica igual.
-export function construirSrcdocJu1(doc: DocumentoJu1, datos: unknown): string {
+export function construirSrcdocJu1(doc: DocumentoJu1, datos: unknown, ticks?: number): string {
   const nombresEnLaCuadricula = new Set(
     doc.estructura.celdas.filter((c): c is typeof c & { seccion: string } => c.seccion !== null).map((c) => c.seccion),
   )
@@ -381,6 +406,7 @@ export function construirSrcdocJu1(doc: DocumentoJu1, datos: unknown): string {
 </head><body><div id="__raiz"></div><script>
 window.__DATOS__ = ${comoLiteralSeguro(datos)};
 window.__SECCIONES__ = {};
+${relojDeRevision(ticks)}
 ${RUNTIME}
 var __raizReal = pagina;
 
@@ -427,6 +453,7 @@ ${bloquesDeSecciones}
   __raizReal.appendChild(__estiloJu1);
 
   var __grid = document.createElement('div');
+  __grid.className = 'tutorias-grid';
   __grid.style.display = 'grid';
   __grid.style.gridTemplateRows = '${templateFilas}';
   __grid.style.gridTemplateColumns = 'repeat(${doc.estructura.columnas}, 1fr)';
@@ -436,7 +463,8 @@ ${bloquesDeSecciones}
   pagina = __grid;
 ${declaracionesDeSecciones}
   __evaluarConNombre(${comoLiteralSeguro(mainConFuente)}, ${comoLiteralSeguro(archivoMain)});
-  parent.postMessage({ tipo: 'preview-ok', html: __raizReal.innerHTML, logs: __logs }, '*');
+  __capturarEvolucion();
+  parent.postMessage({ tipo: 'preview-ok', html: __raizReal.innerHTML, frames: __capturas, logs: __logs }, '*');
 } catch (e) {
   parent.postMessage(
     { tipo: 'preview-error', archivo: __archivoConError, mensaje: String((e && e.message) || e), linea: __lineaDelError(e), logs: __logs },
@@ -449,7 +477,7 @@ ${declaracionesDeSecciones}
 /** Como ejecutarPreview(), pero para un DocumentoJu1 (cuadrícula + una pestaña por sección +
  *  el main). Si cualquier pestaña tiene un error de pseudocódigo, se resuelve directo con ESA
  *  pestaña señalada — mismo criterio que ejecutarPreview con un solo archivo. */
-export function ejecutarPreviewJu1(doc: DocumentoJu1, datos: unknown, timeoutMs = 5000): Promise<ResultadoPreview> {
+export function ejecutarPreviewJu1(doc: DocumentoJu1, datos: unknown, timeoutMs = 5000, ticks?: number): Promise<ResultadoPreview> {
   const seccionesJs: { nombre: string; contenido: string }[] = []
   for (const s of doc.secciones) {
     const t = aJavaScript(s.contenido)
@@ -478,5 +506,15 @@ export function ejecutarPreviewJu1(doc: DocumentoJu1, datos: unknown, timeoutMs 
     secciones: seccionesJs.map((s) => ({ nombre: s.nombre, contenido: s.contenido })),
     main: traduccionMain.js,
   }
-  return correrEnIframe(construirSrcdocJu1(docTraducido, datos), timeoutMs)
+  return correrEnIframe(construirSrcdocJu1(docTraducido, datos, ticks), timeoutMs)
+}
+
+/** Fotogramas del propio programa para evaluar rotación, orden y acumulación. */
+export async function ejecutarPreviewEvolucion(codigo: string, datos: unknown, ticks = 3): Promise<ResultadoPreview[]> {
+  let grid = false
+  try { const value = JSON.parse(codigo); grid = value?.version === 1 && !!value.estructura && Array.isArray(value.secciones) } catch { /* archivo JS */ }
+  const r = grid
+    ? await ejecutarPreviewJu1(parsearDocumentoJu1(codigo), datos, 5000, ticks)
+    : await ejecutarPreview(codigo, datos, 5000, ticks)
+  return r.frames ?? [r]
 }

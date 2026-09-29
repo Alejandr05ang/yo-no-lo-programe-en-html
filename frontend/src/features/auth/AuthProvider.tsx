@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   createUserWithEmailAndPassword, GoogleAuthProvider, linkWithPopup, onIdTokenChanged,
@@ -7,8 +7,8 @@ import {
 } from 'firebase/auth'
 import { configureFirebaseAuth } from '../../lib/firebase'
 import { parseSession, type BackendSession } from '../../lib/backendTypes'
-import { ApiError, createApiClient } from '../../lib/http'
-import { friendlyAuthError, SessionRequests } from './session'
+import { ApiError, bindApiClientToSession, createApiClient } from '../../lib/http'
+import { friendlyAuthError, SessionIdentity, SessionRequests } from './session'
 import { AuthContext, type AuthContextValue } from './authContext'
 
 function googleProvider(): GoogleAuthProvider {
@@ -21,13 +21,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const [firebase] = useState(configureFirebaseAuth)
   const auth = firebase.auth
+  const [sessionIdentity] = useState(() => new SessionIdentity())
+  const [apiSessionKey, setApiSessionKey] = useState<string | null>(null)
   const [connection] = useState(() => {
     try {
       return { api: createApiClient({
         baseUrl: import.meta.env.VITE_API_URL,
         browserOrigin: window.location.origin,
         development: import.meta.env.DEV,
-        getSessionKey: () => auth?.currentUser?.uid ?? null,
+        getSessionKey: () => sessionIdentity.current(auth?.currentUser?.uid ?? null),
         getIdToken: async (force) => auth?.currentUser?.getIdToken(force) ?? null,
       }), error: null }
     } catch (error) {
@@ -46,6 +48,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshing = useRef(false)
 
   const clearPrivateState = useCallback(() => {
+    sessionIdentity.clear()
+    setApiSessionKey(null)
     requests.current.cancel()
     inFlight.current = false
     void queryClient.cancelQueries()
@@ -53,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSession(null)
     setSessionError(null)
     setVerificationError(null)
-  }, [queryClient])
+  }, [queryClient, sessionIdentity])
 
   /**
    * `silencioso` para las reemisiones de onIdTokenChanged del MISMO usuario: Firebase
@@ -94,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = onIdTokenChanged(auth, (current) => {
       const changed = current?.uid !== lastUid.current
       if (changed) clearPrivateState()
+      if (current) setApiSessionKey(sessionIdentity.begin(current.uid))
       lastUid.current = current?.uid ?? null
       setUser(current)
       setInitialized(true)
@@ -116,9 +121,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       unsubscribe()
       sessionRequests.cancel()
+      sessionIdentity.clear()
       inFlight.current = false
     }
-  }, [auth, bootstrap, clearPrivateState])
+  }, [auth, bootstrap, clearPrivateState, sessionIdentity])
 
   const requireFirebase = () => {
     if (!auth) throw new ApiError('SERVICE_UNAVAILABLE')
@@ -152,8 +158,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const privateApi = useMemo(() => connection.api ? bindApiClientToSession(connection.api, apiSessionKey) : null, [connection.api, apiSessionKey])
+
   const value: AuthContextValue = {
-    user, session, initialized, loading, api: connection.api,
+    user, session, initialized, loading, api: privateApi,
     configurationError: firebase.error ?? connection.error, sessionError, verificationError,
     signIn: async (email, password) => { await signInWithEmailAndPassword(requireFirebase(), email.trim(), password) },
     signUp: async (email, password) => {
@@ -168,6 +176,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     signOut: async () => {
       clearPrivateState()
+      // La intención "ir a la demo tras registrarse" es de quien sale, no de quien entre después.
+      try { sessionStorage.removeItem('goto_demo') } catch { /* sin almacenamiento */ }
       await firebaseSignOut(requireFirebase())
       setUser(null)
       setLoading(false)

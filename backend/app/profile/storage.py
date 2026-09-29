@@ -81,3 +81,24 @@ class AvatarStorage:
                 raise ApiError(503, "STORAGE_UNAVAILABLE", "No se pudo eliminar el avatar.")
         except httpx.HTTPError:
             raise ApiError(503, "STORAGE_UNAVAILABLE", "No se pudo eliminar el avatar.") from None
+
+    async def download(self, path: str) -> bytes:
+        encoded = quote(path, safe="/")
+        try:
+            async with httpx.AsyncClient(timeout=10, follow_redirects=False) as client:
+                async with client.stream(
+                    "GET", f"{self.base_url}/storage/v1/object/authenticated/{self.bucket}/{encoded}",
+                    headers=self.headers,
+                ) as response:
+                    if response.status_code == 404:
+                        raise ApiError(404, "AVATAR_NOT_FOUND", "Este portafolio no tiene avatar.")
+                    if response.status_code != 200:
+                        raise ApiError(503, "STORAGE_UNAVAILABLE", "No se pudo abrir el avatar.")
+                    content = bytearray()
+                    async for chunk in response.aiter_bytes():
+                        content.extend(chunk)
+                        if len(content) > 5 * 1024 * 1024:
+                            raise ApiError(503, "STORAGE_UNAVAILABLE", "No se pudo abrir el avatar.")
+                    return bytes(content)
+        except httpx.HTTPError:
+            raise ApiError(503, "STORAGE_UNAVAILABLE", "No se pudo abrir el avatar.") from None

@@ -1,8 +1,7 @@
-// Progreso del estudiante, compartido entre la vista principal (1a) y el mapa (1e).
-// Efímero por pestaña (sessionStorage) — mismo criterio "sin persistencia en servidor" del
-// brief §2.6. En producción lo guarda el backend.
+// Progreso de fixtures/local: efímero por pestaña y en orden curricular explícito.
+// La pantalla autenticada usa el progreso y la autorización persistidos en el backend.
 
-import { NUMEROS_DE_ENCARGO } from './encargos'
+import { NUMEROS_DE_ENCARGO } from './encargos.ts'
 
 const CLAVE_SOLUCIONES = 've:soluciones' // código ACEPTADO por encargo (para heredar)
 const CLAVE_BORRADORES = 've:borradores' // código EN CURSO por encargo (para no perder trabajo)
@@ -43,13 +42,13 @@ export function guardarBorradores(m: Record<number, string>) {
 export function encargosAceptados(): number[] {
   return Object.keys(leerSoluciones())
     .map(Number)
-    .filter((n) => Number.isFinite(n))
+    .filter((n) => NUMEROS_DE_ENCARGO.includes(n))
 }
 
 /** El primer encargo sin aceptar — el que el estudiante está haciendo ahora. */
 export function encargoFrontera(): number {
   const aceptados = new Set(encargosAceptados())
-  for (let n = MIN_ENCARGO; n <= MAX_ENCARGO; n++) {
+  for (const n of NUMEROS_DE_ENCARGO) {
     if (!aceptados.has(n)) return n
   }
   return MAX_ENCARGO

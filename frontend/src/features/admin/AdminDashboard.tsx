@@ -326,6 +326,7 @@ export function AdminDashboard() {
         <div className="adm-seccion-cabecera">
           <h2 className="card-title">{cohorte.name}</h2>
           <div className="adm-acciones">
+            <Link to={`/instructor?cohort=${encodeURIComponent(cohorte.id)}`} className="btn btn-secondary">Gestionar accesos</Link>
             <button className="btn btn-secondary" onClick={() => void regenerarCodigo()} disabled={pendiente}>
               Generar código de acceso
             </button>

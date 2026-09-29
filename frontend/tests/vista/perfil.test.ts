@@ -113,7 +113,7 @@ test('E6 sin hobbies guardados no se acepta sin recorrer la lista: se prueba tam
   await p.desmontar()
 })
 
-test('los datos de "Mis datos" guardados en el navegador de antes no pisan el nombre real ni meten datos de ejemplo', async () => {
+test('el perfil viejo sin propietario queda como respaldo y no modifica el perfil autenticado', async () => {
   // Formulario viejo (localStorage 've:perfil'): empezaba con los datos de ejemplo de Ana Rivas
   // y el estudiante solo cambió sus hobbies y escribió su GitHub sin https.
   ventana.localStorage.setItem('ve:perfil', JSON.stringify({
@@ -127,16 +127,14 @@ test('los datos de "Mis datos" guardados en el navegador de antes no pisan el no
   s.perfil.full_name = 'Luis Pérez'
   const p = await montar(s)
   await hasta(() => !!p.editor() && !p.editor()!.readOnly, 'carga e4')
-  await hasta(() => s.llamadas.some((l) => l.ruta === '/api/profile'), 'migración')
   await esperar(300)
   assert.equal(s.perfil.display_name, 'Luis', 'el nombre real no cambia')
   assert.equal(s.perfil.full_name, 'Luis Pérez')
   assert.equal(s.perfil.description, '', 'el texto de ejemplo no se sube')
-  assert.equal(s.perfil.github_url, 'https://github.com/luis', 'el enlace se normaliza')
-  assert.deepEqual(s.perfil.hobbies, ['Fútbol', 'Guitarra'])
-  assert.equal(ventana.localStorage.getItem('ve:perfil'), null, 'la copia vieja se olvida')
-  await esperar(1500)
-  assert.equal(s.llamadas.filter((l) => l.ruta === '/api/profile').length, 1, 'una sola vez')
+  assert.equal(s.perfil.github_url, null, 'no se atribuye el enlace viejo a la cuenta actual')
+  assert.deepEqual(s.perfil.hobbies, [])
+  assert.notEqual(ventana.localStorage.getItem('ve:perfil'), null, 'se conserva el respaldo sin propietario')
+  assert.equal(s.llamadas.filter((l) => l.ruta === '/api/profile').length, 0, 'no hay importación automática')
   assert.ok(p.editor(), 'el editor sigue montado')
   await p.desmontar()
 })

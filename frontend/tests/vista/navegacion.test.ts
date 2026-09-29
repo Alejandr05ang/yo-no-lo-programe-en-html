@@ -8,6 +8,7 @@ import { esGuardado, esLectura, ServidorFalso } from './servidorFalso.ts'
 const { montar, hasta, esperar } = await import('./montar.ts')
 const { onlineManager } = await import('@tanstack/react-query')
 const { componerAndamiaje } = await import('../../src/lib/encargos.ts')
+const { parsearDocumentoJu1 } = await import('../../src/lib/estructuraDePagina.ts')
 
 const SOLUCION_E4 = `${componerAndamiaje(4, {})}
 PARA CADA red EN datos.redes HACER
@@ -41,7 +42,7 @@ test('fin de día con el siguiente abierto y sin actividades: CTA manual al día
   await p.escribir('const ultimo = 1')
   await p.pulsar('Ir al Día 9')
   await hasta(() => p.ubicacion() === '/sesiones/Ju2', 'va al día por su código')
-  assert.equal(s.progreso.get('e11')?.draft_code, 'const ultimo = 1', 'guardó antes de salir')
+  assert.equal(parsearDocumentoJu1(s.progreso.get('e11')?.draft_code ?? '').main, 'const ultimo = 1', 'guardó el main del documento antes de salir')
   await p.desmontar()
 })
 
