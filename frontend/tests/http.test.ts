@@ -115,6 +115,16 @@ test('a locked day says it is not open yet, not that the account lacks access', 
   }
 })
 
+test('revoked class access directs the student to their teacher instead of retrying a join code', async () => {
+  const client = createApiClient({ ...options, fetcher: async () => Response.json({ error: { code: 'NOT_COHORT_MEMBER', message: 'private trace' } }, { status: 403 }) })
+  await assert.rejects(client.request('/cohorts/join', { method: 'POST', json: { code: 'known-code' } }), (error: unknown) => {
+    assert.ok(error instanceof ApiError)
+    assert.match(error.message, /docente/)
+    assert.doesNotMatch(error.message, /Primero debes unirte|private trace/)
+    return true
+  })
+})
+
 test('private avatar bytes use the same token refresh and session boundary as JSON', async () => {
   let calls = 0
   const client = createApiClient({ ...options, fetcher: async (_input, init) => {

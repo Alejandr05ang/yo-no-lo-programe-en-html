@@ -192,12 +192,16 @@ def test_blank_optional_ca_path_from_env_example_is_not_a_file_path():
     assert settings.database_ssl_ca_file is None
 
 
-def test_env_example_with_database_url_keeps_verified_tls_without_custom_ca(tmp_path):
+def test_env_example_with_database_url_keeps_verified_tls_without_custom_ca(tmp_path, monkeypatch):
     import asyncio
     from pathlib import Path
 
     from app.db.session import create_database
 
+    # This test exercises the example file, not the runner's environment. CI
+    # intentionally sets DATABASE_URL='' to isolate the suite from real databases.
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("DATABASE_SSL_CA_FILE", raising=False)
     example = Path(__file__).resolve().parents[1] / ".env.example"
     contents = example.read_text(encoding="utf-8")
     contents = contents.replace(

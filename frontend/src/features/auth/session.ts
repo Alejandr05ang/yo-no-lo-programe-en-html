@@ -58,6 +58,27 @@ export function friendlyAuthError(error: unknown): string {
 
 interface SessionRequest { uid: string; signal: AbortSignal; generation: number }
 
+/** Se invalida incluso al salir y volver a entrar con el mismo uid. */
+export class SessionIdentity {
+  private uid: string | null = null
+  private key: string | null = null
+  private generation = 0
+  begin(uid: string): string {
+    if (this.uid !== uid || !this.key) {
+      this.uid = uid
+      this.key = `${uid}:${++this.generation}`
+    }
+    return this.key
+  }
+  current(uid: string | null): string | null {
+    return uid === this.uid ? this.key : null
+  }
+  clear(): void {
+    this.uid = null
+    this.key = null
+  }
+}
+
 /** Prevent slow bootstrap responses from restoring an earlier user's permissions. */
 export class SessionRequests {
   private controller: AbortController | null = null

@@ -13,11 +13,13 @@
 /* — barra superior — */
 .ve-nav {
   gap: 18px;
+  flex-wrap: wrap;
   position: relative;
   z-index: 30; /* el popup de música (hijo) cae sobre el editor/preview */
 }
 .ve-nav .nav-brand {
   margin-right: 0;
+  flex-shrink: 0;
 }
 .ve-nav-sep {
   margin-right: auto;
@@ -194,12 +196,19 @@
   .ve-grid {
     display: flex;
     flex-direction: column;
+    flex: none;
     height: auto;
     min-height: 0;
     overflow: visible;
   }
   .ve-divisor {
     display: none;
+  }
+  /* La pila puede ser más alta que la ventana. El envoltorio del editor y
+     su panel conservan su altura, sin encogerse sobre la vista previa. */
+  .ve-col-editor-conjunto,
+  .ve-col-editor-conjunto > .ve-col-editor {
+    flex: none;
   }
   .ve-col-encargo,
   .ve-col-editor,
@@ -212,22 +221,6 @@
   }
   .ve-grid[data-preview='expandido'] .ve-col-preview {
     height: 100vh;
-  }
-  .enc-rail,
-  .ed-rail {
-    flex-direction: row;
-    justify-content: flex-start;
-    width: 100%;
-    height: auto;
-    min-height: 46px; /* handoff §1g: áreas de toque mínimo 46px, vale también acá */
-    border-right: 0;
-    border-bottom: 1px solid var(--color-divider);
-    padding: 0 var(--space-3);
-  }
-  .enc-rail-label,
-  .ed-rail-label {
-    writing-mode: horizontal-tb;
-    transform: none;
   }
 }
 
@@ -660,7 +653,14 @@
 .ed-sello {
   margin-left: auto;
   font-size: 11px;
-  color: #605d5d;
+  color: var(--color-neutral-400);
+}
+.ed-sello[data-estado='dirty'] {
+  color: var(--color-accent-300);
+}
+.ed-sello[data-estado='error'] {
+  color: var(--color-accent-200);
+  font-weight: 600;
 }
 
 /* ── Preview + revisión (columna derecha) ───────────────────────────── */
@@ -840,7 +840,33 @@
 }
 .ve-bloqueo h1 { margin: 0; font-size: 32px; }
 .ve-bloqueo p { margin: 0; }
+/* Después de los estilos base del editor: ambos paneles colapsados son barras
+   horizontales cuando el espacio de trabajo se apila. */
+@media (max-width: 1023px) {
+  .ve-nav-sep { display: none; }
+  .enc-rail,
+  .ed-rail {
+    flex-direction: row;
+    justify-content: flex-start;
+    width: 100%;
+    height: auto;
+    min-height: 46px;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-divider);
+    padding: 0 var(--space-3);
+  }
+  .ve-col-editor-conjunto > .ed-rail {
+    flex: none;
+    min-height: 46px;
+  }
+  .enc-rail-label,
+  .ed-rail-label {
+    writing-mode: horizontal-tb;
+    transform: none;
+  }
+}
 @media (max-width: 560px) {
+  .ve-nav { gap: var(--space-2) var(--space-3); }
   .ve-nav-fila .btn, .ve-nav-dia .btn { flex: 1 1 100%; justify-self: stretch; }
   .ve-nav-posicion { order: -1; flex-basis: 100%; }
 }

@@ -12,19 +12,21 @@ import { SitioPublicadoPage } from '../../src/features/publicacion/SitioPublicad
 import { SesionPage } from '../../src/features/mapa/SesionPage'
 import { MapaReal } from '../../src/features/mapa/MapaReal'
 import { VistaEstudiante } from '../../src/features/estudiante/VistaEstudiante'
+import { InstructorDashboard } from '../../src/features/instructor/InstructorDashboard'
 import '../../src/styles/design-system.css'
 import '../../src/index.css'
 
 if (!import.meta.env.DEV || !['localhost', '127.0.0.1'].includes(location.hostname)) throw new Error('Solo QA local')
+const fixtureToken = new URLSearchParams(location.search).get('staff') === '1' ? 'instructor' : 'alumno'
 const api = createApiClient({ baseUrl: 'http://127.0.0.1:8765/api', browserOrigin: location.origin,
-  development: true, getSessionKey: () => 'stu', getIdToken: async () => 'alumno' })
+  development: true, getSessionKey: () => fixtureToken, getIdToken: async () => fixtureToken })
 const session = await api.request<BackendSession>('/auth/bootstrap', { method: 'POST' })
 const noop = async () => {}
 const auth: AuthContextValue = {
-  user: { uid: 'stu', emailVerified: true } as AuthContextValue['user'], session, api,
+  user: { uid: fixtureToken, emailVerified: true } as AuthContextValue['user'], session, api,
   initialized: true, loading: false, configurationError: null, sessionError: null, verificationError: null,
   refresh: noop, retrySession: noop, signIn: noop, signOut: noop, linkGoogle: noop, sendVerification: noop,
-  resetPassword: noop, getIdToken: async () => 'alumno', signUp: async () => ({ isNewUser: false }), signInGoogle: async () => ({ isNewUser: false }),
+  resetPassword: noop, getIdToken: async () => fixtureToken, signUp: async () => ({ isNewUser: false }), signInGoogle: async () => ({ isNewUser: false }),
 }
 createRoot(document.getElementById('root')!).render(<AuthContext.Provider value={auth}>
   <QueryClientProvider client={new QueryClient()}><HashRouter><Routes>
@@ -34,6 +36,7 @@ createRoot(document.getElementById('root')!).render(<AuthContext.Provider value=
     <Route path="/sesiones/:codigo" element={<SesionPage />} />
     <Route path="/mapa" element={<MapaReal />} />
     <Route path="/portafolio" element={<VistaEstudiante />} />
+    <Route path="/instructor" element={<InstructorDashboard />} />
     <Route path="*" element={<Navigate to="/mi-sitio" replace />} />
   </Routes></HashRouter></QueryClientProvider>
 </AuthContext.Provider>)

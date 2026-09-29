@@ -16,6 +16,13 @@ import './demo-nivel.css'
 const ESPERA_AUTOGUARDADO = 800
 
 export function DemoNivel() {
+  // Otra cuenta es otro nivel: el iframe, lo pendiente de subir y el temporizador de la
+  // anterior no pasan a la siguiente (p. ej. si se cambió de cuenta en otra pestaña).
+  const { user } = useAuth()
+  return <DemoNivelInterno key={user?.uid ?? 'sin-cuenta'} />
+}
+
+function DemoNivelInterno() {
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const auth = useAuth()
   const navigate = useNavigate()

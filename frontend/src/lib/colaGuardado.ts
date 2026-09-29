@@ -60,9 +60,14 @@ export function huella(texto: string): string {
  * El valor de la marca de pendiente: la huella de lo último que este equipo SABE que está en
  * el servidor. Al volver sirve para saber si el servidor cambió desde entonces (otro equipo, o
  * un guardado que llegó aunque la pestaña se cerró antes de enterarse).
+ *
+ * `enviados`: lo que salió hacia el servidor sin que este equipo supiera si llegó (la pestaña
+ * se cerró, se cerró sesión o se cortó la red con el envío en camino). Si el servidor tiene
+ * uno de esos, tampoco cambió en otro equipo: la copia local, más nueva, sigue mandando.
  */
-export function valorPendiente(ultimoEnServidor: string): string {
-  return JSON.stringify({ base: huella(ultimoEnServidor) })
+export function valorPendiente(ultimoEnServidor: string, enviados: readonly string[] = []): string {
+  const posibles = [...new Set(enviados.map(huella))].slice(-8)
+  return JSON.stringify(posibles.length ? { base: huella(ultimoEnServidor), posibles } : { base: huella(ultimoEnServidor) })
 }
 
 /**
@@ -82,12 +87,18 @@ export function elegirBorrador(p: {
 }): { codigo: string; subir: boolean } | null {
   if (p.pendiente && p.local && p.local !== p.servidor) {
     let base: unknown = null
+    let posibles: unknown = null
     try {
-      base = (JSON.parse(p.pendiente) as { base?: unknown })?.base ?? null
+      const marca = JSON.parse(p.pendiente) as { base?: unknown; posibles?: unknown }
+      base = marca?.base ?? null
+      posibles = marca?.posibles ?? null
     } catch {
       base = null
     }
-    if (base === null || base === huella(p.servidor)) return { codigo: p.local, subir: true }
+    const enServidor = huella(p.servidor)
+    if (base === null || base === enServidor || (Array.isArray(posibles) && posibles.includes(enServidor))) {
+      return { codigo: p.local, subir: true }
+    }
   }
   if (p.servidor) return { codigo: p.servidor, subir: false }
   return null

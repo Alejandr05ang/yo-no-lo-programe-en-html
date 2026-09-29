@@ -26,7 +26,7 @@ async def run():
         for key in ("DATABASE_URL", "FIREBASE_PROJECT_ID", "GOOGLE_APPLICATION_CREDENTIALS",
                     "SUPABASE_URL", "SUPABASE_SECRET_KEY"):
             os.environ.pop(key, None)
-        from app.db.models import User
+        from app.db.models import CohortMembership, User
         from tests.conftest import auth_harness
         from tests.test_auth import bearer
         from tests.test_workshop_access import activar, preparar
@@ -44,6 +44,14 @@ async def run():
                 user.hobbies = ["Música", "Lectura", "Programación"]
                 user.github_url = "https://github.com/example"
                 user.profile_completed_at = datetime.now(UTC)
+                other = await session.scalar(select(User).where(User.firebase_uid == "stu2"))
+                other.display_name = "Bruno QA B"
+                other.full_name = "Bruno Ficticio"
+                other.description = "PERFIL PRIVADO B"
+                other.hobbies = ["AJEDREZ B", "PINTURA B"]
+                other.github_url = "https://github.com/bruno-example"
+                other.profile_completed_at = datetime.now(UTC)
+                session.add(CohortMembership(cohort_id=data["cohort"], user_id=other.id))
             document = {
                 "version": 1,
                 "estructura": {"filas": 2, "columnas": 2, "celdas": [
@@ -61,6 +69,12 @@ async def run():
             response = await harness.client.put("/api/challenges/e13/progress", headers=bearer("alumno"),
                                                 json={"draft_code": json.dumps(document), "status": "in_progress"})
             assert response.status_code == 200
+            accepted = await harness.client.put(
+                "/api/challenges/e1/progress", headers=bearer("alumno"),
+                json={"draft_code": 'mostrar(crearTitulo(datos.nombre))', "status": "accepted",
+                      "cases_passed": 1, "cases_total": 1},
+            )
+            assert accepted.status_code == 200
             config = uvicorn.Config(harness.app, host="127.0.0.1", port=8765, log_level="warning")
             print("QA API local: http://127.0.0.1:8765 (SQLite temporal; token ficticio alumno)", flush=True)
             await uvicorn.Server(config).serve()

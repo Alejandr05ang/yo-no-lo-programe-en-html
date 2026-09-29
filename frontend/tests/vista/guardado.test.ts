@@ -116,6 +116,29 @@ test('Atrás con cambios sin guardar y el borrador nuevo tardando: lo del reto a
   await p.desmontar()
 })
 
+test('Siguiente y enseguida Atrás: lo escrito al volver no lo pisa ninguna lectura', async () => {
+  const s = new ServidorFalso()
+  s.borrador('e4', D4)
+  s.borrador('e5', D5)
+  const p = await montar(s)
+  await hasta(() => p.editor()?.value === D4 && !p.editor()!.readOnly, 'carga e4')
+  const lecturasE4 = () => s.llamadas.filter(esLectura('e4')).length
+  const antes = lecturasE4()
+  const lentaE5 = s.retener(esLectura('e5'))
+  await p.pulsar('Siguiente actividad')
+  await lentaE5.llegada
+  await p.ir('/portafolio?e=4') // vuelve antes de que llegue e5: el editor todavía tiene e4
+  await hasta(() => p.ubicacion() === '/portafolio?e=4' && p.editor()?.value === D4 && !p.editor()!.readOnly, 'e4 sigue en el editor')
+  await p.escribir('const escritoAlVolver = 1')
+  lentaE5.soltar() // la respuesta vieja de e5 llega tarde y no cambia nada
+  await hasta(() => s.progreso.get('e4')?.draft_code === 'const escritoAlVolver = 1', 'se guarda lo escrito al volver')
+  await hasta(() => p.sello().startsWith('guardado'), 'sello')
+  assert.equal(p.editor()?.value, 'const escritoAlVolver = 1')
+  assert.equal(lecturasE4(), antes, 'no se relee e4: ya estaba en el editor')
+  assert.equal(s.progreso.get('e5')?.draft_code, D5)
+  await p.desmontar()
+})
+
 test('lo que se escribe durante un guardado no se da por guardado: se envía después', async () => {
   const s = new ServidorFalso()
   s.borrador('e4', D4)
@@ -242,6 +265,76 @@ test('cerrar la pestaña con el guardado en camino y seguir en otro equipo: la c
   await esperar(1200)
   assert.equal(s.progreso.get('e4')?.draft_code, 'const v = "B: trabajo de casa, más nuevo"')
   assert.equal(pendiente('e4'), null)
+  await p.desmontar()
+})
+
+test('recargar con un guardado en camino y algo escrito después: vuelve y se sube lo último', async () => {
+  const s = new ServidorFalso()
+  s.borrador('e4', D4)
+  let p = await montar(s)
+  await hasta(() => p.editor()?.value === D4, 'carga e4')
+  s.colgar(esGuardado('e4')) // X llega al servidor, pero la pestaña nunca recibe la respuesta
+  await p.escribir('const v = "X en camino"')
+  await hasta(() => s.progreso.get('e4')?.draft_code === 'const v = "X en camino"', 'X llegó al servidor')
+  await p.escribir('const v = "Y escrito después"')
+  await esperar(100)
+  ventana.dispatchEvent(new ventana.Event('pagehide'))
+  await p.desmontar()
+  assert.equal(ventana.localStorage.getItem('tutorias:draft:alumno-1:e4'), 'const v = "Y escrito después"')
+
+  s.restablecerRed()
+  p = await montar(s)
+  await hasta(() => p.editor()?.value === 'const v = "Y escrito después"', 'vuelve lo último escrito, no X')
+  await hasta(() => s.progreso.get('e4')?.draft_code === 'const v = "Y escrito después"', 'y se sube')
+  await hasta(() => pendiente('e4') === null, 'sin marca pendiente')
+  await p.desmontar()
+})
+
+test('sin respuesta del servidor al volver, la copia pendiente no pisa a ciegas lo guardado en otro equipo', async () => {
+  const s = new ServidorFalso()
+  s.borrador('e4', D4)
+  let p = await montar(s)
+  await hasta(() => p.editor()?.value === D4, 'carga e4')
+  s.fallar(esGuardado('e4'), 1000)
+  await p.escribir('const trabajo = "solo en este equipo"')
+  await hasta(() => p.sello().startsWith('error al guardar'), 'error')
+  await p.desmontar()
+
+  // En otro equipo se siguió trabajando; al volver aquí la lectura falla una vez.
+  s.restablecerRed()
+  s.borrador('e4', 'const trabajo = "más nuevo, de otro equipo"')
+  s.fallar(esLectura('e4'), 1)
+  p = await montar(s)
+  await hasta(() => p.editor()?.value === 'const trabajo = "solo en este equipo"', 'se muestra la copia local')
+  await esperar(1500)
+  assert.equal(s.progreso.get('e4')?.draft_code, 'const trabajo = "más nuevo, de otro equipo"', 'no se sube sin comparar con el servidor')
+  assert.notEqual(pendiente('e4'), null, 'la marca sigue para decidir cuando haya conexión')
+  await p.desmontar()
+
+  // Con conexión decide la marca: el servidor cambió en otro equipo, así que manda él.
+  p = await montar(s)
+  await hasta(() => p.editor()?.value === 'const trabajo = "más nuevo, de otro equipo"', 'gana lo más nuevo')
+  await hasta(() => pendiente('e4') === null, 'sin marca')
+  await p.desmontar()
+})
+
+test('mientras carga E12 su cuadrícula no se puede tocar, y volver a E6 conserva su código', async () => {
+  const s = new ServidorFalso({ Ju1: 'open' })
+  const D6 = 'mostrar(crearTitulo("borrador de e6"))'
+  s.borrador('e6', D6)
+  const p = await montar(s, '/portafolio?e=6')
+  await hasta(() => p.editor()?.value === D6 && !p.editor()!.readOnly, 'carga e6')
+  const lenta = s.retener(esLectura('e12'))
+  await p.ir('/portafolio?e=12')
+  await lenta.llegada
+  await hasta(() => !!p.boton('+ agregar fila'), 'la cuadrícula de E12 ya se ve')
+  await p.pulsar('+ agregar fila')
+  await p.ir('/portafolio?e=6')
+  lenta.soltar()
+  await esperar(1500)
+  assert.equal(p.editor()?.value, D6, 'E6 conserva su código, sin la cuadrícula')
+  assert.equal(s.progreso.get('e6')?.draft_code, D6)
+  assert.equal(s.guardados('e6').length, 0)
   await p.desmontar()
 })
 

@@ -3,8 +3,7 @@
 //
 // La fuente de verdad es Postgres, a través del perfil que devuelve
 // /api/auth/bootstrap. localStorage ya no guarda el perfil: solo queda como
-// origen de una migración de una sola vez para quien tenga datos de la época en
-// que sí vivía ahí.
+// respaldo heredado sin propietario. Nunca se atribuye automáticamente a una cuenta.
 
 import type { BackendUser } from './backendTypes'
 import { normalizarUrlDePerfil } from './enlaces.ts'
@@ -16,7 +15,7 @@ export interface Perfil {
   hobbies: string[]
 }
 
-/** Clave heredada. Solo se lee para migrar, y se borra en cuanto el servidor confirma. */
+/** Respaldo heredado sin identidad de cuenta; no se importa automáticamente. */
 const CLAVE_LEGADA = 've:perfil'
 
 // Se usa en el fixture de desarrollo y como relleno de la vista previa antes de

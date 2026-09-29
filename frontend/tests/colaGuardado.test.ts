@@ -48,3 +48,19 @@ test('al volver, la copia pendiente de este equipo manda solo si el servidor no 
   assert.deepEqual(elegirBorrador({ servidor: 'x', local: 'copia', pendiente: '1' }), { codigo: 'copia', subir: true })
   assert.equal(elegirBorrador({ servidor: '', local: null, pendiente: null }), null)
 })
+
+test('un envío sin respuesta que sí llegó no hace perder lo escrito después en este equipo', () => {
+  // X salió hacia el servidor y la pestaña no se enteró (F5, cerrar sesión, red cortada);
+  // después se escribió Y, que quedó solo en este equipo.
+  const pendiente = valorPendiente('X0 confirmado', ['X enviado sin respuesta'])
+  assert.deepEqual(elegirBorrador({ servidor: 'X enviado sin respuesta', local: 'Y escrito después', pendiente }), { codigo: 'Y escrito después', subir: true })
+  // Si nada de eso llegó, el servidor sigue en la base: también manda la copia.
+  assert.deepEqual(elegirBorrador({ servidor: 'X0 confirmado', local: 'Y escrito después', pendiente }), { codigo: 'Y escrito después', subir: true })
+  // Si el servidor tiene algo que este equipo nunca envió, se siguió en otro equipo: manda el servidor.
+  assert.deepEqual(elegirBorrador({ servidor: 'trabajo de otro equipo', local: 'Y escrito después', pendiente }), { codigo: 'trabajo de otro equipo', subir: false })
+  // Las marcas anteriores (solo base) se siguen entendiendo igual.
+  assert.equal(valorPendiente('X0 confirmado'), JSON.stringify({ base: JSON.parse(pendiente).base }))
+  // La marca no crece sin límite ni repite envíos.
+  const muchos = JSON.parse(valorPendiente('base', [...Array.from({ length: 20 }, (_, i) => `envío ${i}`), 'envío 19']))
+  assert.equal(muchos.posibles.length, 8)
+})

@@ -3,7 +3,9 @@ const MESSAGES: Record<string, string> = {
   EMAIL_NOT_VERIFIED: 'Verifica tu correo antes de continuar.',
   PROFILE_INCOMPLETE: 'Completa tu perfil antes de continuar.',
   INVALID_JOIN_CODE: 'No pudimos validar ese código de clase.',
-  NOT_COHORT_MEMBER: 'Primero debes unirte a una clase.',
+  NOT_COHORT_MEMBER: 'No tienes acceso a esta clase. Contacta a tu docente para revisar tu inscripción o recuperar el acceso.',
+  COHORT_INACTIVE: 'Esta clase está inactiva. Reactívala antes de cambiar el acceso de sus estudiantes.',
+  MEMBERSHIP_PENDING: 'Esta inscripción sigue pendiente. Todavía no se puede retirar ni reactivar.',
   CHALLENGE_LOCKED: 'Tu docente todavía no ha habilitado este encargo.',
   SESSION_LOCKED: 'Tu docente todavía no ha abierto este día.',
   SESSION_PAUSED: 'Tu docente pausó temporalmente este día. Tu progreso sigue guardado.',
@@ -55,6 +57,8 @@ interface RequestOptions {
   json?: unknown
   form?: FormData
   signal?: AbortSignal
+  /** Cuenta y generación que originaron una operación diferida. */
+  expectedSessionKey?: string | null
 }
 
 function apiBase(options: ClientOptions): URL {
@@ -92,6 +96,7 @@ export function createApiClient(options: ClientOptions) {
     const destination = new URL(path.slice(1), base)
     if (destination.origin !== base.origin || !destination.pathname.startsWith('/api/')) throw new ApiError('INVALID_API_URL')
     const sessionKey = options.getSessionKey()
+    if (init.expectedSessionKey !== undefined && sessionKey !== init.expectedSessionKey) throw new ApiError('SESSION_CHANGED')
     if (!sessionKey) throw new ApiError('AUTH_REQUIRED', 401)
     const checkSession = () => {
       if (options.getSessionKey() !== sessionKey) throw new ApiError('SESSION_CHANGED')
@@ -150,3 +155,11 @@ export function createApiClient(options: ClientOptions) {
 }
 
 export type ApiClient = ReturnType<typeof createApiClient>
+
+/** Una cola conserva el cliente de su sesión; nunca toma las credenciales de la siguiente. */
+export function bindApiClientToSession(client: ApiClient, sessionKey: string | null): ApiClient {
+  return {
+    request: <T>(path: string, init: RequestOptions = {}) => client.request<T>(path, { ...init, expectedSessionKey: sessionKey }),
+    requestBlob: (path: string, init: RequestOptions = {}) => client.requestBlob(path, { ...init, expectedSessionKey: sessionKey }),
+  }
+}

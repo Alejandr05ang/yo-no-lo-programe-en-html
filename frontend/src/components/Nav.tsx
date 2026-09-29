@@ -26,6 +26,8 @@ export function Nav({ seccion, dia, iniciales, activo, onAbrirSitio }: Props) {
   // alumno solo le mostraría una pantalla de acceso denegado.
   const { session } = useAuth()
   const esAlumno = session?.user.role === 'student'
+  const nombre = session?.user.display_name || session?.user.full_name
+  const avatar = nombre ? nombre.trim().split(/\s+/).slice(0, 2).map((parte) => [...parte][0]).join('').toLocaleUpperCase('es') : iniciales
   return (
     <nav className="nav ve-nav">
       <span className="nav-brand">
@@ -46,7 +48,7 @@ export function Nav({ seccion, dia, iniciales, activo, onAbrirSitio }: Props) {
       {!esAlumno && <NavLink to="/bitacora">Bitácora</NavLink>}
       <ControlesMusica />
       <div className="ve-avatar" aria-hidden>
-        {iniciales}
+        {avatar}
       </div>
     </nav>
   )
