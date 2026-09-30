@@ -134,6 +134,26 @@ function borradorVacio(codigo: string): boolean {
   return !doc.main.trim() && doc.secciones.every(s => !s.contenido.trim())
 }
 
+/** Las secciones de un borrador de cuadrícula sin una sola línea escrita: el encargo se abrió
+ *  (y se guardó) antes de que el anterior tuviera contenido, o el alumno no ha empezado. */
+function sinContenidoEnSecciones(doc: ReturnType<typeof parsearDocumentoJu1>): boolean {
+  return doc.secciones.every(s => !s.contenido.trim())
+}
+
+/** Al borrador de cuadrícula sin contenido le pone las secciones y la estructura heredadas,
+ *  y conserva lo que el alumno ya tenga (su main, y las secciones que sumó él). */
+function completarConHeredado(propio: string, heredado: string): string | null {
+  const mio = parsearDocumentoJu1(propio)
+  const base = parsearDocumentoJu1(heredado)
+  if (!sinContenidoEnSecciones(mio) || sinContenidoEnSecciones(base)) return null
+  return serializarDocumentoJu1({
+    ...mio,
+    estructura: base.estructura,
+    secciones: [...base.secciones, ...mio.secciones.filter(m => !base.secciones.some(b => b.nombre === m.nombre))],
+    main: mio.main.trim() ? mio.main : base.main,
+  })
+}
+
 export function VistaEstudiante() {
   // Otra cuenta es otra pantalla: nada del estado de la anterior pasa a la siguiente.
   const { user } = useAuth()
@@ -600,8 +620,8 @@ function VistaEstudianteInterna() {
     // se buscaba en sessionStorage, que se vacía al cerrar la pestaña: en una clase nueva, o en
     // otro equipo, el alumno recibía el código de ejemplo en vez del suyo. El servidor tiene
     // su borrador del encargo anterior; se usa ese.
-    const componerInicial = async (): Promise<string> => {
-      if (fallbackLocal) return fallbackLocal
+    const componerInicial = async (ignorarLocal = false): Promise<string> => {
+      if (fallbackLocal && !ignorarLocal) return fallbackLocal
       const soluciones = { ...solucionesRef.current }
       const previo = encargo.heredaDe
       if (previo != null) {
@@ -647,9 +667,10 @@ function VistaEstudianteInterna() {
         }
         let codigo = elegido ? elegido.codigo : await componerInicial()
         let reHeredado = false
-        if (elegido && encargo.modelo === 'grid' && encargo.heredaDe != null && borradorVacio(elegido.codigo)) {
-          const heredado = await componerInicial()
-          if (heredado.trim() && !borradorVacio(heredado)) { codigo = heredado; reHeredado = true }
+        if (encargo.modelo === 'grid' && encargo.heredaDe != null) {
+          const heredado = await componerInicial(true)
+          const completado = heredado.trim() ? completarConHeredado(codigo, heredado) : null
+          if (completado) { codigo = completado; reHeredado = true }
         }
         if (!vigente()) return
         setInitialCode(codigo)

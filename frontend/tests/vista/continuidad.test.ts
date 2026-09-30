@@ -118,3 +118,16 @@ test('E13 con copia local vacía (sessionStorage) y sin borrador en servidor her
   assert.equal(p.editor()!.value, inicial.main)
   await p.desmontar()
 })
+
+test('E8 con borrador guardado sin secciones hereda el contenido de E7 y conserva su main', async () => {
+  const s = new ServidorFalso({ Ju1: 'open', V1: 'open' })
+  const e7 = fuente()
+  s.borrador('e7', serializarDocumentoJu1(e7), 'accepted')
+  const viejo = { ...e7, secciones: [{ nombre: 'miIdentidad', contenido: '' }], main: e7.main + '\n// mi nota' }
+  s.borrador('e8', serializarDocumentoJu1(viejo))
+  const p = await montar(s, '/portafolio?e=8')
+  await hasta(() => !!p.editor() && !p.editor()!.readOnly, 'E8 listo')
+  await hasta(() => JSON.parse(s.progreso.get('e8')!.draft_code).secciones[0]?.contenido === e7.secciones[0].contenido, 'hereda secciones')
+  assert.match(JSON.parse(s.progreso.get('e8')!.draft_code).main, /mi nota/)
+  await p.desmontar()
+})
