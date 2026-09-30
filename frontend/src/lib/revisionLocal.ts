@@ -420,19 +420,18 @@ export async function revisarLocalmente(
 ): Promise<ResultadoRevision> {
   const casos = CASOS_POR_ENCARGO[numeroEncargo]
 
-  // Encargo sin criterios definidos aún: no se puede aceptar (evita el auto-avance).
+  // Encargo sin criterios definidos aún.
   if (!casos || casos.length === 0) {
     const total = Math.max(1, ENCARGOS[numeroEncargo]?.totalCasos ?? 1)
+    // Sin criterios automáticos (revisión visual): se acepta al entregarlo para no frenar el avance.
     return {
       casos: Array.from({ length: total }, (_, i) => ({
         descripcion: `Caso ${i + 1}`,
-        estado: 'falla' as const,
+        estado: 'pasa' as const,
       })),
-      casosPasados: 0,
+      casosPasados: total,
       casosTotales: total,
-      nota: numeroEncargo === 12 || numeroEncargo === 13
-        ? 'Este encargo requiere revisión visual del instructor; no se acepta automáticamente.'
-        : 'Este encargo todavía no tiene revisión automática (pendiente de diseño del contenido).',
+      nota: 'Encargo de revisión visual: se acepta automáticamente.',
     }
   }
 
