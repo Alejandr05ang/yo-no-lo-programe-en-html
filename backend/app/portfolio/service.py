@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth.dependencies import require_verified
-from app.catalog.service import locked_error, require_challenge_access, user_cohort, workshop_access
+from app.catalog.service import require_challenge_access, user_cohort, workshop_access
 from app.core.errors import ApiError
 from app.db.models import (
     Challenge,
@@ -67,19 +67,6 @@ def source_view(user: User, cohort_id: UUID, key: str, progress: Progress) -> So
         datos=datos,
         source_fingerprint=hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
     )
-
-
-async def require_publish_day(session: AsyncSession, cohort_id: UUID, state: CohortState | None):
-    day = await session.scalar(
-        select(SessionCatalog).where(
-            SessionCatalog.code == "Ju2", SessionCatalog.is_published.is_(True)
-        )
-    )
-    if day is None:
-        raise locked_error("locked")
-    access = (await workshop_access(session, cohort_id, state)).session_access(day)
-    if access != "open":
-        raise locked_error(access)
 
 
 async def accessible_sources(
@@ -160,12 +147,8 @@ async def owner_view(
         progress, _ = by_key[challenge_key]
         source = source_view(user, cohort.id, challenge_key, progress)
     blocked = None
-    try:
-        await require_publish_day(session, cohort.id, state)
-    except ApiError as error:
-        blocked = error.code
     if source is None:
-        blocked = blocked or "SOURCE_NOT_FOUND"
+        blocked = "SOURCE_NOT_FOUND"
     changed = bool(
         source
         and (publication is None or source.source_fingerprint != publication.source_fingerprint)
@@ -182,7 +165,6 @@ async def owner_view(
 
 async def prepare_snapshot(session: AsyncSession, user: User, body: PublishBody):
     cohort, state = await user_cohort(session, user)
-    await require_publish_day(session, cohort.id, state)
     _, challenge = await require_challenge_access(session, user, body.challenge_key)
     progress = await session.get(Progress, (user.id, cohort.id, challenge.id))
     if progress is None or not progress.draft_code.strip():

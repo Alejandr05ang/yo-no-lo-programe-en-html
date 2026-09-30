@@ -114,9 +114,24 @@ function contenidoInicialDe(numero: number, soluciones: Record<number, string>):
       const doc = parsearDocumentoJu1(heredado || e.fallbackHeredado || '')
       return serializarDocumentoJu1({ ...doc, main: `${doc.main}\n\n${e.andamiajeNuevo}` })
     }
-    return heredado || serializarDocumentoJu1(crearDocumentoJu1Inicial())
+    if (heredado) return heredado
+    // Sin nada propio del encargo anterior (E12 sin el E6 del alumno): en vez de arrancar
+    // vacío, se le da ese encargo como punto de partida, avisando que es de ejemplo.
+    const base = e.heredaDe != null && ENCARGOS[e.heredaDe] ? componerAndamiaje(e.heredaDe, soluciones).trim() : ''
+    if (!base) return serializarDocumentoJu1(crearDocumentoJu1Inicial())
+    return serializarDocumentoJu1({
+      ...crearDocumentoJu1Inicial(),
+      main: `// ← Código de ejemplo del encargo ${e.heredaDe} (no encontramos el tuyo): cámbialo por lo tuyo\n${base}`,
+    })
   }
   return componerAndamiaje(numero, soluciones)
+}
+
+/** Un borrador de grid sin nada escrito (ni en portafolio.js ni en ninguna sección): quedó
+ *  guardado al abrir el encargo antes de que hubiera algo que heredar. */
+function borradorVacio(codigo: string): boolean {
+  const doc = parsearDocumentoJu1(codigo)
+  return !doc.main.trim() && doc.secciones.every(s => !s.contenido.trim())
 }
 
 export function VistaEstudiante() {
@@ -586,11 +601,17 @@ function VistaEstudianteInterna() {
       if (fallbackLocal) return fallbackLocal
       const soluciones = { ...solucionesRef.current }
       const previo = encargo.heredaDe
-      if (previo != null && !soluciones[previo]?.trim()) {
-        const anteriorServidor = await api.getProgress(clienteApi, previo)
-        if (anteriorServidor.draft_code.trim() && !pareceContenidoDeDatos(anteriorServidor.draft_code)) {
-          soluciones[previo] = anteriorServidor.draft_code
-        }
+      if (previo != null) {
+        // El último borrador guardado manda sobre la copia de "solución": esa solo se
+        // actualiza al aceptar y se queda vieja si el alumno siguió editando o avanzó antes.
+        const local = borradoresRef.current[previo]
+        if (local?.trim() && !pareceContenidoDeDatos(local)) soluciones[previo] = local
+        try {
+          const anteriorServidor = await api.getProgress(clienteApi, previo)
+          if (anteriorServidor.draft_code.trim() && !pareceContenidoDeDatos(anteriorServidor.draft_code)) {
+            soluciones[previo] = anteriorServidor.draft_code
+          }
+        } catch { /* sin red: se usa lo que haya en local */ }
       }
       return contenidoInicialDe(numero, soluciones)
     }
@@ -621,11 +642,16 @@ function VistaEstudianteInterna() {
         if (pendiente && !elegido?.subir && !res.sinRespuesta && user) {
           try { localStorage.removeItem(clavePendiente(user.uid, challengeKeyFromNumero(numero))) } catch { /* sin almacenamiento */ }
         }
-        const codigo = elegido ? elegido.codigo : await componerInicial()
+        let codigo = elegido ? elegido.codigo : await componerInicial()
+        let reHeredado = false
+        if (elegido && !elegido.subir && encargo.modelo === 'grid' && encargo.heredaDe != null && borradorVacio(elegido.codigo)) {
+          const heredado = await componerInicial()
+          if (heredado.trim() && !borradorVacio(heredado)) { codigo = heredado; reHeredado = true }
+        }
         if (!vigente()) return
         setInitialCode(codigo)
         // Lo que no llegó al servidor se vuelve a subir con el autoguardado.
-        if (elegido?.subir) setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
+        if (elegido?.subir || reHeredado) setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
         // Después de setInitialCode, que limpia la revisión.
         if (res.status === 'accepted') {
           if (!elegido?.subir) setEstadoGuardado(prev => ({ ...prev, estado: 'saved' }))
