@@ -158,3 +158,27 @@ test('E8 hereda la versión de E7 que tiene trabajo aunque el servidor guarde un
   await hasta(() => p.editor('seccion-miIdentidad.js')?.value === e7.secciones[0].contenido, 'hereda la versión con trabajo')
   await p.desmontar()
 })
+
+test('E8 hereda de la cadena: E7 vacío, pero E13 tiene trabajo', async () => {
+  const s = new ServidorFalso({ Ju1: 'open', V1: 'open' })
+  const e13 = fuente()
+  s.borrador('e13', serializarDocumentoJu1(e13), 'accepted')
+  s.borrador('e7', serializarDocumentoJu1({ ...e13, secciones: [{ nombre: 'miIdentidad', contenido: '' }] }))
+  const p = await montar(s, '/portafolio?e=8')
+  await hasta(() => !!p.editor() && !p.editor()!.readOnly, 'E8 listo')
+  await p.pestana('seccion-miIdentidad.js')
+  await hasta(() => p.editor('seccion-miIdentidad.js')?.value === e13.secciones[0].contenido, 'hereda de la cadena')
+  await p.desmontar()
+})
+
+test('E8 con una sección vacía y otra con código: rellena solo la vacía', async () => {
+  const s = new ServidorFalso({ Ju1: 'open', V1: 'open' })
+  const e7 = fuente()
+  s.borrador('e7', serializarDocumentoJu1(e7), 'accepted')
+  s.borrador('e8', serializarDocumentoJu1({ ...e7, secciones: [{ nombre: 'miIdentidad', contenido: '' }] }))
+  const p = await montar(s, '/portafolio?e=8')
+  await hasta(() => !!p.editor() && !p.editor()!.readOnly, 'E8 listo')
+  await p.pestana('seccion-miIdentidad.js')
+  await hasta(() => p.editor('seccion-miIdentidad.js')?.value === e7.secciones[0].contenido, 'rellena la vacía')
+  await p.desmontar()
+})

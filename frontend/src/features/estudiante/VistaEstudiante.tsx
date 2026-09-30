@@ -151,13 +151,23 @@ function sinContenidoEnSecciones(doc: ReturnType<typeof parsearDocumentoJu1>): b
 function completarConHeredado(propio: string, heredado: string): string | null {
   const mio = parsearDocumentoJu1(propio)
   const base = parsearDocumentoJu1(heredado)
-  if (!sinContenidoEnSecciones(mio) || sinContenidoEnSecciones(base)) return null
-  return serializarDocumentoJu1({
-    ...mio,
-    estructura: base.estructura,
-    secciones: [...base.secciones, ...mio.secciones.filter(m => !base.secciones.some(b => b.nombre === m.nombre))],
-    main: mio.main.trim() ? mio.main : base.main,
+  if (sinContenidoEnSecciones(base)) return null
+  const vacio = sinContenidoEnSecciones(mio)
+  const secciones = mio.secciones.map(m => {
+    const b = base.secciones.find(x => x.nombre === m.nombre)
+    return !m.contenido.trim() && b?.contenido.trim() ? { ...m, contenido: b.contenido } : m
   })
+  if (vacio) {
+    for (const b of base.secciones) if (!secciones.some(m => m.nombre === b.nombre)) secciones.push(b)
+  }
+  const nuevo = {
+    ...mio,
+    estructura: vacio ? base.estructura : mio.estructura,
+    secciones,
+    main: mio.main.trim() ? mio.main : base.main,
+  }
+  const igual = JSON.stringify(nuevo) === JSON.stringify(mio)
+  return igual ? null : serializarDocumentoJu1(nuevo)
 }
 
 export function VistaEstudiante() {
@@ -631,18 +641,26 @@ function VistaEstudianteInterna() {
       const soluciones = { ...solucionesRef.current }
       const previo = encargo.heredaDe
       if (previo != null) {
-        // Se hereda la versión del anterior que SÍ tiene trabajo: el servidor, la copia de este
-        // equipo y la "solución" aceptada pueden diferir, y una versión guardada antes de que el
-        // alumno escribiera (secciones vacías) no debe tapar a otra que sí lo tiene.
-        const candidatos: string[] = []
-        try {
-          const anteriorServidor = await api.getProgress(clienteApi, previo)
-          candidatos.push(anteriorServidor.draft_code)
-        } catch { /* sin red: se usa lo que haya en este equipo */ }
-        candidatos.push(borradoresRef.current[previo] ?? '', soluciones[previo] ?? '')
-        const validos = candidatos.filter(c => c.trim() && !pareceContenidoDeDatos(c))
-        const elegido = validos.find(tieneTrabajo) ?? validos[0]
-        if (elegido) soluciones[previo] = elegido
+        // Se hereda la versión más reciente con trabajo: la del encargo anterior (servidor,
+        // copia de este equipo o solución aceptada) y, si esa está vacía, la de los anteriores
+        // en la cadena. Una versión guardada antes de que el alumno escribiera no tapa a otra.
+        let elegido: string | undefined
+        let primero: string | undefined
+        let actual: number | null | undefined = previo
+        for (let paso = 0; actual != null && paso < 8 && !elegido; paso++) {
+          const candidatos: string[] = []
+          try {
+            const r = await api.getProgress(clienteApi, actual)
+            candidatos.push(r.draft_code)
+          } catch { /* sin red: se usa lo que haya en este equipo */ }
+          candidatos.push(borradoresRef.current[actual] ?? '', solucionesRef.current[actual] ?? '')
+          const validos = candidatos.filter(c => c.trim() && !pareceContenidoDeDatos(c))
+          primero ??= validos[0]
+          elegido = validos.find(tieneTrabajo)
+          actual = ENCARGOS[actual]?.heredaDe
+        }
+        const usar = elegido ?? primero
+        if (usar) soluciones[previo] = usar
       }
       return contenidoInicialDe(numero, soluciones)
     }
