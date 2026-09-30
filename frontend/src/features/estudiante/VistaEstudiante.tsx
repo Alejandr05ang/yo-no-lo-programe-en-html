@@ -565,6 +565,9 @@ function VistaEstudianteInterna() {
     // datos.js como si fuera el borrador de portafolio.js. Lo que ya haya quedado guardado
     // así (de antes del arreglo) se descarta acá en vez de mostrárselo al estudiante.
     if (fallbackLocal && pareceContenidoDeDatos(fallbackLocal)) fallbackLocal = undefined
+    // Una copia local de una cuadrícula sin nada escrito no es trabajo del alumno: no debe
+    // tapar lo que se hereda del encargo anterior.
+    if (fallbackLocal && encargo.modelo === 'grid' && encargo.heredaDe != null && borradorVacio(fallbackLocal)) fallbackLocal = undefined
 
     const setInitialCode = (code: string) => {
       const ejecucion = ++ejecucionRef.current
@@ -644,7 +647,7 @@ function VistaEstudianteInterna() {
         }
         let codigo = elegido ? elegido.codigo : await componerInicial()
         let reHeredado = false
-        if (elegido && !elegido.subir && encargo.modelo === 'grid' && encargo.heredaDe != null && borradorVacio(elegido.codigo)) {
+        if (elegido && encargo.modelo === 'grid' && encargo.heredaDe != null && borradorVacio(elegido.codigo)) {
           const heredado = await componerInicial()
           if (heredado.trim() && !borradorVacio(heredado)) { codigo = heredado; reHeredado = true }
         }
