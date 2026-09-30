@@ -134,6 +134,12 @@ function borradorVacio(codigo: string): boolean {
   return !doc.main.trim() && doc.secciones.every(s => !s.contenido.trim())
 }
 
+/** Una versión con trabajo: alguna sección con código, o (archivo único) un main con texto. */
+function tieneTrabajo(codigo: string): boolean {
+  const doc = parsearDocumentoJu1(codigo)
+  return doc.secciones.length === 0 ? !!doc.main.trim() : doc.secciones.some(s => !!s.contenido.trim())
+}
+
 /** Las secciones de un borrador de cuadrícula sin una sola línea escrita: el encargo se abrió
  *  (y se guardó) antes de que el anterior tuviera contenido, o el alumno no ha empezado. */
 function sinContenidoEnSecciones(doc: ReturnType<typeof parsearDocumentoJu1>): boolean {
@@ -625,16 +631,18 @@ function VistaEstudianteInterna() {
       const soluciones = { ...solucionesRef.current }
       const previo = encargo.heredaDe
       if (previo != null) {
-        // El último borrador guardado manda sobre la copia de "solución": esa solo se
-        // actualiza al aceptar y se queda vieja si el alumno siguió editando o avanzó antes.
-        const local = borradoresRef.current[previo]
-        if (local?.trim() && !pareceContenidoDeDatos(local)) soluciones[previo] = local
+        // Se hereda la versión del anterior que SÍ tiene trabajo: el servidor, la copia de este
+        // equipo y la "solución" aceptada pueden diferir, y una versión guardada antes de que el
+        // alumno escribiera (secciones vacías) no debe tapar a otra que sí lo tiene.
+        const candidatos: string[] = []
         try {
           const anteriorServidor = await api.getProgress(clienteApi, previo)
-          if (anteriorServidor.draft_code.trim() && !pareceContenidoDeDatos(anteriorServidor.draft_code)) {
-            soluciones[previo] = anteriorServidor.draft_code
-          }
-        } catch { /* sin red: se usa lo que haya en local */ }
+          candidatos.push(anteriorServidor.draft_code)
+        } catch { /* sin red: se usa lo que haya en este equipo */ }
+        candidatos.push(borradoresRef.current[previo] ?? '', soluciones[previo] ?? '')
+        const validos = candidatos.filter(c => c.trim() && !pareceContenidoDeDatos(c))
+        const elegido = validos.find(tieneTrabajo) ?? validos[0]
+        if (elegido) soluciones[previo] = elegido
       }
       return contenidoInicialDe(numero, soluciones)
     }

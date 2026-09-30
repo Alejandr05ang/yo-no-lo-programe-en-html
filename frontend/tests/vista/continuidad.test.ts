@@ -146,3 +146,15 @@ test('E8 heredado: la vista previa muestra el contenido y no se vacía pasado un
   assert.equal(visible(), true, 'la vista previa sigue mostrando el contenido')
   await p.desmontar()
 })
+
+test('E8 hereda la versión de E7 que tiene trabajo aunque el servidor guarde una sin secciones', async () => {
+  const s = new ServidorFalso({ Ju1: 'open', V1: 'open' })
+  const e7 = fuente()
+  s.borrador('e7', serializarDocumentoJu1({ ...e7, secciones: [{ nombre: 'miIdentidad', contenido: '' }] }))
+  ventana.sessionStorage.setItem('ve:borradores:alumno-1', JSON.stringify({ 7: serializarDocumentoJu1(e7) }))
+  const p = await montar(s, '/portafolio?e=8')
+  await hasta(() => !!p.editor() && !p.editor()!.readOnly, 'E8 listo')
+  await p.pestana('seccion-miIdentidad.js')
+  await hasta(() => p.editor('seccion-miIdentidad.js')?.value === e7.secciones[0].contenido, 'hereda la versión con trabajo')
+  await p.desmontar()
+})
