@@ -131,3 +131,18 @@ test('E8 con borrador guardado sin secciones hereda el contenido de E7 y conserv
   assert.match(JSON.parse(s.progreso.get('e8')!.draft_code).main, /mi nota/)
   await p.desmontar()
 })
+
+test('E8 heredado: la vista previa muestra el contenido y no se vacía pasado un rato', async () => {
+  const s = new ServidorFalso({ Ju1: 'open', V1: 'open' })
+  const e7 = fuente()
+  s.borrador('e7', serializarDocumentoJu1(e7), 'accepted')
+  const viejo = { ...e7, secciones: [{ nombre: 'miIdentidad', contenido: '' }] }
+  s.borrador('e8', serializarDocumentoJu1(viejo))
+  const p = await montar(s, '/portafolio?e=8')
+  await hasta(() => !!p.editor() && !p.editor()!.readOnly, 'E8 listo')
+  const visible = () => (p.contenedor.querySelector<HTMLIFrameElement>('.pv-marco')?.getAttribute('srcdoc') ?? '').includes('Mi diseño único')
+  await hasta(visible, 'preview con contenido')
+  await new Promise(r => setTimeout(r, 2500))
+  assert.equal(visible(), true, 'la vista previa sigue mostrando el contenido')
+  await p.desmontar()
+})
