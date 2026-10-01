@@ -99,9 +99,20 @@ def safe_link(value: str) -> str | None:
     return None
 
 
+def safe_image_url(value: str) -> str | None:
+    # Solo imágenes por https, sin credenciales ni data:/javascript:. La imagen la pide el
+    # navegador de quien mira la página, con referrerpolicy=no-referrer (ver CLEANER).
+    link = safe_link(value)
+    if link and link.lower().startswith("https://"):
+        return link
+    return None
+
+
 def attribute_filter(tag: str, name: str, value: str) -> str | None:
     if name == "href":
         return safe_link(value)
+    if name == "src":
+        return safe_image_url(value) if tag == "img" else None
     if name == "style":
         # Additional defense for escaped CSS, custom properties, legacy expressions.
         # Safe allowlisted layout/font/color properties do not load resources.
@@ -175,8 +186,9 @@ CLEANER = nh3.Cleaner(
     attributes={
         "*": {"class", "id", "style", "title", "aria-label", "aria-live"},
         "a": {"href"},
-        "img": {"alt"},
+        "img": {"alt", "src"},
     },
+    set_tag_attribute_values={"img": {"referrerpolicy": "no-referrer", "loading": "lazy"}},
     attribute_filter=attribute_filter,
     filter_style_properties=STYLE_PROPERTIES,
     url_schemes={"http", "https", "mailto"},

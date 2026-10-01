@@ -200,7 +200,7 @@ function MiSitio() {
         <p className="text-muted">Se usa la última fuente que llegó al servidor. {numero !== null && <Link to={rutaActividad(numero)}>Editar esta fuente</Link>}. Después de editar, espera a que indique «guardado» y vuelve aquí.</p>
         <div className="field"><label htmlFor="sitio-title">Título de tu sitio</label><input id="sitio-title" type="text" className="input" maxLength={120} value={title} disabled={pending} onChange={(event) => { setTitle(event.target.value); invalidate() }} /></div>
         <p>Tu correo de acceso no se añade automáticamente. Revisa el texto y los enlaces que escribiste antes de compartirlos. Los proyectos y habilidades de ejemplo del taller no se publican como si fueran tuyos.</p>
-        <p>Esta es una versión estática: los temporizadores y otros scripts no se ejecutan; tampoco se cargan imágenes ni fuentes externas. El diseño y los textos se conservan cuando son seguros.</p>
+        <p>Esta es una versión estática: los temporizadores y otros scripts no se ejecutan; las imágenes sí se ven si su dirección es https (las que no, se omiten). Las fuentes externas no se cargan. El diseño y los textos se conservan cuando son seguros.</p>
         {!state.can_publish && <p className="auth-message">{state.publish_block_reason === 'NOT_COHORT_MEMBER' ? 'Únete a una cohorte para publicar.' : 'La publicación estará disponible cuando tu docente abra Git y publicación y la actividad elegida esté disponible.'}</p>}
         <div className="sitio-acciones">
           <button className="btn btn-secondary" disabled={blocked} onClick={() => void prepare()}>{pending ? 'Procesando…' : 'Preparar vista previa'}</button>

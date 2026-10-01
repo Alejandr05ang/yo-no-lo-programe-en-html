@@ -98,3 +98,12 @@ test('generarEncabezado()/generarFooter() salen como <header>/<footer> y la altu
   assert.doesNotMatch(r['index.html'], /rol-(encabezado|pie)/)
   assert.match(r['styles.css'], /grid-template-rows: auto minmax\(auto, 1fr\) auto/)
 })
+
+test('las imágenes llegan al repositorio aunque la publicación las filtre (http, relativas)', async () => {
+  const codigo = 'mostrar(crearImagen("https://fotos.example.com/a.png", "Ana"))\nmostrar(crearImagen("http://fotos.example.com/b.png", "Beto"))\nmostrar(crearImagen("foto.jpg", "Local"))'
+  const r = await prepararRepositorio({ challenge_key: 'e1', draft_code: codigo, datos: {}, source_fingerprint: 'f' }, 'Ana', '<p>sin imagenes</p>')
+  assert.match(r['index.html'], /<img src="https:\/\/fotos\.example\.com\/a\.png" alt="Ana">/)
+  assert.match(r['index.html'], /src="http:\/\/fotos\.example\.com\/b\.png"/)
+  assert.match(r['index.html'], /src="foto\.jpg"/)
+  assert.doesNotMatch(r['index.html'], /sin imagenes/)
+})

@@ -231,7 +231,9 @@ async def test_preview_sanitizes_before_publish_and_visitor_schema_hides_source(
     await setup(h)
     payload = await body(
         h,
-        '<h1 onclick="bad()">Hola</h1><script>bad()</script><img src="https://tracker.invalid/x" onerror="bad()">',
+        '<h1 onclick="bad()">Hola</h1><script>bad()</script><img src="http://tracker.invalid/x" onerror="bad()">'
+        '<img src="javascript:bad()"><img src="data:image/png;base64,AAAA"><img src="//tracker.invalid/y">'
+        '<img src="https://fotos.example.com/ana.png" alt="Ana">',
     )
     preview = await h.client.post(
         "/api/portfolio/publication/preview", json=payload, headers=bearer("alumno")
@@ -241,6 +243,10 @@ async def test_preview_sanitizes_before_publish_and_visitor_schema_hides_source(
     assert "<h1>Hola</h1>" in clean
     assert "bad" not in clean
     assert "tracker" not in clean
+    assert "javascript" not in clean and "data:" not in clean
+    # Una imagen https normal sí se conserva, sin enviar el referrer de la plataforma.
+    assert 'src="https://fotos.example.com/ana.png"' in clean
+    assert 'referrerpolicy="no-referrer"' in clean
     assert (await owner(h))["publication"] is None
     publication = await publish(h, {**payload, "snapshot_html": clean})
     assert publication["snapshot_html"] == clean

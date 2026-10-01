@@ -194,13 +194,15 @@ export async function prepararRepositorio(source: FuentePublicacion, titulo: str
     }
 
     const logica = extraerLogica(unidades)
-    if (!logica.hayLogica) return construirRepositorio(titulo, snapshotHtml)
-
+    // Siempre se corre el programa otra vez (no se usa el HTML saneado de la publicación): ese
+    // descarta imágenes con direcciones que no son https y todo lo que no se publica. El .zip es
+    // del propio alumno y se abre fuera de la plataforma, así que lleva la página completa.
+    const ejecutable = (nombre: string, original: string) => (logica.hayLogica ? logica.ejecutables.get(nombre) ?? original : original)
     const resultado = doc
-      ? await ejecutarPreviewJu1({ ...doc, secciones: doc.secciones.map((s) => ({ nombre: s.nombre, contenido: logica.ejecutables.get(`seccion-${s.nombre}.js`) ?? s.contenido })), main: logica.ejecutables.get('portafolio.js') ?? doc.main }, source.datos)
-      : await ejecutarPreview(logica.ejecutables.get('portafolio.js') ?? source.draft_code, source.datos)
+      ? await ejecutarPreviewJu1({ ...doc, secciones: doc.secciones.map((s) => ({ nombre: s.nombre, contenido: ejecutable(`seccion-${s.nombre}.js`, s.contenido) })), main: ejecutable('portafolio.js', doc.main) }, source.datos)
+      : await ejecutarPreview(ejecutable('portafolio.js', source.draft_code), source.datos)
     if (!resultado.ok) return construirRepositorio(titulo, snapshotHtml)
-    return construirRepositorio(titulo, resultado.html, { script: logica.script, ...(logica.usaDatos ? { datos: source.datos } : {}) })
+    return construirRepositorio(titulo, resultado.html, logica.hayLogica ? { script: logica.script, ...(logica.usaDatos ? { datos: source.datos } : {}) } : undefined)
   } catch {
     return construirRepositorio(titulo, snapshotHtml)
   }

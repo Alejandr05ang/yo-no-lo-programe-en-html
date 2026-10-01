@@ -59,7 +59,7 @@ export async function capturarFuente(source: FuentePublicacion): Promise<string>
 export function documentoPublicado(html: string): string {
   const css = ANDAMIAJE_CSS.replace(/@import\s+url\([^)]*\)\s*;/gi, '')
   return `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src 'none'; font-src 'none'; connect-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'none'; style-src 'unsafe-inline'; img-src https:; font-src 'none'; connect-src 'none'; frame-src 'none'; base-uri 'none'; form-action 'none'">
 <style>${css}</style></head><body>${html}</body></html>`
 }
 
