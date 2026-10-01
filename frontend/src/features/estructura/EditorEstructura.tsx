@@ -1,5 +1,6 @@
 import { useRef, useState, type PointerEvent } from 'react'
 import type { Celda, EstructuraDePagina } from '../../lib/tipos'
+import { ubicarSeccion } from '../../lib/estructuraDePagina'
 import './estructura.css'
 
 interface Props {
@@ -28,6 +29,8 @@ interface Props {
     filaFin: number,
     columnaFin: number,
   ) => string | null
+  /** Mueve una sección (con su código) a otro lugar. Devuelve un mensaje si no se pudo, o null. */
+  onMoverSeccion: (celdaId: string, fila: number, columna: number) => string | null
   onSepararCelda: (celdaId: string) => void
   onAbrirSeccion: (nombre: string) => void
   abierto: boolean
@@ -52,6 +55,7 @@ export function EditorEstructura({
   onEliminarColumna,
   onCrearSeccion,
   onExtenderSeccion,
+  onMoverSeccion,
   onSepararCelda,
   onAbrirSeccion,
   abierto,
@@ -68,6 +72,35 @@ export function EditorEstructura({
   // decide nada todavía, solo lo anota.
   const origenPresionadoRef = useRef<Celda | null>(null)
   const huboArrastreRef = useRef(false)
+
+  // Mover una sección arrastrando su asa (⠿): arrastre nativo del navegador, aparte del
+  // arrastre con puntero que agranda/crea (ese sigue igual). `movida` es la sección en vuelo y
+  // `destinoMovida` el rectángulo donde caería si se suelta ahora.
+  const [movida, setMovida] = useState<Celda | null>(null)
+  const [destinoMovida, setDestinoMovida] = useState<{ fila: number; columna: number; expandeFilas: number; expandeColumnas: number } | null>(null)
+
+  function alSoltarMovida(celda: Celda) {
+    const enVuelo = movida
+    setMovida(null)
+    setDestinoMovida(null)
+    if (!enVuelo) return
+    limpiarSeleccion()
+    setErrorEstructura(onMoverSeccion(enVuelo.id, celda.fila, celda.columna))
+  }
+
+  function sobreMovida(celda: Celda) {
+    if (!movida) return
+    const d = ubicarSeccion(estructura, movida.id, celda.fila, celda.columna)
+    setDestinoMovida((previo) => (previo && d && previo.fila === d.fila && previo.columna === d.columna ? previo : d))
+  }
+
+  function esDestinoDeMovida(celda: Celda): boolean {
+    if (!destinoMovida) return false
+    return (
+      celda.fila <= destinoMovida.fila + destinoMovida.expandeFilas - 1 && celda.fila + celda.expandeFilas - 1 >= destinoMovida.fila &&
+      celda.columna <= destinoMovida.columna + destinoMovida.expandeColumnas - 1 && celda.columna + celda.expandeColumnas - 1 >= destinoMovida.columna
+    )
+  }
 
   const extendiendoSeccion = origen?.seccion != null
 
@@ -205,7 +238,9 @@ export function EditorEstructura({
         <p className="ee-ayuda">
           Arrastrá sobre varias celdas para juntarlas en una sola sección (por ejemplo, para que
           el encabezado ocupe las tres columnas) — o hacé clic en una sola para usarla tal cual.
-          Arrastrar desde una sección que ya tiene nombre la agranda, sin tocar su código.
+          Arrastrar desde una sección que ya tiene nombre la agranda, sin tocar su código. Para
+          cambiarla de lugar (y hacerle espacio a otras en el medio), agarrala del asa ⠿ y soltala
+          donde quieras: se lleva su código.
         </p>
       )}
 
@@ -223,6 +258,8 @@ export function EditorEstructura({
           <div
             key={celda.id}
             className="ee-celda-envoltorio"
+            onDragOver={(e) => { if (movida) { e.preventDefault(); sobreMovida(celda) } }}
+            onDrop={(e) => { if (movida) { e.preventDefault(); alSoltarMovida(celda) } }}
             style={{
               gridRow: `${celda.fila + 1} / span ${celda.expandeFilas}`,
               gridColumn: `${celda.columna + 1} / span ${celda.expandeColumnas}`,
@@ -233,12 +270,31 @@ export function EditorEstructura({
               className="ee-celda"
               data-etiquetada={celda.seccion !== null || undefined}
               data-seleccionada={estaSeleccionada(celda) || undefined}
+              data-destino={esDestinoDeMovida(celda) || undefined}
               onPointerDown={() => alPresionarCelda(celda)}
               onPointerEnter={(e) => alEntrarArrastrando(celda, e)}
               onClick={() => alClicCelda(celda)}
             >
               {celda.seccion ?? '···'}
             </button>
+            {celda.seccion !== null && (
+              <span
+                className="ee-celda-asa"
+                draggable
+                title="Arrastrar para mover esta sección"
+                aria-label={`Mover la sección ${celda.seccion}: arrástrala a otro lugar`}
+                onDragStart={(e) => {
+                  e.dataTransfer.effectAllowed = 'move'
+                  e.dataTransfer.setData('text/plain', celda.seccion ?? '')
+                  const envoltorio = e.currentTarget.parentElement
+                  if (envoltorio) e.dataTransfer.setDragImage(envoltorio, 16, 16)
+                  setMovida(celda)
+                }}
+                onDragEnd={() => { setMovida(null); setDestinoMovida(null) }}
+              >
+                ⠿
+              </span>
+            )}
             {celda.seccion !== null && (
               <button
                 type="button"

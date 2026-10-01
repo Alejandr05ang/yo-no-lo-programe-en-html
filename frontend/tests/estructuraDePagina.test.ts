@@ -11,6 +11,8 @@ import {
   eliminarFila,
   etiquetarCelda,
   extenderSeccion,
+  moverSeccion,
+  ubicarSeccion,
   parsearDocumentoJu1,
   sanearNombreDeSeccion,
   separarCelda,
@@ -267,4 +269,73 @@ test('parsearDocumentoJu1: un borrador viejo (texto plano, de antes de este camb
   assert.equal(doc.main, viejo)
   assert.equal(doc.secciones.length, 0)
   assert.equal(doc.estructura.filas, 1)
+})
+
+// ── moverSeccion(): hacerle lugar a secciones nuevas en el medio ─────────────────────────
+// Cuadrícula 4×3: encabezado (fila 0, todo el ancho), sobreMi | misHobbies (fila 1), footer
+// (fila 2, todo el ancho) y una fila 3 todavía vacía.
+function cuadriculaConPie(): EstructuraDePagina {
+  const c = (id: string, fila: number, columna: number, expandeColumnas: number, seccion: string | null) => ({ id, fila, columna, expandeFilas: 1, expandeColumnas, seccion })
+  return {
+    filas: 4,
+    columnas: 3,
+    celdas: [
+      c('enc', 0, 0, 3, 'encabezado'), c('s', 1, 0, 1, 'sobreMi'), c('h', 1, 1, 2, 'misHobbies'), c('pie', 2, 0, 3, 'footer'),
+      c('v0', 3, 0, 1, null), c('v1', 3, 1, 1, null), c('v2', 3, 2, 1, null),
+    ],
+  }
+}
+const lugar = (e: EstructuraDePagina, id: string) => { const x = e.celdas.find((c) => c.id === id)!; return [x.fila, x.columna] }
+const cubre = (e: EstructuraDePagina) => e.celdas.reduce((t, c) => t + c.expandeFilas * c.expandeColumnas, 0)
+
+test('moverSeccion baja el pie a la fila vacía y deja libre la que ocupaba', () => {
+  const r = moverSeccion(cuadriculaConPie(), 'pie', 3, 0)
+  assert.equal(r.ok, true)
+  if (!r.ok) return
+  assert.deepEqual(lugar(r.valor, 'pie'), [3, 0])
+  assert.equal(r.valor.celdas.find((c) => c.id === 'pie')!.seccion, 'footer')
+  // La fila 2 quedó con 3 celdas vacías 1×1 y la cuadrícula sigue cubierta sin huecos.
+  assert.equal(r.valor.celdas.filter((c) => c.fila === 2 && c.seccion === null).length, 3)
+  assert.equal(cubre(r.valor), 12)
+})
+
+test('moverSeccion se corre lo justo si se suelta cerca del borde', () => {
+  const r = moverSeccion(cuadriculaConPie(), 'pie', 3, 2)
+  assert.equal(r.ok, true)
+  if (r.ok) assert.deepEqual(lugar(r.valor, 'pie'), [3, 0])
+  assert.deepEqual(ubicarSeccion(cuadriculaConPie(), 'pie', 9, 9), { fila: 3, columna: 0, expandeFilas: 1, expandeColumnas: 3 })
+})
+
+test('moverSeccion permite bajar una sección solo una fila aunque se superponga con su lugar', () => {
+  const e: EstructuraDePagina = { filas: 3, columnas: 1, celdas: [
+    { id: 'a', fila: 0, columna: 0, expandeFilas: 2, expandeColumnas: 1, seccion: 'alta' },
+    { id: 'b', fila: 2, columna: 0, expandeFilas: 1, expandeColumnas: 1, seccion: null },
+  ] }
+  const r = moverSeccion(e, 'a', 1, 0)
+  assert.equal(r.ok, true)
+  if (!r.ok) return
+  assert.deepEqual(lugar(r.valor, 'a'), [1, 0])
+  assert.equal(cubre(r.valor), 3)
+})
+
+test('moverSeccion intercambia dos secciones del mismo tamaño y rechaza lo demás sin tocar nada', () => {
+  const e = cuadriculaConPie()
+  const swap = moverSeccion(e, 'pie', 0, 0)
+  assert.equal(swap.ok, true)
+  if (swap.ok) { assert.deepEqual(lugar(swap.valor, 'pie'), [0, 0]); assert.deepEqual(lugar(swap.valor, 'enc'), [2, 0]) }
+
+  const otroTamano = moverSeccion(e, 'pie', 1, 0)
+  assert.equal(otroTamano.ok, false)
+  const sobreOtra = moverSeccion(e, 's', 1, 1)
+  assert.equal(sobreOtra.ok, false)
+  assert.equal(JSON.stringify(e), JSON.stringify(cuadriculaConPie()))
+})
+
+test('mover una sección no cambia su código: el documento sigue teniendo su pestaña', () => {
+  const e = cuadriculaConPie()
+  const r = moverSeccion(e, 'pie', 3, 0)
+  assert.equal(r.ok, true)
+  if (!r.ok) return
+  const doc = { version: 1 as const, estructura: r.valor, secciones: [{ nombre: 'footer', contenido: 'generarFooter()' }], main: '' }
+  assert.equal(doc.estructura.celdas.some((c) => c.seccion === 'footer'), true)
 })

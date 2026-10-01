@@ -31,6 +31,7 @@ import {
   eliminarColumna,
   eliminarFila,
   extenderSeccion,
+  moverSeccion,
   parsearDocumentoJu1,
   separarCeldaDelDocumento,
   serializarDocumentoJu1,
@@ -1019,6 +1020,13 @@ function VistaEstudianteInterna() {
                 if (!r.ok) return r.error
                 setContenido(serializarDocumentoJu1(r.valor))
                 setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
+                return null
+              }}
+              onMoverSeccion={(celdaId, fila, columna) => {
+                if (numeroCargado !== numero) return 'Espera a que termine de cargar tu borrador.'
+                const r = moverSeccion(documento.estructura, celdaId, fila, columna)
+                if (!r.ok) return r.error
+                actualizarEstructura(() => r.valor)
                 return null
               }}
               onSepararCelda={(celdaId) => {

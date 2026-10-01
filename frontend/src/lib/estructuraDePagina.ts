@@ -178,6 +178,95 @@ export function extenderSeccion(
   }
 }
 
+/** Dónde cae una sección (celdaId) si se suelta con su esquina de arriba a la izquierda en
+ *  (fila, columna): se corre lo justo para no salirse de la cuadrícula, así soltarla "cerca del
+ *  borde" funciona sin apuntar al milímetro. null si la celda no existe o no es una sección. */
+export function ubicarSeccion(
+  estructura: EstructuraDePagina,
+  celdaId: string,
+  fila: number,
+  columna: number,
+): { fila: number; columna: number; expandeFilas: number; expandeColumnas: number } | null {
+  const celda = estructura.celdas.find((c) => c.id === celdaId)
+  if (!celda || celda.seccion === null) return null
+  return {
+    fila: Math.max(0, Math.min(fila, estructura.filas - celda.expandeFilas)),
+    columna: Math.max(0, Math.min(columna, estructura.columnas - celda.expandeColumnas)),
+    expandeFilas: celda.expandeFilas,
+    expandeColumnas: celda.expandeColumnas,
+  }
+}
+
+/** Mueve una sección (con su nombre, por lo tanto con su pestaña y su código) a otro lugar de la
+ *  cuadrícula. Sirve para hacerle lugar a secciones nuevas en el medio: por ejemplo, bajar el pie
+ *  a la última fila y dejar libre lo que ocupaba. Dos casos válidos:
+ *  - el destino son solo celdas vacías (o parte de la misma sección): se mueve y lo que quedó
+ *    libre vuelve a ser celdas vacías;
+ *  - el destino es OTRA sección exactamente del mismo tamaño y en esa misma posición: se
+ *    intercambian. Cualquier otra cosa se rechaza con el motivo, sin tocar nada. */
+export function moverSeccion(
+  estructura: EstructuraDePagina,
+  celdaId: string,
+  fila: number,
+  columna: number,
+): Resultado<EstructuraDePagina> {
+  const origen = estructura.celdas.find((c) => c.id === celdaId)
+  const destino = ubicarSeccion(estructura, celdaId, fila, columna)
+  if (!origen || !destino) return { ok: false, error: 'Esa sección ya no existe.' }
+  if (destino.fila === origen.fila && destino.columna === origen.columna) return { ok: true, valor: estructura }
+
+  const filaFin = destino.fila + destino.expandeFilas - 1
+  const columnaFin = destino.columna + destino.expandeColumnas - 1
+  // La sección que se mueve no cuenta como obstáculo: su lugar de antes se trata como celdas
+  // vacías, así un destino que se superpone con su propio lugar (bajarla una fila) es válido.
+  const huecoPropio: Celda[] = []
+  for (let f = origen.fila; f < origen.fila + origen.expandeFilas; f++) {
+    for (let c = origen.columna; c < origen.columna + origen.expandeColumnas; c++) huecoPropio.push(celdaVacia(f, c))
+  }
+  const sinOrigen = { ...estructura, celdas: [...estructura.celdas.filter((c) => c.id !== celdaId), ...huecoPropio] }
+  const otras = celdasDelRectangulo(sinOrigen, destino.fila, filaFin, destino.columna, columnaFin)
+  if (!otras.ok) {
+    return { ok: false, error: 'Ahí hay una sección de otro tamaño — mové o agrandá/separá esa primero.' }
+  }
+
+  // Intercambio: justo una sección, del mismo tamaño y en el mismo lugar que el destino.
+  const nombradas = otras.valor.filter((c) => c.seccion !== null)
+  if (nombradas.length > 0) {
+    const otra = nombradas[0]!
+    const mismoLugar =
+      nombradas.length === 1 && otras.valor.length === 1 && otra.fila === destino.fila && otra.columna === destino.columna &&
+      otra.expandeFilas === origen.expandeFilas && otra.expandeColumnas === origen.expandeColumnas
+    if (!mismoLugar) {
+      return { ok: false, error: 'Ahí hay una sección: solo se puede cambiar de lugar con otra del mismo tamaño.' }
+    }
+    return {
+      ok: true,
+      valor: {
+        ...estructura,
+        celdas: estructura.celdas.map((c) =>
+          c.id === origen.id ? { ...c, fila: otra.fila, columna: otra.columna }
+            : c.id === otra.id ? { ...c, fila: origen.fila, columna: origen.columna }
+              : c),
+      },
+    }
+  }
+
+  const idsReales = new Set(estructura.celdas.map((c) => c.id))
+  const ocupadas = new Set(otras.valor.map((c) => c.id).filter((id) => idsReales.has(id)))
+  const movida: Celda = { ...origen, fila: destino.fila, columna: destino.columna }
+  const liberadas: Celda[] = []
+  for (let f = origen.fila; f < origen.fila + origen.expandeFilas; f++) {
+    for (let c = origen.columna; c < origen.columna + origen.expandeColumnas; c++) {
+      const dentroDelDestino = f >= destino.fila && f <= filaFin && c >= destino.columna && c <= columnaFin
+      if (!dentroDelDestino) liberadas.push(celdaVacia(f, c))
+    }
+  }
+  return {
+    ok: true,
+    valor: { ...estructura, celdas: [...estructura.celdas.filter((c) => c.id !== celdaId && !ocupadas.has(c.id)), movida, ...liberadas] },
+  }
+}
+
 /** Deshace una combinación: la celda vuelve a ser sus 1x1 originales, vacías (se pierde el
  *  contenido que tuviera esa sección — se avisa en la UI antes de llamar a esto). */
 export function separarCelda(estructura: EstructuraDePagina, celdaId: string): EstructuraDePagina {
