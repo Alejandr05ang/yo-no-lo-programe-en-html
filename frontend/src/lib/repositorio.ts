@@ -110,6 +110,18 @@ export function construirRepositorio(titulo: string, snapshotHtml: string, logic
   }
   for (const script of [...cuerpo.querySelectorAll('script')]) script.remove()
 
+  // Secciones marcadas con generarEncabezado()/generarFooter() → etiquetas semánticas.
+  for (const [clase, etiqueta] of [['rol-encabezado', 'header'], ['rol-pie', 'footer']] as const) {
+    for (const el of [...cuerpo.querySelectorAll('.' + clase)]) {
+      const nuevo = doc.createElement(etiqueta)
+      for (const atributo of [...el.attributes]) nuevo.setAttribute(atributo.name, atributo.value)
+      nuevo.classList.remove(clase)
+      if (!nuevo.getAttribute('class')) nuevo.removeAttribute('class')
+      nuevo.append(...el.childNodes)
+      el.replaceWith(nuevo)
+    }
+  }
+
   quitarCodigoActivo(cuerpo)
   endurecerEnlaces(cuerpo)
   const claseExtra = extraerEstilosEnLinea(cuerpo)

@@ -230,3 +230,75 @@ test('una sección con crearSeccion() adentro puede subdividirse a sí misma', a
   assert.equal(r.ok, true, r.error)
   assert.ok(doc(r.html).querySelector('.fila p'))
 })
+
+// ── generarEncabezado() / generarFooter() ────────────────────────────────────────────────
+// Cuadrícula 3×2: encabezado (arriba, 2 columnas), sobreMi | hobbies (medio), footer (abajo, 2 columnas).
+function cuadricula3x2(codigos: { encabezado?: string; footer?: string; sobreMi?: string }): DocumentoJu1 {
+  const celda = (id: string, fila: number, columna: number, expandeColumnas: number, seccion: string) => ({ id, fila, columna, expandeFilas: 1, expandeColumnas, seccion })
+  return {
+    version: 1,
+    estructura: { filas: 3, columnas: 2, celdas: [celda('a', 0, 0, 2, 'encabezado'), celda('b', 1, 0, 1, 'sobreMi'), celda('c', 1, 1, 1, 'hobbies'), celda('d', 2, 0, 2, 'footer')] },
+    secciones: [
+      { nombre: 'encabezado', contenido: `${codigos.encabezado ?? ''}\nmostrar(crearTitulo("Hola"))` },
+      { nombre: 'sobreMi', contenido: `${codigos.sobreMi ?? ''}\nmostrar(crearParrafo("yo"))` },
+      { nombre: 'hobbies', contenido: 'mostrar(crearParrafo("leer"))' },
+      { nombre: 'footer', contenido: `${codigos.footer ?? ''}\nmostrar(crearParrafo("fin"))` },
+    ],
+    main: 'mostrar(encabezado)\nmostrar(sobreMi)\nmostrar(hobbies)\nmostrar(footer)',
+  }
+}
+const filasDe = (html: string) => (doc(html).querySelector('body > div[style*="grid"]') as HTMLElement).style.gridTemplateRows
+
+test('sin generarFooter() todo sigue igual: la última fila absorbe el espacio', async () => {
+  const r = await ejecutarJu1Real(cuadricula3x2({}), {})
+  assert.equal(r.ok, true, r.error)
+  assert.equal(filasDe(r.html), 'auto auto minmax(auto, 1fr)')
+})
+
+test('generarEncabezado() y generarFooter() miden su fila por contenido; el espacio sobrante va al medio', async () => {
+  const r = await ejecutarJu1Real(cuadricula3x2({ encabezado: 'generarEncabezado()', footer: 'generarFooter()' }), {})
+  assert.equal(r.ok, true, r.error)
+  assert.equal(filasDe(r.html), 'auto minmax(auto, 1fr) auto')
+})
+
+test('generarFooter() en una sección que no está abajo explica por qué no se puede', async () => {
+  const r = await ejecutarJu1Real(cuadricula3x2({ sobreMi: 'generarFooter()' }), {})
+  assert.equal(r.ok, false)
+  assert.match(r.error ?? '', /generarFooter\(\) solo funciona en la fila de abajo/)
+  assert.equal(r.archivo, 'seccion-sobreMi.js')
+})
+
+test('generarEncabezado() fuera de la fila de arriba no se puede', async () => {
+  const r = await ejecutarJu1Real(cuadricula3x2({ footer: 'generarEncabezado()' }), {})
+  assert.equal(r.ok, false)
+  assert.match(r.error ?? '', /generarEncabezado\(\) solo funciona en la fila de arriba/)
+})
+
+test('un pie con otra sección a su lado que no es pie no se puede', async () => {
+  const d = cuadricula3x2({ footer: 'generarFooter()' })
+  // El pie ocupa solo la columna izquierda y "hobbies" pasa a su derecha, abajo.
+  d.estructura.celdas = [
+    { id: 'a', fila: 0, columna: 0, expandeFilas: 1, expandeColumnas: 2, seccion: 'encabezado' },
+    { id: 'b', fila: 1, columna: 0, expandeFilas: 1, expandeColumnas: 2, seccion: 'sobreMi' },
+    { id: 'd', fila: 2, columna: 0, expandeFilas: 1, expandeColumnas: 1, seccion: 'footer' },
+    { id: 'c', fila: 2, columna: 1, expandeFilas: 1, expandeColumnas: 1, seccion: 'hobbies' },
+  ]
+  const r = await ejecutarJu1Real(d, {})
+  assert.equal(r.ok, false)
+  assert.match(r.error ?? '', /no puede ir con otra sección en su misma fila/)
+  assert.equal(r.archivo, 'seccion-footer.js')
+})
+
+test('un pie de varias columnas es válido si todas las secciones de la fila lo usan', async () => {
+  const d = cuadricula3x2({ footer: 'generarFooter()' })
+  d.estructura.celdas = [
+    { id: 'a', fila: 0, columna: 0, expandeFilas: 1, expandeColumnas: 2, seccion: 'encabezado' },
+    { id: 'b', fila: 1, columna: 0, expandeFilas: 1, expandeColumnas: 2, seccion: 'sobreMi' },
+    { id: 'd', fila: 2, columna: 0, expandeFilas: 1, expandeColumnas: 1, seccion: 'footer' },
+    { id: 'c', fila: 2, columna: 1, expandeFilas: 1, expandeColumnas: 1, seccion: 'hobbies' },
+  ]
+  d.secciones.find((s) => s.nombre === 'hobbies')!.contenido = 'generarFooter()\nmostrar(crearParrafo("leer"))'
+  const r = await ejecutarJu1Real(d, {})
+  assert.equal(r.ok, true, r.error)
+  assert.equal(filasDe(r.html), 'auto minmax(auto, 1fr) auto')
+})

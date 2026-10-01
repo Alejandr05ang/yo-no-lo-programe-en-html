@@ -379,7 +379,9 @@ export function construirSrcdocJu1(doc: DocumentoJu1, datos: unknown, ticks?: nu
   pagina = document.createElement('div');
   pagina.style.gridRow = '${celda.fila + 1} / span ${celda.expandeFilas}';
   pagina.style.gridColumn = '${celda.columna + 1} / span ${celda.expandeColumnas}';
+  __seccionActual = ${comoLiteralSeguro(s.nombre)};
   __evaluarConNombre(${comoLiteralSeguro(codigoConFuente)}, ${comoLiteralSeguro(archivo)});
+  __seccionActual = null;
   window.__SECCIONES__[${comoLiteralSeguro(s.nombre)}] = pagina;`
     })
     .join('\n')
@@ -391,15 +393,12 @@ export function construirSrcdocJu1(doc: DocumentoJu1, datos: unknown, ticks?: nu
   const archivoMain = 'portafolio.js'
   const mainConFuente = doc.main + `\n//# sourceURL=${archivoMain}`
 
-  // Todas las filas menos la última se miden por su contenido ("auto"); la última reparte lo
-  // que sobre (repeat(0, ...) no es válido CSS, así que con una sola fila queda solo "1fr").
-  // Junto con min-height: 100vh en el grid, esto hace que la última fila (normalmente el pie
-  // de página) llegue hasta abajo del todo cuando el contenido no alcanza a llenar la
-  // pantalla — un pie de página de verdad, no una franja que corta a la mitad de la hoja.
-  const filasSinLaUltima = doc.estructura.filas - 1
-  const templateFilas = filasSinLaUltima > 0
-    ? `repeat(${filasSinLaUltima}, auto) minmax(auto, 1fr)`
-    : 'minmax(auto, 1fr)'
+  // Geometría de la cuadrícula para el iframe: decide qué filas se miden por su contenido y
+  // valida generarEncabezado()/generarFooter() (ver __declararRol más abajo).
+  const geometria = comoLiteralSeguro({
+    filas: doc.estructura.filas,
+    celdas: doc.estructura.celdas.map((c) => ({ seccion: c.seccion, fila: c.fila, expandeFilas: c.expandeFilas })),
+  })
 
   return `<!doctype html><html><head><meta charset="utf-8">
 <style>${ANDAMIAJE_CSS}</style>
@@ -409,6 +408,59 @@ window.__SECCIONES__ = {};
 ${relojDeRevision(ticks)}
 ${RUNTIME}
 var __raizReal = pagina;
+
+// Encabezado y pie (Ju1). generarEncabezado()/generarFooter() se llaman DENTRO del código de una
+// sección y solo valen cuando la posición lo permite: el encabezado va en la fila de arriba de
+// todo, el pie en la de abajo, y nadie comparte esa fila con ellos a menos que también lo sea.
+// Si no se puede, se explica por qué (error en la pestaña de esa sección) en vez de ignorarlo.
+var __GRID__ = ${geometria};
+var __roles = {};
+var __seccionActual = null;
+function __celdasQueTocan(fila) {
+  return __GRID__.celdas.filter(function (c) { return c.fila <= fila && fila < c.fila + c.expandeFilas; });
+}
+function __declararRol(rol) {
+  var funcion = rol === 'encabezado' ? 'generarEncabezado' : 'generarFooter';
+  var nombre = __seccionActual;
+  if (!nombre) throw new Error(funcion + '() se escribe dentro del código de una sección, no en portafolio.js.');
+  var celda = __GRID__.celdas.filter(function (c) { return c.seccion === nombre; })[0];
+  if (rol === 'encabezado' && celda.fila !== 0) {
+    throw new Error(funcion + '() solo funciona en la fila de arriba de todo, y "' + nombre + '" no está ahí.');
+  }
+  if (rol === 'footer' && celda.fila + celda.expandeFilas !== __GRID__.filas) {
+    throw new Error(funcion + '() solo funciona en la fila de abajo de todo, y "' + nombre + '" no está ahí.');
+  }
+  __roles[nombre] = rol;
+  // Marca para que el repositorio descargable la escriba como <header> / <footer>.
+  pagina.classList.add(rol === 'encabezado' ? 'rol-encabezado' : 'rol-pie');
+}
+function generarEncabezado() { __declararRol('encabezado'); }
+function generarFooter() { __declararRol('footer'); }
+
+// Qué mide cada fila: las que son solo encabezado o solo pie se ajustan a su contenido; de las
+// demás, la última absorbe el espacio que sobra (así el pie queda pegado abajo sin estirarse).
+function __plantillaDeFilas() {
+  var contenido = [];
+  var medidas = [];
+  for (var f = 0; f < __GRID__.filas; f++) {
+    var tocan = __celdasQueTocan(f);
+    var rol = tocan.length ? __roles[tocan[0].seccion] : undefined;
+    var puro = !!rol && tocan.every(function (c) { return __roles[c.seccion] === rol; });
+    medidas.push(puro ? 'auto' : null);
+    if (!puro) contenido.push(f);
+  }
+  for (var nombre in __roles) {
+    var propia = __GRID__.celdas.filter(function (c) { return c.seccion === nombre; })[0];
+    for (var g = propia.fila; g < propia.fila + propia.expandeFilas; g++) {
+      if (medidas[g] === null) {
+        __archivoConError = 'seccion-' + nombre + '.js';
+        throw new Error((__roles[nombre] === 'footer' ? 'generarFooter' : 'generarEncabezado') + '() de "' + nombre + '" no puede ir con otra sección en su misma fila, a menos que esa también lo use.');
+      }
+    }
+  }
+  var ultima = contenido.length ? contenido[contenido.length - 1] : __GRID__.filas - 1;
+  return medidas.map(function (m, i) { return i === ultima ? 'minmax(auto, 1fr)' : 'auto'; }).join(' ');
+}
 
 // A diferencia del documento de un solo archivo, acá corren VARIOS scripts en secuencia (uno
 // por sección + el main): __archivoConError dice cuál está corriendo en este momento, así un
@@ -455,7 +507,7 @@ ${bloquesDeSecciones}
   var __grid = document.createElement('div');
   __grid.className = 'tutorias-grid';
   __grid.style.display = 'grid';
-  __grid.style.gridTemplateRows = '${templateFilas}';
+  __grid.style.gridTemplateRows = __plantillaDeFilas();
   __grid.style.gridTemplateColumns = 'repeat(${doc.estructura.columnas}, 1fr)';
   __grid.style.gap = '0';
   __grid.style.minHeight = '100vh';

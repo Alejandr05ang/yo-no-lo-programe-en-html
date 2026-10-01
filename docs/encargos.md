@@ -116,7 +116,7 @@ una pestaña de código por sección).
 | --- | --- |
 | Ma1 | `crearTitulo`, `crearSubtitulo`, `crearParrafo`, `mostrar`, `const`, `datos` |
 | Mi1 | `crearEnlace`, `if` / `else`, `crearLista`, `crearItem`, `agregarA`, `for … of` |
-| Ju1 (E12/E13) | `cambiarColorTexto`, `cambiarTamano`, `cambiarFuente`, `cambiarAlineacion`, `cambiarColorFondo` — la estructura (E12) se arma con una herramienta visual, no con código |
+| Ju1 (E12/E13) | `cambiarColorTexto`, `cambiarTamano`, `cambiarFuente`, `cambiarAlineacion`, `cambiarColorFondo`, `generarEncabezado`, `generarFooter` — la estructura (E12) se arma con una herramienta visual, no con código |
 | V1 | `cadaSegundo` |
 | L2 | (nada nuevo — combina `for` + `if`) |
 | Ma2 | `function` |

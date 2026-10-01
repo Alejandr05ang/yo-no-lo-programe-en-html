@@ -58,7 +58,7 @@ const DIA_DE_SESION: Record<Sesion, string> = {
 const HERRAMIENTAS_POR_SESION: Record<Sesion, string[]> = {
   Ma1: ['crearTitulo()', 'crearSubtitulo()', 'crearParrafo()', 'mostrar()', 'const'],
   Mi1: ['crearEnlace()', 'condición', 'crearSalto()', 'crearLista()', 'crearItem()', 'agregarA()', 'vaciar()', 'por cada'],
-  Ju1: ['crearSeccion()', 'cambiarColorTexto()', 'cambiarTamano()', 'cambiarFuente()', 'cambiarColorFondo()', 'cambiarAlineacion()'],
+  Ju1: ['crearSeccion()', 'cambiarColorTexto()', 'cambiarTamano()', 'cambiarFuente()', 'cambiarColorFondo()', 'cambiarAlineacion()', 'generarEncabezado()', 'generarFooter()'],
   // crearImagen() pedagógicamente es del nivel 2 / Mi1 (niveles.md), pero hoy no hay encargo
   // de Mi1 que la ejercite (D14, pendiente) — se desbloquea acá porque es donde se usa primero.
   V1: ['crearCarrusel()', 'proyectosDestacados()', 'cadaSegundo()', 'crearImagen()'],

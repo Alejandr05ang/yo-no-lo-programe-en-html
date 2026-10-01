@@ -89,3 +89,12 @@ test('prepararRepositorio con cuadrícula (Ju1): secciones con id y lógica por 
   assert.match(r['script.js'], /document\.getElementById\('seccion-encabezado'\)\.style\.backgroundColor = "tomato"/)
   new Function(r['script.js'])
 })
+
+test('generarEncabezado()/generarFooter() salen como <header>/<footer> y la altura de las filas queda en el CSS', () => {
+  const html = '<div class="tutorias-grid" style="display: grid; grid-template-rows: auto minmax(auto, 1fr) auto"><div class="rol-encabezado" style="grid-row: 1 / span 1"><h1>Hola</h1></div><div style="grid-row: 2 / span 1"><p>cuerpo</p></div><div class="rol-pie" style="grid-row: 3 / span 1"><p>fin</p></div></div>'
+  const r = construirRepositorio('Ana', html)
+  assert.match(r['index.html'], /<header class="estilo-\d+">[\s\S]*<h1>Hola<\/h1>[\s\S]*<\/header>/)
+  assert.match(r['index.html'], /<footer class="estilo-\d+">[\s\S]*<p>fin<\/p>[\s\S]*<\/footer>/)
+  assert.doesNotMatch(r['index.html'], /rol-(encabezado|pie)/)
+  assert.match(r['styles.css'], /grid-template-rows: auto minmax\(auto, 1fr\) auto/)
+})

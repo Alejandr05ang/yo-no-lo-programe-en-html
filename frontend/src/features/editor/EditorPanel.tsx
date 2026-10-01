@@ -88,6 +88,10 @@ declare function cambiarFuente(elemento: HTMLElement, fuente: 'clásica' | 'eleg
 declare function cambiarColorTexto(elemento: HTMLElement, color: string): HTMLElement
 /** ${doc('cambiarAlineacion()')} */
 declare function cambiarAlineacion(elemento: HTMLElement, alineacion: 'izquierda' | 'centro' | 'derecha' | 'justificado'): HTMLElement
+/** ${doc('generarEncabezado()')} */
+declare function generarEncabezado(): void
+/** ${doc('generarFooter()')} */
+declare function generarFooter(): void
 /** ${doc('cambiarColorFondo()')} */
 declare function cambiarColorFondo(color: string): void
 declare function cambiarColorFondo(elemento: HTMLElement, color: string): HTMLElement

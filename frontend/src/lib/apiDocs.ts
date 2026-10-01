@@ -282,6 +282,22 @@ export const API_DOCS: Record<string, DocHerramienta> = {
       '</div>',
   },
 
+  'generarEncabezado()': {
+    firma: 'generarEncabezado()',
+    descripcion:
+      'Se escribe DENTRO de la pestaña de una sección y la convierte en el encabezado de la página: la fila se ajusta a su contenido, sin estirarse. Solo funciona si la sección está en la fila de arriba de todo y nadie comparte esa fila con ella (a menos que esa otra sección también la use). Si no se puede, te dice por qué.',
+    ejemplo: 'generarEncabezado()\nmostrar(crearTitulo("Mi portafolio"))',
+    relacionadas: ['generarFooter()', 'cambiarColorFondo()'],
+  },
+
+  'generarFooter()': {
+    firma: 'generarFooter()',
+    descripcion:
+      'Se escribe DENTRO de la pestaña de una sección y la convierte en el pie de página: la fila se ajusta a su contenido y queda pegada abajo, y el espacio que sobra lo toma la fila de arriba. Solo funciona si la sección está en la fila de abajo de todo y nadie comparte esa fila con ella (a menos que esa otra sección también la use). Si no se puede, te dice por qué.',
+    ejemplo: 'generarFooter()\nmostrar(crearParrafo("Gracias por visitar mi portafolio."))',
+    relacionadas: ['generarEncabezado()', 'cambiarColorFondo()'],
+  },
+
   'función': {
     firma: 'FUNCIÓN nombre(entrada) … FIN FUNCIÓN',
     descripcion:
