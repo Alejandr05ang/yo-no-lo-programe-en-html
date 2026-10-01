@@ -11,6 +11,12 @@ import {
   eliminarFila,
   etiquetarCelda,
   extenderSeccion,
+  esDocumentoVirgen,
+  sinMostrarDe,
+  eliminarFilaDelDocumento,
+  eliminarColumnaDelDocumento,
+  seccionesDeLaUltima,
+  sinSeccionesHuerfanas,
   moverSeccion,
   ubicarSeccion,
   parsearDocumentoJu1,
@@ -338,4 +344,107 @@ test('mover una sección no cambia su código: el documento sigue teniendo su pe
   if (!r.ok) return
   const doc = { version: 1 as const, estructura: r.valor, secciones: [{ nombre: 'footer', contenido: 'generarFooter()' }], main: '' }
   assert.equal(doc.estructura.celdas.some((c) => c.seccion === 'footer'), true)
+})
+
+// ── ids de celda: una recarga no debe hacer desaparecer secciones ────────────────────────
+test('tras recargar (contador de ids en 0) mover y crear secciones no borra otras', async () => {
+  const A = await import('../src/lib/estructuraDePagina.ts?sesion-a')
+  const B = await import('../src/lib/estructuraDePagina.ts?sesion-b')
+  const ok = <T>(r: { ok: true; valor: T } | { ok: false; error: string }): T => { if (!r.ok) throw new Error(r.error); return r.valor }
+  let d = A.crearDocumentoJu1Inicial()
+  d = { ...d, estructura: A.agregarColumna(A.agregarColumna(d.estructura)) }
+  for (let i = 0; i < 3; i++) d = { ...d, estructura: A.agregarFila(d.estructura) }
+  d = ok(A.crearSeccion(d, 0, 0, 0, 2, 'encabezado'))
+  d = ok(A.crearSeccion(d, 1, 0, 1, 0, 'sobreMi'))
+  d = ok(A.crearSeccion(d, 1, 1, 1, 2, 'misHobbies'))
+  d = ok(A.crearSeccion(d, 2, 0, 2, 2, 'footer'))
+  d = B.parsearDocumentoJu1(A.serializarDocumentoJu1(d))
+  const pie = d.estructura.celdas.find((c) => c.seccion === 'footer')!
+  d = { ...d, estructura: ok(B.moverSeccion(d.estructura, pie.id, 3, 0)) }
+  d = ok(B.crearSeccion(d, 2, 0, 2, 2, 'fragmentoDeLibro'))
+  assert.deepEqual(d.estructura.celdas.map((c) => c.seccion).sort(), ['encabezado', 'footer', 'fragmentoDeLibro', 'misHobbies', 'sobreMi'])
+  assert.equal(new Set(d.estructura.celdas.map((c) => c.id)).size, d.estructura.celdas.length)
+})
+
+test('un documento guardado con ids repetidos se repara al abrirlo', () => {
+  const c = (id: string, fila: number, seccion: string | null) => ({ id, fila, columna: 0, expandeFilas: 1, expandeColumnas: 1, seccion })
+  const texto = JSON.stringify({ version: 1, estructura: { filas: 2, columnas: 1, celdas: [c('celda-1', 0, 'a'), c('celda-1', 1, 'b')] }, secciones: [{ nombre: 'a', contenido: 'x' }, { nombre: 'b', contenido: 'y' }], main: '' })
+  const d = parsearDocumentoJu1(texto)
+  assert.equal(new Set(d.estructura.celdas.map((x) => x.id)).size, 2)
+  assert.deepEqual(d.estructura.celdas.map((x) => x.seccion), ['a', 'b'])
+})
+
+test('nombrar una celda con el nombre de una sección huérfana la reconecta con su código', () => {
+  const base = crearDocumentoJu1Inicial()
+  const doc = { ...base, secciones: [{ nombre: 'footer', contenido: 'generarFooter()' }] }
+  const r = crearSeccion(doc, 0, 0, 0, 0, 'Footer')
+  assert.equal(r.ok, true)
+  if (!r.ok) return
+  assert.deepEqual(r.valor.secciones, [{ nombre: 'footer', contenido: 'generarFooter()' }])
+  assert.equal(r.valor.estructura.celdas[0]!.seccion, 'footer')
+})
+
+// ── pestañas de secciones que ya no existen ──────────────────────────────────────────────
+function docConPie() {
+  const e = cuadriculaConPie()
+  return {
+    version: 1 as const,
+    estructura: e,
+    secciones: [
+      { nombre: 'encabezado', contenido: 'a' }, { nombre: 'sobreMi', contenido: '' }, { nombre: 'misHobbies', contenido: '' }, { nombre: 'footer', contenido: 'generarFooter()' },
+    ],
+    main: '',
+  }
+}
+
+test('quitar una fila se lleva las secciones que vivían ahí, con su pestaña', () => {
+  const d = docConPie()
+  d.estructura.celdas = d.estructura.celdas.filter((c) => c.fila !== 3) // sin la fila vacía de abajo
+  d.estructura.filas = 3
+  assert.deepEqual(seccionesDeLaUltima(d.estructura, 'fila'), ['footer'])
+  const r = eliminarFilaDelDocumento(d)
+  assert.equal(r.ok, true)
+  if (r.ok) assert.deepEqual(r.valor.secciones.map((s) => s.nombre), ['encabezado', 'sobreMi', 'misHobbies'])
+})
+
+test('quitar una columna con una sección combinada que la invade se rechaza sin tocar nada', () => {
+  const d = docConPie()
+  const r = eliminarColumnaDelDocumento(d)
+  assert.equal(r.ok, false)
+  assert.equal(d.secciones.length, 4)
+})
+
+test('al abrir un documento, las pestañas vacías sin celda se descartan y las que tienen código se conservan', () => {
+  const d = docConPie()
+  const texto = JSON.stringify({ ...d, secciones: [...d.secciones, { nombre: 'fantasma', contenido: '' }, { nombre: 'conCodigo', contenido: 'mostrar(1)' }] })
+  const abierto = parsearDocumentoJu1(texto)
+  assert.deepEqual(abierto.secciones.map((s) => s.nombre), ['encabezado', 'sobreMi', 'misHobbies', 'footer', 'conCodigo'])
+  assert.deepEqual(sinSeccionesHuerfanas(abierto).secciones.map((s) => s.nombre), ['encabezado', 'sobreMi', 'misHobbies', 'footer'])
+})
+
+// ── borrar todas las secciones no debe romper ni reiniciar la página ─────────────────────
+test('separar una sección 1x1 la quita de verdad: ni etiqueta suelta ni mostrar() colgando en el main', () => {
+  const d = { ...docConPie(), main: 'mostrar(encabezado)\nmostrar(sobreMi);\nmostrar( misHobbies ) // hobbies\nmostrar(footer)\nconsole.log("hola")' }
+  const s = d.estructura.celdas.find((c) => c.seccion === 'sobreMi')!
+  const r = separarCeldaDelDocumento(d, s.id)
+  assert.equal(r.estructura.celdas.find((c) => c.id === s.id)!.seccion, null)
+  assert.equal(r.secciones.some((x) => x.nombre === 'sobreMi'), false)
+  assert.equal(r.main, 'mostrar(encabezado)\nmostrar( misHobbies ) // hobbies\nmostrar(footer)\nconsole.log("hola")')
+})
+
+test('al borrar TODAS las secciones el documento queda vacío pero es del alumno: no se considera virgen', () => {
+  let d = docConPie()
+  for (const c of d.estructura.celdas.filter((x) => x.seccion !== null)) d = separarCeldaDelDocumento(d, c.id) as typeof d
+  assert.equal(d.secciones.length, 0)
+  assert.equal(d.estructura.celdas.every((c) => c.seccion === null), true)
+  assert.equal(esDocumentoVirgen(d), false, 'sigue teniendo 4×3 celdas: la estructura heredada no debe pisarla')
+  assert.equal(esDocumentoVirgen(crearDocumentoJu1Inicial()), true)
+})
+
+test('una celda con etiqueta pero sin pestaña (daño de antes) vuelve a ser una celda vacía al abrir', () => {
+  const d = docConPie()
+  const roto = { ...d, secciones: d.secciones.filter((s) => s.nombre !== 'footer'), main: 'mostrar(footer)\nmostrar(encabezado)' }
+  const abierto = parsearDocumentoJu1(JSON.stringify(roto))
+  assert.equal(abierto.estructura.celdas.find((c) => c.id === 'pie')!.seccion, null)
+  assert.equal(sinMostrarDe('mostrar(a)\nmostrar(b)', ['a']), 'mostrar(b)')
 })

@@ -28,12 +28,14 @@ import {
   agregarFila,
   crearDocumentoJu1Inicial,
   crearSeccion,
-  eliminarColumna,
-  eliminarFila,
+  eliminarColumnaDelDocumento,
+  esDocumentoVirgen,
+  eliminarFilaDelDocumento,
   extenderSeccion,
   moverSeccion,
   parsearDocumentoJu1,
   separarCeldaDelDocumento,
+  sinSeccionesHuerfanas,
   serializarDocumentoJu1,
 } from '../../lib/estructuraDePagina'
 import type { EstadoGuardado, EstructuraDePagina, ResultadoRevision, SalidaEjecucion } from '../../lib/tipos'
@@ -132,7 +134,7 @@ function contenidoInicialDe(numero: number, soluciones: Record<number, string>):
  *  guardado al abrir el encargo antes de que hubiera algo que heredar. */
 function borradorVacio(codigo: string): boolean {
   const doc = parsearDocumentoJu1(codigo)
-  return !doc.main.trim() && doc.secciones.every(s => !s.contenido.trim())
+  return !doc.main.trim() && doc.secciones.every(s => !s.contenido.trim()) && esDocumentoVirgen(doc)
 }
 
 /** Una versión con trabajo: alguna sección con código, o (archivo único) un main con texto. */
@@ -153,7 +155,11 @@ function completarConHeredado(propio: string, heredado: string): string | null {
   const mio = parsearDocumentoJu1(propio)
   const base = parsearDocumentoJu1(heredado)
   if (sinContenidoEnSecciones(base)) return null
-  const vacio = sinContenidoEnSecciones(mio)
+  // La estructura heredada solo se pone si el alumno todavía no armó NINGUNA sección en su
+  // cuadrícula. Que sus secciones estén sin código no alcanza: son suyas, y reemplazar la
+  // estructura las dejaba sin celda (el bloque desaparecía al pasar de nivel y las pestañas
+  // quedaban huérfanas).
+  const vacio = sinContenidoEnSecciones(mio) && esDocumentoVirgen(mio)
   const secciones = mio.secciones.map(m => {
     const b = base.secciones.find(x => x.nombre === m.nombre)
     return !m.contenido.trim() && b?.contenido.trim() ? { ...m, contenido: b.contenido } : m
@@ -167,8 +173,9 @@ function completarConHeredado(propio: string, heredado: string): string | null {
     secciones,
     main: mio.main.trim() ? mio.main : base.main,
   }
-  const igual = JSON.stringify(nuevo) === JSON.stringify(mio)
-  return igual ? null : serializarDocumentoJu1(nuevo)
+  const limpio = sinSeccionesHuerfanas(nuevo)
+  const igual = JSON.stringify(limpio) === JSON.stringify(mio)
+  return igual ? null : serializarDocumentoJu1(limpio)
 }
 
 export function VistaEstudiante() {
@@ -997,14 +1004,20 @@ function VistaEstudianteInterna() {
               onAgregarFila={() => actualizarEstructura(agregarFila)}
               onAgregarColumna={() => actualizarEstructura(agregarColumna)}
               onEliminarFila={() => {
-                const r = eliminarFila(documento.estructura)
-                if (r.ok) actualizarEstructura(() => r.valor)
-                return r.ok ? null : r.error
+                if (numeroCargado !== numero) return 'Espera a que termine de cargar tu borrador.'
+                const r = eliminarFilaDelDocumento(documento)
+                if (!r.ok) return r.error
+                setContenido(serializarDocumentoJu1(r.valor))
+                setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
+                return null
               }}
               onEliminarColumna={() => {
-                const r = eliminarColumna(documento.estructura)
-                if (r.ok) actualizarEstructura(() => r.valor)
-                return r.ok ? null : r.error
+                if (numeroCargado !== numero) return 'Espera a que termine de cargar tu borrador.'
+                const r = eliminarColumnaDelDocumento(documento)
+                if (!r.ok) return r.error
+                setContenido(serializarDocumentoJu1(r.valor))
+                setEstadoGuardado(prev => ({ ...prev, estado: 'dirty' }))
+                return null
               }}
               onCrearSeccion={(fi, ci, ff, cf, etq) => {
                 if (numeroCargado !== numero) return 'Espera a que termine de cargar tu borrador.'

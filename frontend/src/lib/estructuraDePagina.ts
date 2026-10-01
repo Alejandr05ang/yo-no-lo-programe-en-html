@@ -8,10 +8,30 @@
 // cuadrícula pertenece a EXACTAMENTE una celda (1x1, o combinada más grande).
 import type { Celda, DocumentoJu1, EstructuraDePagina } from './tipos'
 
+// Los ids se guardan con el documento: un contador que arranca en 0 en cada carga de la página
+// repetía "celda-3" de una sesión anterior, y todas las operaciones que buscan por id (combinar,
+// mover, etiquetar) tocaban DOS celdas — una sección podía desaparecer de la cuadrícula. Por eso
+// el id lleva una parte aleatoria; el contador solo ordena los de una misma sesión.
 let idSeq = 0
 function nuevoId(): string {
   idSeq += 1
-  return `celda-${idSeq}`
+  const azar = Math.floor(Math.random() * 0xffffff).toString(36).padStart(4, '0')
+  return `celda-${azar}${idSeq}`
+}
+
+/** Documentos guardados con ids repetidos (por el contador de antes): se les da un id nuevo a las
+ *  repetidas para que ninguna operación vuelva a tocar dos celdas a la vez. */
+function conIdsUnicos(doc: DocumentoJu1): DocumentoJu1 {
+  const vistos = new Set<string>()
+  let hubo = false
+  const celdas = doc.estructura.celdas.map((c) => {
+    if (!vistos.has(c.id)) { vistos.add(c.id); return c }
+    hubo = true
+    const id = nuevoId()
+    vistos.add(id)
+    return { ...c, id }
+  })
+  return hubo ? { ...doc, estructura: { ...doc.estructura, celdas } } : doc
 }
 
 function celdaVacia(fila: number, columna: number): Celda {
@@ -325,7 +345,18 @@ export function serializarDocumentoJu1(doc: DocumentoJu1): string {
 export function etiquetarCelda(doc: DocumentoJu1, celdaId: string, etiqueta: string): DocumentoJu1 {
   const celda = doc.estructura.celdas.find((c) => c.id === celdaId)
   if (!celda || celda.seccion !== null) return doc
-  const nombre = sanearNombreDeSeccion(etiqueta, doc.secciones.map((s) => s.nombre))
+  const conCelda = new Set(doc.estructura.celdas.flatMap((c) => (c.seccion ? [c.seccion] : [])))
+  const existentes = doc.secciones.map((s) => s.nombre)
+  // Si la etiqueta es justo el nombre de una sección que perdió su lugar en la cuadrícula, se
+  // reconecta a ella (con su código) en vez de crear "nombre2" y dejar la pestaña vieja huérfana.
+  const base = sanearNombreDeSeccion(etiqueta, existentes.filter((n) => conCelda.has(n)))
+  if (existentes.includes(base)) {
+    return {
+      ...doc,
+      estructura: { ...doc.estructura, celdas: doc.estructura.celdas.map((c) => (c.id === celdaId ? { ...c, seccion: base } : c)) },
+    }
+  }
+  const nombre = sanearNombreDeSeccion(etiqueta, existentes)
   return {
     ...doc,
     estructura: {
@@ -365,11 +396,28 @@ export function crearSeccion(
 export function separarCeldaDelDocumento(doc: DocumentoJu1, celdaId: string): DocumentoJu1 {
   const celda = doc.estructura.celdas.find((c) => c.id === celdaId)
   if (!celda) return doc
-  return {
-    ...doc,
-    estructura: separarCelda(doc.estructura, celdaId),
-    secciones: celda.seccion ? doc.secciones.filter((s) => s.nombre !== celda.seccion) : doc.secciones,
-  }
+  // Una celda 1x1 no se "separa" en nada (separarCelda la deja igual): hay que soltarle el nombre
+  // a mano, si no la celda seguía diciendo "footer" sin que existiera su pestaña y la página
+  // se rompía en el mostrar() del main.
+  const estructura = celda.expandeFilas === 1 && celda.expandeColumnas === 1
+    ? { ...doc.estructura, celdas: doc.estructura.celdas.map((c) => (c.id === celdaId ? { ...c, seccion: null } : c)) }
+    : separarCelda(doc.estructura, celdaId)
+  const sinCelda = { ...doc, estructura, secciones: celda.seccion ? doc.secciones.filter((s) => s.nombre !== celda.seccion) : doc.secciones }
+  return celda.seccion ? { ...sinCelda, main: sinMostrarDe(sinCelda.main, [celda.seccion]) } : sinCelda
+}
+
+/** Quita del main las líneas "mostrar(nombre)" de secciones que ya no existen: si no, la página
+ *  fallaba con "nombre is not defined" apenas se borraba una sección. */
+export function sinMostrarDe(main: string, nombres: string[]): string {
+  if (nombres.length === 0) return main
+  const quitar = new Set(nombres)
+  return main
+    .split('\n')
+    .filter((linea) => {
+      const m = /^\s*mostrar\(\s*([^\s()]+)\s*\)\s*;?\s*(\/\/.*)?$/.exec(linea)
+      return !(m && quitar.has(m[1]!))
+    })
+    .join('\n')
 }
 
 export function actualizarContenidoDeSeccion(doc: DocumentoJu1, nombre: string, contenido: string): DocumentoJu1 {
@@ -378,6 +426,52 @@ export function actualizarContenidoDeSeccion(doc: DocumentoJu1, nombre: string, 
 
 export function actualizarMain(doc: DocumentoJu1, main: string): DocumentoJu1 {
   return { ...doc, main }
+}
+
+/** Quita las pestañas de secciones que ya no existen en la cuadrícula (su celda se borró: al quitar
+ *  una fila o columna, al heredar otra estructura, por ids repetidos de versiones anteriores…).
+ *  Sin esto quedaban archivos "fantasma" que nadie podía borrar desde la herramienta visual.
+ *  Con soloVacias se respetan las que todavía tienen código, por si el alumno puede reconectarlas
+ *  nombrando de nuevo una celda (ver etiquetarCelda). */
+export function sinSeccionesHuerfanas(doc: DocumentoJu1, soloVacias = false): DocumentoJu1 {
+  const conCelda = new Set(doc.estructura.celdas.flatMap((c) => (c.seccion ? [c.seccion] : [])))
+  const conPestana = new Set(doc.secciones.map((s) => s.nombre))
+  const secciones = doc.secciones.filter((s) => conCelda.has(s.nombre) || (soloVacias && s.contenido.trim() !== ''))
+  // Al revés también: una celda que dice tener una sección cuya pestaña ya no existe (quedó así
+  // al borrarla) vuelve a ser una celda vacía.
+  const celdasSueltas = doc.estructura.celdas.some((c) => c.seccion !== null && !conPestana.has(c.seccion))
+  if (secciones.length === doc.secciones.length && !celdasSueltas) return doc
+  const quitadas = doc.secciones.filter((s) => !secciones.includes(s)).map((s) => s.nombre)
+  const celdas = celdasSueltas
+    ? doc.estructura.celdas.map((c) => (c.seccion !== null && !conPestana.has(c.seccion) ? { ...c, seccion: null } : c))
+    : doc.estructura.celdas
+  return { ...doc, estructura: { ...doc.estructura, celdas }, secciones, main: sinMostrarDe(doc.main, quitadas) }
+}
+
+/** Un documento que el alumno nunca tocó: una sola celda sin nombre y ninguna pestaña. Solo a
+ *  este se le pone la estructura heredada del encargo anterior; uno al que ya se le borraron
+ *  todas las secciones (aunque quede vacío) es suyo y no se reinicia. */
+export function esDocumentoVirgen(doc: DocumentoJu1): boolean {
+  return doc.estructura.filas === 1 && doc.estructura.columnas === 1 && doc.secciones.length === 0 && doc.estructura.celdas.every((c) => c.seccion === null)
+}
+
+/** Quita la última fila Y las secciones que vivían en ella (su pestaña de código también). */
+export function eliminarFilaDelDocumento(doc: DocumentoJu1): Resultado<DocumentoJu1> {
+  const r = eliminarFila(doc.estructura)
+  return r.ok ? { ok: true, valor: sinSeccionesHuerfanas({ ...doc, estructura: r.valor }) } : r
+}
+
+/** Quita la última columna Y las secciones que vivían en ella. */
+export function eliminarColumnaDelDocumento(doc: DocumentoJu1): Resultado<DocumentoJu1> {
+  const r = eliminarColumna(doc.estructura)
+  return r.ok ? { ok: true, valor: sinSeccionesHuerfanas({ ...doc, estructura: r.valor }) } : r
+}
+
+/** Nombres de las secciones que se perderían al quitar la última fila / columna (para avisar
+ *  antes: se borra su código). */
+export function seccionesDeLaUltima(estructura: EstructuraDePagina, eje: 'fila' | 'columna'): string[] {
+  const ultima = (eje === 'fila' ? estructura.filas : estructura.columnas) - 1
+  return estructura.celdas.flatMap((c) => ((eje === 'fila' ? c.fila : c.columna) === ultima && c.seccion ? [c.seccion] : []))
 }
 
 /** Nunca falla: un texto que no es un DocumentoJu1 (un borrador de antes de este cambio, o
@@ -391,7 +485,7 @@ export function parsearDocumentoJu1(texto: string): DocumentoJu1 {
         datos && typeof datos === 'object' && (datos as { version?: unknown }).version === 1 &&
         (datos as { estructura?: unknown }).estructura && Array.isArray((datos as { secciones?: unknown }).secciones)
       ) {
-        return datos as DocumentoJu1
+        return sinSeccionesHuerfanas(conIdsUnicos(datos as DocumentoJu1), true)
       }
     } catch {
       /* no era JSON: es texto de portafolio.js de antes de este cambio */

@@ -1,6 +1,6 @@
 import { useRef, useState, type PointerEvent } from 'react'
 import type { Celda, EstructuraDePagina } from '../../lib/tipos'
-import { ubicarSeccion } from '../../lib/estructuraDePagina'
+import { seccionesDeLaUltima, ubicarSeccion } from '../../lib/estructuraDePagina'
 import './estructura.css'
 
 interface Props {
@@ -100,6 +100,15 @@ export function EditorEstructura({
       celda.fila <= destinoMovida.fila + destinoMovida.expandeFilas - 1 && celda.fila + celda.expandeFilas - 1 >= destinoMovida.fila &&
       celda.columna <= destinoMovida.columna + destinoMovida.expandeColumnas - 1 && celda.columna + celda.expandeColumnas - 1 >= destinoMovida.columna
     )
+  }
+
+  // Quitar la última fila/columna se lleva las secciones que vivan ahí, con su código: se avisa
+  // antes (igual que al separar una sección).
+  function quitarUltima(eje: 'fila' | 'columna') {
+    const perdidas = seccionesDeLaUltima(estructura, eje)
+    if (perdidas.length > 0 && !window.confirm(`Quitar la última ${eje} borra ${perdidas.length === 1 ? 'la sección' : 'las secciones'} ${perdidas.map((n) => `"${n}"`).join(', ')} y su código. ¿Seguro?`)) return
+    limpiarSeleccion()
+    setErrorEstructura(eje === 'fila' ? onEliminarFila() : onEliminarColumna())
   }
 
   const extendiendoSeccion = origen?.seccion != null
@@ -228,9 +237,9 @@ export function EditorEstructura({
 
       <div className="ee-acciones">
         <button type="button" className="ee-boton" onClick={() => { setErrorEstructura(null); onAgregarFila() }}>+ agregar fila</button>
-        <button type="button" className="ee-boton" onClick={() => setErrorEstructura(onEliminarFila())}>eliminar fila</button>
+        <button type="button" className="ee-boton" onClick={() => quitarUltima('fila')}>eliminar fila</button>
         <button type="button" className="ee-boton" onClick={() => { setErrorEstructura(null); onAgregarColumna() }}>+ agregar columna</button>
-        <button type="button" className="ee-boton" onClick={() => setErrorEstructura(onEliminarColumna())}>eliminar columna</button>
+        <button type="button" className="ee-boton" onClick={() => quitarUltima('columna')}>eliminar columna</button>
       </div>
       {errorEstructura && <p className="ee-form-error" role="alert">{errorEstructura}</p>}
 
