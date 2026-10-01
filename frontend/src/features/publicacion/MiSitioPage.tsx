@@ -5,6 +5,7 @@ import { useAuth } from '../auth/authContext'
 import { friendlyAuthError } from '../auth/session'
 import { ApiError } from '../../lib/http'
 import { capturarFuente, type EstadoPublicacion, type VistaPreviaPublicacion } from '../../lib/publicacion'
+import { descargarRepositorio } from '../../lib/repositorio'
 import { numeroFromChallengeKey } from '../../lib/challengeIdentity'
 import { rutaActividad } from '../../lib/navegacionActividades'
 import { SnapshotFrame } from './SnapshotFrame'
@@ -28,6 +29,7 @@ function MiSitio() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [pending, setPending] = useState(false)
+  const [downloading, setDownloading] = useState(false)
   const [reload, setReload] = useState(0)
   const generation = useRef(Symbol())
   const shareInput = useRef<HTMLInputElement>(null)
@@ -117,6 +119,20 @@ function MiSitio() {
     }
   }
 
+  async function download() {
+    if (!preview || !state?.source || downloading) return
+    const version = generation.current
+    setDownloading(true)
+    setError(null)
+    try {
+      await descargarRepositorio(state.source, title.trim(), preview.snapshot_html)
+    } catch {
+      if (generation.current === version) setError('No se pudo preparar la descarga.')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   async function unpublish() {
     if (!api || pending) return
     const version = generation.current
@@ -186,7 +202,10 @@ function MiSitio() {
         <p>Tu correo de acceso no se añade automáticamente. Revisa el texto y los enlaces que escribiste antes de compartirlos. Los proyectos y habilidades de ejemplo del taller no se publican como si fueran tuyos.</p>
         <p>Esta es una versión estática: los temporizadores y otros scripts no se ejecutan; tampoco se cargan imágenes ni fuentes externas. El diseño y los textos se conservan cuando son seguros.</p>
         {!state.can_publish && <p className="auth-message">{state.publish_block_reason === 'NOT_COHORT_MEMBER' ? 'Únete a una cohorte para publicar.' : 'La publicación estará disponible cuando tu docente abra Git y publicación y la actividad elegida esté disponible.'}</p>}
-        <button className="btn btn-secondary" disabled={blocked} onClick={() => void prepare()}>{pending ? 'Procesando…' : 'Preparar vista previa'}</button>
+        <div className="sitio-acciones">
+          <button className="btn btn-secondary" disabled={blocked} onClick={() => void prepare()}>{pending ? 'Procesando…' : 'Preparar vista previa'}</button>
+          <button className="btn btn-secondary" disabled={!preview || pending || downloading} title={preview ? undefined : 'Prepara la vista previa para poder descargar'} onClick={() => void download()}>{downloading ? 'Preparando .zip…' : 'Descargar Repositorio'}</button>
+        </div>
         {preview && <>
           <h2>Así se verá la versión compartida</h2>
           <SnapshotFrame html={preview.snapshot_html} title="Vista previa de publicación" />
