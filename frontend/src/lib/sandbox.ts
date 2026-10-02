@@ -193,7 +193,14 @@ const RUNTIME = String.raw`
         // y el carrusel no debe encogerse mientras llega la siguiente.
         if (siguiente && siguiente.tagName === 'IMG') siguiente.setAttribute('loading', 'eager');
         if (destino.offsetHeight > 0) destino.style.minHeight = destino.offsetHeight + 'px';
-        destino.replaceChildren(siguiente);
+        // La imagen anterior se queda a la vista hasta que la siguiente terminó de cargar:
+        // así no hay un parpadeo en blanco entre una y otra.
+        const poner = () => destino.replaceChildren(siguiente);
+        if (siguiente && siguiente.tagName === 'IMG' && !siguiente.complete && destino.firstChild && !Array.isArray(__capturas)) {
+          // (En la revisión automática el reloj es simulado y no se espera a la red.)
+          siguiente.addEventListener('load', poner, { once: true });
+          siguiente.addEventListener('error', poner, { once: true });
+        } else poner();
         indice = (indice + 1) % elementos.length;
       };
       avanzar();

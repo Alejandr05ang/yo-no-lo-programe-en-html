@@ -161,7 +161,10 @@ function llamadaTraducida(n: Nodo, ctx: Contexto): string | null {
     const siguiente = crearElemento(elementos[indice]);
     if (siguiente.tagName === 'IMG') siguiente.loading = 'eager';
     if (destino.offsetHeight > 0) destino.style.minHeight = destino.offsetHeight + 'px';
-    destino.replaceChildren(siguiente);
+    if (siguiente.tagName === 'IMG' && !siguiente.complete && destino.firstChild) {
+      siguiente.addEventListener('load', () => destino.replaceChildren(siguiente), { once: true });
+      siguiente.addEventListener('error', () => destino.replaceChildren(siguiente), { once: true });
+    } else destino.replaceChildren(siguiente);
     indice = (indice + 1) % elementos.length;
   };
   avanzar();
@@ -260,7 +263,10 @@ function texto(nodo: Nodo, ctx: Contexto, padre: Nodo | null = null): string {
       `    const siguiente = ${f}(${l}[${indice}]);`,
       `    if (siguiente.tagName === 'IMG') siguiente.loading = 'eager';`,
       `    if (${d}.offsetHeight > 0) ${d}.style.minHeight = ${d}.offsetHeight + 'px';`,
-      `    ${d}.replaceChildren(siguiente);`,
+      `    if (siguiente.tagName === 'IMG' && !siguiente.complete && ${d}.firstChild) {`,
+      `      siguiente.addEventListener('load', () => ${d}.replaceChildren(siguiente), { once: true });`,
+      `      siguiente.addEventListener('error', () => ${d}.replaceChildren(siguiente), { once: true });`,
+      `    } else ${d}.replaceChildren(siguiente);`,
       `    ${indice} = (${indice} + 1) % ${l}.length;`,
       '  };',
       `  ${avanzar}();`,

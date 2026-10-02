@@ -4,7 +4,8 @@ import { AccountFrame } from '../auth/AuthPages'
 import { useAuth } from '../auth/authContext'
 import { friendlyAuthError } from '../auth/session'
 import { ApiError } from '../../lib/http'
-import { capturarFuente, guardarImagenesParaEnviar, restaurarImagenes, type EstadoPublicacion, type VistaPreviaPublicacion } from '../../lib/publicacion'
+import { datosExtraComoDatos, leerDatosExtra } from '../../lib/datosExtra'
+import { capturarFuente, guardarImagenesParaEnviar, restaurarImagenes, type EstadoPublicacion, type FuentePublicacion, type VistaPreviaPublicacion } from '../../lib/publicacion'
 import { descargarRepositorio } from '../../lib/repositorio'
 import { numeroFromChallengeKey } from '../../lib/challengeIdentity'
 import { rutaActividad } from '../../lib/navegacionActividades'
@@ -17,7 +18,12 @@ export function MiSitioPage() {
 }
 
 function MiSitio() {
-  const { api } = useAuth()
+  const { api, session } = useAuth()
+  // El servidor publica `proyectos: []` a propósito (no publica ejemplos como si fueran tuyos).
+  // Los proyectos y segundos que escribiste en "Mis datos" viven en este navegador: se suman acá.
+  const idUsuario = session?.user.id
+  const conMisDatos = (fuente: FuentePublicacion): FuentePublicacion =>
+    ({ ...fuente, datos: { ...fuente.datos, ...datosExtraComoDatos(leerDatosExtra(idUsuario)) } })
   const [params, setParams] = useSearchParams()
   const selected = params.get('challenge_key') ?? ''
   const [state, setState] = useState<EstadoPublicacion | null>(null)
@@ -77,7 +83,7 @@ function MiSitio() {
     if (!api || !state?.source || !state.can_publish || pending || !title.trim()) return
     invalidate()
     const version = generation.current
-    const source = state.source
+    const source = conMisDatos(state.source)
     setPending(true)
     setError(null)
     try {
@@ -125,7 +131,7 @@ function MiSitio() {
     setDownloading(true)
     setError(null)
     try {
-      await descargarRepositorio(state.source, title.trim(), restaurarImagenes(preview.snapshot_html))
+      await descargarRepositorio(conMisDatos(state.source), title.trim(), restaurarImagenes(preview.snapshot_html))
     } catch {
       if (generation.current === version) setError('No se pudo preparar la descarga.')
     } finally {
