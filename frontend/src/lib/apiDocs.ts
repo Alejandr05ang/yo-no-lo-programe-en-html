@@ -191,7 +191,7 @@ export const API_DOCS: Record<string, DocHerramienta> = {
     descripcion:
       'En un carrusel, cambia al siguiente elemento de una lista una vez por segundo y vuelve al primero al llegar al final. Si la lista está vacía, muestra un aviso. Puedes cambiar cada cuántos segundos cambia: en "editar mis datos" (en datos.js) escribe el número en "Segundos de cadaSegundo()"; queda guardado como datos.segundos (por ejemplo 3, o 0.5 para medio segundo). Si lo dejas vacío, son 1 segundo.',
     ejemplo:
-      'cadaSegundo(destacado, destacados, proyecto =>\n  crearImagen(proyecto.imagenUrl, proyecto.nombre)\n)',
+      '// Cambia de proyecto cada datos.segundos (1 si no lo cambiaste en "editar mis datos")\ncadaSegundo(destacado, destacados, proyecto =>\n  crearImagen(proyecto.imagenUrl, proyecto.nombre)\n)',
     relacionadas: ['crearCarrusel()', 'proyectosDestacados()', 'crearImagen()'],
   },
 
