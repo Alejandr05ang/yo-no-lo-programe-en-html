@@ -119,3 +119,30 @@ test('la normalización también reconoce <A> en mayúsculas', () => {
   const { html } = normalizarEnlacesDelHtml('<A HREF="javascript:alert(1)">x</A>', parser)
   assert.deepEqual(enlaces(html).map((e) => e.href), [null])
 })
+
+test('crearImagen con el runtime real: solo https llega con src; http y rutas locales quedan con su descripción', async () => {
+  const r = await ejecutarReal(
+    'mostrar(crearImagen("https://fotos.example.com/a.png", "Ana"))\nmostrar(crearImagen("http://fotos.example.com/b.png", "Beto"))\nmostrar(crearImagen("foto.jpg", "Local"))',
+    {},
+  )
+  assert.equal(r.ok, true, r.error)
+  const imgs = [...parser.parseFromString(r.html, 'text/html').querySelectorAll('img')]
+  assert.deepEqual(imgs.map((i) => i.getAttribute('src')), ['https://fotos.example.com/a.png', null, null])
+  assert.deepEqual(imgs.map((i) => i.getAttribute('alt')), ['Ana', 'Beto', 'Local'])
+  assert.ok(r.logs.some((l) => l.includes('http://fotos.example.com/b.png')), 'avisa en la consola por qué no se muestra')
+})
+
+test('cambiarAlineacion centra una imagen (display block + márgenes automáticos) y no rompe el texto', async () => {
+  const r = await ejecutarReal(
+    'const f = crearImagen("https://fotos.example.com/a.png", "Ana")\nmostrar(f)\ncambiarAlineacion(f, "centro")\nconst d = crearImagen("https://fotos.example.com/b.png", "Beto")\nmostrar(d)\ncambiarAlineacion(d, "derecha")\nconst p = crearParrafo("hola")\nmostrar(p)\ncambiarAlineacion(p, "centro")',
+    {},
+  )
+  assert.equal(r.ok, true, r.error)
+  const [centro, derecha] = [...parser.parseFromString(r.html, 'text/html').querySelectorAll('img')]
+  assert.match(centro!.getAttribute('style')!, /display:\s*block/)
+  assert.match(centro!.getAttribute('style')!, /margin-left:\s*auto/)
+  assert.match(centro!.getAttribute('style')!, /margin-right:\s*auto/)
+  assert.match(derecha!.getAttribute('style')!, /margin-left:\s*auto/)
+  assert.match(derecha!.getAttribute('style')!, /margin-right:\s*0/)
+  assert.match(parser.parseFromString(r.html, 'text/html').querySelector('p')!.getAttribute('style')!, /text-align:\s*center/)
+})

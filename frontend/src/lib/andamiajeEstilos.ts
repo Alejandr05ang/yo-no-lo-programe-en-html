@@ -66,6 +66,8 @@ h1, h2, h3 {
 }
 p { margin: 0 0 var(--espaciado); }
 a { color: var(--color-acento); }
+/* Una imagen nunca es más ancha que su sección: se achica con su proporción en vez de salirse. */
+img { max-width: 100%; height: auto; }
 
 .salto { height: var(--espaciado); }
 

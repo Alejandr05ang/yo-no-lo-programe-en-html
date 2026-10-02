@@ -101,7 +101,7 @@ export const API_DOCS: Record<string, DocHerramienta> = {
   'crearImagen()': {
     firma: 'crearImagen(url, descripcion)',
     descripcion:
-      'Crea una imagen a partir de una dirección web. La descripción es para quien no puede ver la imagen — contá qué muestra.',
+      'Crea una imagen a partir de una dirección web que empiece con https:// (las http:// no se muestran). La imagen se achica para caber en su sección. La descripción es para quien no puede ver la imagen — contá qué muestra.',
     devuelve: 'la imagen',
     ejemplo: 'mostrar(crearImagen("https://ejemplo.com/foto.jpg", "Vista de la ciudad de noche"))',
     relacionadas: ['mostrar()', 'agregarA()'],
@@ -269,7 +269,7 @@ export const API_DOCS: Record<string, DocHerramienta> = {
   'cambiarAlineacion()': {
     firma: 'cambiarAlineacion(elemento, alineacion)',
     descripcion:
-      'Cambia cómo se alinea el texto adentro de un elemento. "alineacion" es una de estas cuatro, siempre entre comillas: "izquierda", "centro", "derecha", "justificado".',
+      'Cambia cómo se alinea el texto adentro de un elemento, o dónde queda una imagen. "alineacion" es una de estas cuatro, siempre entre comillas: "izquierda", "centro", "derecha", "justificado" (en una imagen, "justificado" equivale a "izquierda").',
     devuelve: 'el mismo elemento, ya con la alineación puesta',
     ejemplo: 'const p = crearParrafo("Un texto más largo, para notar el efecto.")\nmostrar(p)\ncambiarAlineacion(p, "centro")',
     relacionadas: ['cambiarColorTexto()', 'cambiarTamano()', 'cambiarFuente()'],

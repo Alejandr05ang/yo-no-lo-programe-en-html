@@ -76,8 +76,15 @@ const RUNTIME = String.raw`
   }
   function crearImagen(url, descripcion) {
     const img = __crear('img');
-    img.setAttribute('src', String(url ?? ''));
+    // Solo https, igual que la página publicada (publicacion.ts / sanitize.py): una dirección
+    // http se ve acá pero desaparece al publicar, y el estudiante no sabría por qué. Sin src, el
+    // navegador muestra la descripción en su lugar.
+    const direccion = String(url ?? '').trim();
+    if (/^https:\/\//i.test(direccion)) img.setAttribute('src', direccion);
+    else console.log('crearImagen: solo se aceptan direcciones que empiecen con https:// — "' + direccion + '" no se va a mostrar.');
     img.setAttribute('alt', String(descripcion ?? ''));
+    img.setAttribute('referrerpolicy', 'no-referrer');
+    img.setAttribute('loading', 'lazy');
     return img;
   }
 
@@ -121,7 +128,15 @@ const RUNTIME = String.raw`
   }
   const __ALINEACIONES = { izquierda: 'left', centro: 'center', derecha: 'right', justificado: 'justify' };
   function cambiarAlineacion(elemento, alineacion) {
-    elemento.style.textAlign = __ALINEACIONES[alineacion] || __ALINEACIONES.izquierda;
+    const valor = __ALINEACIONES[alineacion] || __ALINEACIONES.izquierda;
+    elemento.style.textAlign = valor;
+    // text-align no mueve una imagen (es el elemento mismo, no texto adentro): se la vuelve de
+    // bloque y se reparte el espacio sobrante con márgenes automáticos.
+    if (elemento.tagName === 'IMG') {
+      elemento.style.display = 'block';
+      elemento.style.marginLeft = valor === 'center' || valor === 'right' ? 'auto' : '0';
+      elemento.style.marginRight = valor === 'center' ? 'auto' : '0';
+    }
     return elemento;
   }
   // Con dos argumentos (elemento, color): fondo de ESE elemento nada más — sin sorpresas, un
