@@ -4,7 +4,7 @@ import { AccountFrame } from '../auth/AuthPages'
 import { useAuth } from '../auth/authContext'
 import { friendlyAuthError } from '../auth/session'
 import { ApiError } from '../../lib/http'
-import { capturarFuente, type EstadoPublicacion, type VistaPreviaPublicacion } from '../../lib/publicacion'
+import { capturarFuente, guardarImagenesParaEnviar, restaurarImagenes, type EstadoPublicacion, type VistaPreviaPublicacion } from '../../lib/publicacion'
 import { descargarRepositorio } from '../../lib/repositorio'
 import { numeroFromChallengeKey } from '../../lib/challengeIdentity'
 import { rutaActividad } from '../../lib/navegacionActividades'
@@ -84,7 +84,7 @@ function MiSitio() {
       const html = await capturarFuente(source)
       if (generation.current !== version) return
       const result = await api.request<VistaPreviaPublicacion>('/portfolio/publication/preview', {
-        method: 'POST', json: { challenge_key: source.challenge_key, title: title.trim(), snapshot_html: html, source_fingerprint: source.source_fingerprint, visibility: 'cohort' },
+        method: 'POST', json: { challenge_key: source.challenge_key, title: title.trim(), snapshot_html: guardarImagenesParaEnviar(html), source_fingerprint: source.source_fingerprint, visibility: 'cohort' },
       })
       if (generation.current !== version) return
       if (result.source_fingerprint !== source.source_fingerprint) throw new ApiError('SOURCE_CHANGED')
@@ -125,7 +125,7 @@ function MiSitio() {
     setDownloading(true)
     setError(null)
     try {
-      await descargarRepositorio(state.source, title.trim(), preview.snapshot_html)
+      await descargarRepositorio(state.source, title.trim(), restaurarImagenes(preview.snapshot_html))
     } catch {
       if (generation.current === version) setError('No se pudo preparar la descarga.')
     } finally {

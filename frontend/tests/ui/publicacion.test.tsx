@@ -170,3 +170,32 @@ test('galería y sitio publicado usan rutas autenticadas, sin ejecutar la fuente
   assert.match(p.host.querySelector('iframe')!.srcdoc, /Mi sitio guardado/)
   assert.doesNotMatch(p.text(), /Publicar para mi cohorte/)
 })
+
+test('las imágenes https sobreviven a un saneador que quita todo src: viajan en title y vuelven a src al mostrarlas', async () => {
+  const { guardarImagenesParaEnviar, documentoPublicado } = await import('../../src/lib/publicacion.ts')
+  const html = '<style>:root{--color-fondo:#fff}</style><p>hola</p>'
+    + '<img src="https://fotos.example.com/a%20b.png?x=1&y=2" alt="Ana">'
+    + '<img src="http://fotos.example.com/b.png" alt="Beto">'
+    + '<img src="foto.jpg" alt="Local">'
+    + '<img src="https://user:clave@fotos.example.com/c.png" alt="Credenciales">'
+  const enviado = guardarImagenesParaEnviar(html)
+  assert.doesNotMatch(enviado, /\ssrc=/, 'al servidor no viaja ningún src')
+  assert.match(enviado, /<style>:root\{--color-fondo:#fff\}<\/style>/, 'el <style> inicial no se pierde')
+  // Lo que haría el saneador viejo: conservar alt y title, quitar el resto.
+  const devuelto = enviado.replace(/ referrerpolicy="[^"]*"| loading="[^"]*"/g, '')
+  const visto = documentoPublicado(devuelto)
+  const imgs = [...new window.DOMParser().parseFromString(visto, 'text/html').querySelectorAll('img')]
+  assert.deepEqual(imgs.map((i) => i.getAttribute('src')), ['https://fotos.example.com/a%20b.png?x=1&y=2', null, null, null])
+  assert.ok(imgs.every((i) => !i.hasAttribute('title')), 'el title auxiliar no queda como tooltip')
+  assert.ok(imgs.every((i) => i.getAttribute('referrerpolicy') === 'no-referrer'))
+})
+
+test('un title que imita la dirección guardada no puede colar una dirección que no sea https', async () => {
+  const { restaurarImagenes } = await import('../../src/lib/publicacion.ts')
+  for (const mala of ['javascript:alert(1)', 'http://x.com/a.png', 'data:image/png;base64,AAAA', '//x.com/a.png']) {
+    const html = restaurarImagenes(`<img title="img:${encodeURIComponent(mala)}" alt="x">`)
+    assert.doesNotMatch(html, /\ssrc=/, mala)
+  }
+  assert.doesNotMatch(restaurarImagenes('<img src="javascript:alert(1)" alt="x">'), /\ssrc=/)
+  assert.match(restaurarImagenes('<img src="https://ok.example.com/a.png" alt="x">'), /src="https:\/\/ok\.example\.com\/a\.png"/, 'un src que el servidor ya conserva se respeta')
+})
