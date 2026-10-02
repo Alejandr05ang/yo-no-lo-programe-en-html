@@ -38,6 +38,34 @@ function celdaVacia(fila: number, columna: number): Celda {
   return { id: nuevoId(), fila, columna, expandeFilas: 1, expandeColumnas: 1, seccion: null }
 }
 
+/** Documentos guardados que rompieron la regla de cobertura (alguna posición sin celda, por una
+ *  operación vieja que borró de más): en la pantalla queda un hueco que no se puede clicar ni
+ *  nombrar. Se rellena cada posición libre con una celda vacía; las celdas que se salen de la
+ *  cuadrícula o pisan a otra se descartan, y las que tienen sección ganan sobre las vacías. */
+function conCoberturaCompleta(doc: DocumentoJu1): DocumentoJu1 {
+  const { filas, columnas } = doc.estructura
+  const ocupada = Array.from({ length: filas }, () => Array<boolean>(columnas).fill(false))
+  const ordenadas = [...doc.estructura.celdas].sort((a, b) => Number(b.seccion !== null) - Number(a.seccion !== null))
+  const aceptadas = new Set<Celda>()
+  for (const c of ordenadas) {
+    const cabe = c.fila >= 0 && c.columna >= 0 && c.expandeFilas >= 1 && c.expandeColumnas >= 1 &&
+      c.fila + c.expandeFilas <= filas && c.columna + c.expandeColumnas <= columnas
+    if (!cabe) continue
+    let libre = true
+    for (let f = c.fila; f < c.fila + c.expandeFilas && libre; f++) {
+      for (let k = c.columna; k < c.columna + c.expandeColumnas; k++) if (ocupada[f]![k]) { libre = false; break }
+    }
+    if (!libre) continue
+    for (let f = c.fila; f < c.fila + c.expandeFilas; f++) for (let k = c.columna; k < c.columna + c.expandeColumnas; k++) ocupada[f]![k] = true
+    aceptadas.add(c)
+  }
+  const nuevas: Celda[] = []
+  for (let f = 0; f < filas; f++) for (let k = 0; k < columnas; k++) if (!ocupada[f]![k]) nuevas.push(celdaVacia(f, k))
+  if (nuevas.length === 0 && aceptadas.size === doc.estructura.celdas.length) return doc
+  const celdas = [...doc.estructura.celdas.filter((c) => aceptadas.has(c)), ...nuevas]
+  return { ...doc, estructura: { ...doc.estructura, celdas } }
+}
+
 export function crearEstructuraInicial(): EstructuraDePagina {
   return { filas: 1, columnas: 1, celdas: [celdaVacia(0, 0)] }
 }
@@ -485,7 +513,7 @@ export function parsearDocumentoJu1(texto: string): DocumentoJu1 {
         datos && typeof datos === 'object' && (datos as { version?: unknown }).version === 1 &&
         (datos as { estructura?: unknown }).estructura && Array.isArray((datos as { secciones?: unknown }).secciones)
       ) {
-        return sinSeccionesHuerfanas(conIdsUnicos(datos as DocumentoJu1), true)
+        return sinSeccionesHuerfanas(conCoberturaCompleta(conIdsUnicos(datos as DocumentoJu1)), true)
       }
     } catch {
       /* no era JSON: es texto de portafolio.js de antes de este cambio */

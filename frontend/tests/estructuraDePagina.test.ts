@@ -448,3 +448,26 @@ test('una celda con etiqueta pero sin pestaña (daño de antes) vuelve a ser una
   assert.equal(abierto.estructura.celdas.find((c) => c.id === 'pie')!.seccion, null)
   assert.equal(sinMostrarDe('mostrar(a)\nmostrar(b)', ['a']), 'mostrar(b)')
 })
+
+test('una fila sin celdas (daño de antes) se rellena con celdas vacías al abrir, sin tocar las secciones', () => {
+  const d = docConPie()
+  const sinPie = { ...d, estructura: { ...d.estructura, celdas: d.estructura.celdas.filter((c) => c.id !== 'pie') } }
+  const abierto = parsearDocumentoJu1(JSON.stringify(sinPie))
+  const ocupadas = new Set<string>()
+  for (const c of abierto.estructura.celdas) {
+    for (let f = c.fila; f < c.fila + c.expandeFilas; f++) for (let k = c.columna; k < c.columna + c.expandeColumnas; k++) {
+      assert.equal(ocupadas.has(`${f},${k}`), false, 'ninguna posición queda en dos celdas')
+      ocupadas.add(`${f},${k}`)
+    }
+  }
+  assert.equal(ocupadas.size, abierto.estructura.filas * abierto.estructura.columnas, 'ninguna posición queda sin celda')
+  assert.deepEqual(
+    abierto.estructura.celdas.filter((c) => c.seccion !== null).map((c) => c.id).sort(),
+    d.estructura.celdas.filter((c) => c.seccion !== null && c.id !== 'pie').map((c) => c.id).sort(),
+  )
+})
+
+test('un documento íntegro se abre sin cambios (misma estructura, mismos ids)', () => {
+  const d = docConPie()
+  assert.deepEqual(parsearDocumentoJu1(JSON.stringify(d)).estructura, d.estructura)
+})
