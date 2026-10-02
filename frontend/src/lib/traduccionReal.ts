@@ -158,7 +158,10 @@ function llamadaTraducida(n: Nodo, ctx: Contexto): string | null {
   }
   let indice = 0;
   const avanzar = () => {
-    destino.replaceChildren(crearElemento(elementos[indice]));
+    const siguiente = crearElemento(elementos[indice]);
+    if (siguiente.tagName === 'IMG') siguiente.loading = 'eager';
+    if (destino.offsetHeight > 0) destino.style.minHeight = destino.offsetHeight + 'px';
+    destino.replaceChildren(siguiente);
     indice = (indice + 1) % elementos.length;
   };
   avanzar();
@@ -254,7 +257,10 @@ function texto(nodo: Nodo, ctx: Contexto, padre: Nodo | null = null): string {
       '} else {',
       `  let ${indice} = 0;`,
       `  const ${avanzar} = () => {`,
-      `    ${d}.replaceChildren(${f}(${l}[${indice}]));`,
+      `    const siguiente = ${f}(${l}[${indice}]);`,
+      `    if (siguiente.tagName === 'IMG') siguiente.loading = 'eager';`,
+      `    if (${d}.offsetHeight > 0) ${d}.style.minHeight = ${d}.offsetHeight + 'px';`,
+      `    ${d}.replaceChildren(siguiente);`,
       `    ${indice} = (${indice} + 1) % ${l}.length;`,
       '  };',
       `  ${avanzar}();`,

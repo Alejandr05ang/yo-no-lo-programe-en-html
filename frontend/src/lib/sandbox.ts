@@ -188,7 +188,12 @@ const RUNTIME = String.raw`
       }
       let indice = 0;
       const avanzar = () => {
-        destino.replaceChildren(crearElemento(elementos[indice]));
+        const siguiente = crearElemento(elementos[indice]);
+        // Una imagen "lazy" no carga mientras el panel está minimizado y deja el carrusel vacío;
+        // y el carrusel no debe encogerse mientras llega la siguiente.
+        if (siguiente && siguiente.tagName === 'IMG') siguiente.setAttribute('loading', 'eager');
+        if (destino.offsetHeight > 0) destino.style.minHeight = destino.offsetHeight + 'px';
+        destino.replaceChildren(siguiente);
         indice = (indice + 1) % elementos.length;
       };
       avanzar();
