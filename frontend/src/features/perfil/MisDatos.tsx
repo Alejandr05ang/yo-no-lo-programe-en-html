@@ -10,13 +10,28 @@ import {
   type ErroresPerfil,
   type Perfil,
 } from '../../lib/perfil'
+import {
+  MAX_PROYECTOS,
+  MAX_SEGUNDOS,
+  prepararDatosExtra,
+  type ErroresExtra,
+  type ProyectoDato,
+} from '../../lib/datosExtra'
 import { friendlyAuthError } from '../auth/session'
 
 interface Props {
   perfil: Perfil
+  /** Los proyectos que hay ahora en `datos` (propios o de ejemplo), para editarlos. */
+  proyectos?: ProyectoDato[]
+  /** Cada cuántos segundos corre cadaSegundo(); null = el valor por defecto (1). */
+  segundos?: number | null
   onGuardar: (p: Perfil) => Promise<void>
+  /** `proyectos` undefined = no los tocó: se conserva lo que había. */
+  onGuardarExtra?: (d: { proyectos?: ProyectoDato[]; segundos: number | null }) => void
   onCerrar: () => void
 }
+
+const PROYECTO_NUEVO: ProyectoDato = { nombre: '', imagenUrl: '', destacado: true, terminado: true, tipo: 'texto' }
 
 const ORDEN: CampoPerfil[] = ['nombre', 'sobreMi', 'github', 'linkedin', 'hobbies']
 const ID: Record<CampoPerfil, string> = {
@@ -34,9 +49,16 @@ const ID: Record<CampoPerfil, string> = {
 // hobbies son texto libre hasta pulsar Guardar: antes se convertían a lista en cada tecla y
 // el Enter recién pulsado (una línea vacía) desaparecía, así que no se podía pasar al
 // segundo hobby.
-export function MisDatos({ perfil, onGuardar, onCerrar }: Props) {
+const SIN_PROYECTOS: ProyectoDato[] = []
+
+export function MisDatos({ perfil, proyectos: proyectosIniciales = SIN_PROYECTOS, segundos: segundosIniciales = null, onGuardar, onGuardarExtra, onCerrar }: Props) {
   const [b, setB] = useState<BorradorPerfil>(() => borradorDesdePerfil(perfil))
   const [errores, setErrores] = useState<ErroresPerfil>({})
+  const [proyectos, setProyectos] = useState<ProyectoDato[]>(proyectosIniciales)
+  const [segundosTexto, setSegundosTexto] = useState(segundosIniciales ? String(segundosIniciales) : '')
+  const [erroresExtra, setErroresExtra] = useState<ErroresExtra>({ proyectos: {} })
+  const cambiarProyecto = (i: number, cambio: Partial<ProyectoDato>) =>
+    setProyectos((lista) => lista.map((p, j) => (j === i ? { ...p, ...cambio } : p)))
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const set = <K extends keyof BorradorPerfil>(k: K, v: BorradorPerfil[K]) => setB((x) => ({ ...x, [k]: v }))
@@ -76,16 +98,24 @@ export function MisDatos({ perfil, onGuardar, onCerrar }: Props) {
   const guardar = async () => {
     setError(null)
     const r = prepararPerfil(b)
-    if (r.errores) {
-      setErrores(r.errores)
-      const primero = ORDEN.find((c) => r.errores[c])
+    const x = prepararDatosExtra(proyectos, segundosTexto)
+    setErroresExtra(x.errores ?? { proyectos: {} })
+    if (r.errores || x.errores) {
+      setErrores(r.errores ?? {})
+      const primero = r.errores ? ORDEN.find((c) => r.errores[c]) : undefined
       if (primero) document.getElementById(ID[primero])?.focus()
+      else if (x.errores) {
+        const fila = Object.keys(x.errores.proyectos)[0]
+        document.getElementById(fila !== undefined ? `md-proyecto-${fila}-nombre` : 'md-segundos')?.focus()
+      }
       return
     }
     setErrores({})
     setGuardando(true)
     try {
       await onGuardar(r.perfil)
+      const tocoProyectos = JSON.stringify(x.datos.proyectos) !== JSON.stringify(proyectosIniciales)
+      onGuardarExtra?.({ proyectos: tocoProyectos ? x.datos.proyectos ?? [] : undefined, segundos: x.datos.segundos })
       onCerrar()
     } catch (e) {
       setError(e instanceof GuardadoSinRefrescar ? e.message : friendlyAuthError(e))
@@ -157,6 +187,48 @@ export function MisDatos({ perfil, onGuardar, onCerrar }: Props) {
             aria-invalid={!!errores.hobbies} aria-describedby={describe('hobbies', true)}
             onChange={(e) => set('hobbiesTexto', e.target.value)} />
           {ayuda('hobbies', `Pulsa Enter para pasar al siguiente. Hasta ${MAX_HOBBIES}, de ${MAX_LARGO_HOBBY} caracteres como máximo cada uno.`)}
+        </div>
+
+        <div className="field">
+          <label>Proyectos ({proyectos.length})</label>
+          <span className="text-muted">Pon los que quieras: uno solo o veinte. Se leen en datos.proyectos.</span>
+          {proyectos.map((p, i) => (
+            <fieldset key={i} className="md-proyecto" style={{ border: '1px solid var(--color-divider, #ccc)', borderRadius: 8, padding: 10, margin: '8px 0', display: 'grid', gap: 6 }}>
+              <input id={`md-proyecto-${i}-nombre`} className="input" placeholder="Nombre del proyecto" aria-label={`Proyecto ${i + 1}: nombre`}
+                value={p.nombre} aria-invalid={!!erroresExtra.proyectos[i]}
+                onChange={(e) => cambiarProyecto(i, { nombre: e.target.value })} />
+              {erroresExtra.proyectos[i] && <span className="dialog-error" role="alert">{erroresExtra.proyectos[i]}</span>}
+              <input className="input" placeholder="Dirección de la imagen (https://…, obligatoria para verla en el carrusel)" aria-label={`Proyecto ${i + 1}: imagen`}
+                value={p.imagenUrl} onChange={(e) => cambiarProyecto(i, { imagenUrl: e.target.value })} />
+              <input className="input" list="md-tipos" placeholder="Tipo (demo, texto, video…)" aria-label={`Proyecto ${i + 1}: tipo`}
+                value={p.tipo} onChange={(e) => cambiarProyecto(i, { tipo: e.target.value })} />
+              <input className="input" placeholder="Enlace (opcional)" aria-label={`Proyecto ${i + 1}: enlace`}
+                value={p.url ?? ''} onChange={(e) => cambiarProyecto(i, { url: e.target.value })} />
+              <span style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+                <label><input type="checkbox" checked={p.destacado} onChange={(e) => cambiarProyecto(i, { destacado: e.target.checked })} /> Destacado</label>
+                <label><input type="checkbox" checked={p.terminado} onChange={(e) => cambiarProyecto(i, { terminado: e.target.checked })} /> Terminado</label>
+                <button type="button" className="btn btn-ghost" onClick={() => setProyectos((l) => l.filter((_, j) => j !== i))}>
+                  Quitar
+                </button>
+              </span>
+            </fieldset>
+          ))}
+          <datalist id="md-tipos"><option value="demo" /><option value="texto" /><option value="video" /></datalist>
+          <div>
+            <button type="button" className="btn btn-ghost" disabled={proyectos.length >= MAX_PROYECTOS}
+              onClick={() => setProyectos((l) => [...l, { ...PROYECTO_NUEVO }])}>
+              + Agregar proyecto
+            </button>
+          </div>
+        </div>
+
+        <div className="field">
+          <label htmlFor="md-segundos">Segundos de cadaSegundo() (opcional)</label>
+          <input id="md-segundos" className="input" inputMode="decimal" placeholder="1" value={segundosTexto}
+            aria-invalid={!!erroresExtra.segundos} onChange={(e) => setSegundosTexto(e.target.value)} />
+          {erroresExtra.segundos
+            ? <span className="dialog-error" role="alert">{erroresExtra.segundos}</span>
+            : <span className="text-muted">Cada cuántos segundos cambia el carrusel. Vacío = 1. Hasta {MAX_SEGUNDOS}.</span>}
         </div>
 
         {error && <div className="dialog-error" role="alert">{error}</div>}

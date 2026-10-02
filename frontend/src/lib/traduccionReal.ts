@@ -11,6 +11,9 @@
 // navegador (document.createElement, appendChild, style.color, setInterval…).
 import { parse } from 'acorn'
 
+// Cada cuántos milisegundos corre cadaSegundo(): `datos.segundos` ("Mis datos"), o 1 segundo.
+const ESPERA_REAL = "(typeof datos !== 'undefined' && datos.segundos > 0 ? datos.segundos : 1) * 1000"
+
 export interface UnidadCodigo {
   nombre: string
   /** JavaScript (ya sin pseudocódigo). */
@@ -143,7 +146,7 @@ function llamadaTraducida(n: Nodo, ctx: Contexto): string | null {
     case 'cambiarColorFondo': return nodos.length >= 2 ? `${arg(0)}.style.backgroundColor = ${arg(1)}` : ctx.fondo(arg(0))
     case 'cadaSegundo': {
       if (nodos.length < 3) {
-        return `(() => { const accion = ${arg(0)}; accion(); setInterval(accion, 1000); })()`
+        return `(() => { const accion = ${arg(0)}; accion(); setInterval(accion, ${ESPERA_REAL}); })()`
       }
       return `(() => {
   const destino = ${arg(0)};
@@ -159,7 +162,7 @@ function llamadaTraducida(n: Nodo, ctx: Contexto): string | null {
     indice = (indice + 1) % elementos.length;
   };
   avanzar();
-  setInterval(avanzar, 1000);
+  setInterval(avanzar, ${ESPERA_REAL});
 })()`
     }
   }
@@ -255,7 +258,7 @@ function texto(nodo: Nodo, ctx: Contexto, padre: Nodo | null = null): string {
       `    ${indice} = (${indice} + 1) % ${l}.length;`,
       '  };',
       `  ${avanzar}();`,
-      `  setInterval(${avanzar}, 1000);`,
+      `  setInterval(${avanzar}, ${ESPERA_REAL});`,
       '}',
     ]
     return lineas.join('\n' + sangria)

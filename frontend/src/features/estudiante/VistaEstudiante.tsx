@@ -44,6 +44,13 @@ import { DivisorArrastrable } from './DivisorArrastrable'
 import { EditorPanel } from '../editor/EditorPanel'
 import { EditorEstructura } from '../estructura/EditorEstructura'
 import { MisDatos } from '../perfil/MisDatos'
+import {
+  comoProyecto,
+  datosExtraComoDatos,
+  guardarDatosExtra,
+  leerDatosExtra,
+  type ProyectoDato,
+} from '../../lib/datosExtra'
 import { PanelPreview } from '../preview/PanelPreview'
 import { PanelRevision } from '../revision/PanelRevision'
 import { VistaConsultaMovil } from './VistaConsultaMovil'
@@ -303,6 +310,13 @@ function VistaEstudianteInterna() {
   const perfilRef = useRef(perfil)
   perfilRef.current = perfil
 
+  // Proyectos propios y segundos de cadaSegundo(): viven en el navegador, uno por cuenta.
+  const [datosExtra, setDatosExtra] = useState(() => leerDatosExtra(session?.user.id))
+  const idUsuario = session?.user.id
+  useEffect(() => { setDatosExtra(leerDatosExtra(idUsuario)) }, [idUsuario])
+  const datosExtraRef = useRef(datosExtra)
+  datosExtraRef.current = datosExtra
+
   // ve:perfil no registra un propietario. Se conserva como respaldo, pero nunca se
   // importa automáticamente en la cuenta que abra este navegador compartido.
 
@@ -334,8 +348,8 @@ function VistaEstudianteInterna() {
   // `datos` de la preview = perfil del estudiante + override del encargo (donde este necesita
   // un estado concreto). Que sea propio hace que el portafolio se sienta suyo desde E1.
   const datos = useMemo(
-    () => ({ ...perfilComoDatos(perfil), ...(encargo?.datosOverride ?? {}) }),
-    [perfil, encargo],
+    () => ({ ...perfilComoDatos(perfil), ...(encargo?.datosOverride ?? {}), ...datosExtraComoDatos(datosExtra) }),
+    [perfil, encargo, datosExtra],
   )
   const archivoDatos = useMemo(
     () => ({ nombre: 'datos.js', soloLectura: true, contenido: datosComoTexto(datos) }),
@@ -626,7 +640,7 @@ function VistaEstudianteInterna() {
       setSalida(null)
       setRevision(null)
       if (encargo.heredaDe != null || encargo.modelo === 'grid') {
-        const d = { ...perfilComoDatos(perfilRef.current), ...encargo.datosOverride }
+        const d = { ...perfilComoDatos(perfilRef.current), ...encargo.datosOverride, ...datosExtraComoDatos(datosExtraRef.current) }
         const promesa = encargo.modelo === 'grid' ? ejecutarPreviewJu1(parsearDocumentoJu1(code), d) : ejecutarPreview(code, d)
         void promesa.then((r) => {
           if (r.ok && numeroRef.current === numero && numeroCargadoRef.current === numero
@@ -887,6 +901,13 @@ function VistaEstudianteInterna() {
     <MisDatos
       key="mis-datos"
       perfil={perfil}
+      proyectos={Array.isArray(datos.proyectos) ? datos.proyectos.map(comoProyecto).filter((p): p is ProyectoDato => p !== null) : []}
+      segundos={datosExtra.segundos}
+      onGuardarExtra={({ proyectos, segundos }) => {
+        const nuevo = { proyectos: proyectos ?? datosExtra.proyectos, segundos }
+        guardarDatosExtra(idUsuario, nuevo)
+        setDatosExtra(nuevo)
+      }}
       onGuardar={async (p) => {
         if (!clienteApi || !session) return
         await clienteApi.request('/profile', { method: 'PUT', json: perfilParaBackend(p, session.user) })

@@ -179,6 +179,8 @@ const RUNTIME = String.raw`
   // resultado y dejamos un intervalo que morirá con el iframe. El segundo formato
   // mantiene un carrusel: reemplaza su único contenido y recorre la lista en ciclo.
   function cadaSegundo(destino, elementos, crearElemento) {
+    // "Mis datos" permite elegir cada cuántos segundos cambia (datos.segundos); sin eso, 1.
+    const espera = (Number(datos.segundos) > 0 ? Number(datos.segundos) : 1) * 1000;
     if (Array.isArray(elementos) && typeof crearElemento === 'function') {
       if (elementos.length === 0) {
         destino.replaceChildren(__crear('p', 'Todavía no hay proyectos destacados.'));
@@ -190,12 +192,12 @@ const RUNTIME = String.raw`
         indice = (indice + 1) % elementos.length;
       };
       avanzar();
-      setInterval(avanzar, 1000);
+      setInterval(avanzar, espera);
       return;
     }
     if (typeof destino === 'function') {
       destino();
-      setInterval(destino, 1000);
+      setInterval(destino, espera);
     }
   }
 `

@@ -51,7 +51,7 @@ test('extraerLogica conserva solo el comportamiento y traduce las funciones del 
   assert.ok(r.hayLogica && r.usaDatos)
   assert.doesNotMatch(r.script, /mostrar\(|crearImagen|crearCarrusel|crearBoton|cadaSegundo|proyectosDestacados|crearTitulo|cambiarColorTexto/)
   assert.match(r.script, /document\.getElementById\('destacado'\)/)
-  assert.match(r.script, /setInterval\(avanzar, 1000\)/)
+  assert.match(r.script, /setInterval\(avanzar, \(typeof datos !== 'undefined' && datos\.segundos > 0 \? datos\.segundos : 1\) \* 1000\)/)
   assert.match(r.script, /boton\.style\.color = "red"/)
   assert.match(r.script, /const parrafo = document\.createElement\('p'\);/)
   assert.match(r.script, /parrafo\.textContent = "clic";/)
