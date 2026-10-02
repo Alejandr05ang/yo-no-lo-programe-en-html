@@ -237,7 +237,7 @@ window.clearInterval = (id) => __intervalos.delete(id);
 function __capturarEvolucion() {
   const capturar = () => __capturas.push(document.getElementById('__raiz').innerHTML);
   capturar();
-  for (let tick = 0; tick < ${Math.max(0, Math.min(10, Math.floor(ticks)))}; tick++) {
+  for (let tick = 0; tick < ${Math.max(0, Math.min(50, Math.floor(ticks)))}; tick++) {
     for (const fn of [...__intervalos.values()]) fn();
     capturar();
   }
